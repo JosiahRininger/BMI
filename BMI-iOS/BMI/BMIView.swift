@@ -291,8 +291,7 @@ class BMIView: UIView {
         super.init(coder: aDecoder)
         setupView()
     }
-    
-    
+        
     fileprivate func setupView() {
         frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: UIScreen.main.bounds.height)
         backgroundColor = .backgroundColor
