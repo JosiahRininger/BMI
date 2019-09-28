@@ -38,7 +38,11 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
-        return .lightContent
+        if #available(iOS 13.0, *) {
+            return self.traitCollection.userInterfaceStyle == .dark ? .darkContent : .lightContent
+        } else {
+            return .lightContent
+        }
     }
     
     func setupView() {
@@ -70,7 +74,8 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
     @objc func indexChanged(_ sender: UISegmentedControl) {
         viewWillAppear(true)
         super.viewDidLoad()
-        switch sender.selectedSegmentIndex{
+        
+        switch sender.selectedSegmentIndex {
         case 0:
             bmiView.weightTextField.text = "215"
             bmiView.poundsLabel.text = "lbs"
@@ -126,13 +131,13 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
         weightPicker.delegate = self
         weightPicker.dataSource = self
         weightPicker.selectRow(bmiView.weightInPounds.firstIndex(of: 215) ?? 0, inComponent: 0, animated: true)
-        weightPicker.backgroundColor = .white
+        weightPicker.backgroundColor = .backgroundColor
         bmiView.weightTextField.inputView = weightPicker
         
         heightPicker.delegate = self
         heightPicker.dataSource = self
         heightPicker.selectRow(bmiView.heightInFeetAndInches.firstIndex(of: "5'9\"") ?? 0, inComponent: 0, animated: true)
-        heightPicker.backgroundColor = .white
+        heightPicker.backgroundColor = .backgroundColor
         bmiView.heightTextField.inputView = heightPicker
     }
     
@@ -150,7 +155,9 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
         let toolBar = UIToolbar()
         toolBar.sizeToFit()
         let doneButton = UIBarButtonItem(title: "Done", style: .plain, target: self, action: #selector(dismissKeyboard))
-        toolBar.setItems([doneButton], animated: false)
+        doneButton.tintColor = .secondaryBlue
+        let flexibilitySpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
+        toolBar.setItems([flexibilitySpace, doneButton], animated: false)
         toolBar.isUserInteractionEnabled = true
         bmiView.weightTextField.inputAccessoryView = toolBar
         bmiView.heightTextField.inputAccessoryView = toolBar
