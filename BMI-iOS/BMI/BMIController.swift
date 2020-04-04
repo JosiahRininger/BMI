@@ -65,7 +65,11 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
     
     func initializeBanner() {
         print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
+#if DEBUG
+        bmiView.bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
+#else
         bmiView.bannerView.adUnitID = "ca-app-pub-6687613409331343/5598406572"
+#endif
         bmiView.bannerView.rootViewController = self
         bmiView.bannerView.load(GADRequest())
         bmiView.bannerView.delegate = self
