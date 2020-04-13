@@ -12,20 +12,11 @@ import GoogleMobileAds
 class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegate {
     
     let bmiView = BMIView()
+    let bmiViewModel = BMIViewModel()
     let weightPicker = UIPickerView()
     let heightPicker = UIPickerView()
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        
-        bmiView.segmentedControl.addTarget(self, action: #selector(indexChanged(_:)), for: .valueChanged)
-        bmiView.calculateButton.addTarget(self, action: #selector(calculateBMI), for: .touchUpInside)
-        
-        setupView()
-        initializeBanner()
-        
-    }
-    
+    // MARK: - View Setup
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
@@ -33,8 +24,6 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
         bmiView.calculateButton.addTarget(self, action: #selector(calculateBMI), for: .touchUpInside)
         
         setupView()
-        initializeBanner()
-        
     }
     
     override var preferredStatusBarStyle: UIStatusBarStyle {
@@ -46,51 +35,52 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
     }
     
     func setupView() {
+        initializeBanner()
+        
         bmiView.weightTextField.delegate = self
         bmiView.heightTextField.delegate = self
         
-        let dismissKeyboardTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
-        dismissKeyboardTapGestureRecognizer.cancelsTouchesInView = false
-        bmiView.addGestureRecognizer(dismissKeyboardTapGestureRecognizer)
-        
+        setupKeyboard()
         createPicker()
         createPickerToolBar()
         
         view = bmiView
     }
     
-    @objc fileprivate func dismissKeyboard() {
-        view.endEditing(true)
-    }
-    
     func initializeBanner() {
-        print("Google Mobile Ads SDK version: \(GADRequest.sdkVersion())")
-#if DEBUG
-        bmiView.bannerView.adUnitID = "ca-app-pub-3940256099942544/2934735716"
-#else
-        bmiView.bannerView.adUnitID = "ca-app-pub-6687613409331343/5598406572"
-#endif
+        bmiView.bannerView.adUnitID = Constants.Strings.adUnitID
         bmiView.bannerView.rootViewController = self
         bmiView.bannerView.load(GADRequest())
         bmiView.bannerView.delegate = self
     }
     
+    private func setupKeyboard() {
+        let dismissKeyboardTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        dismissKeyboardTapGestureRecognizer.cancelsTouchesInView = false
+        bmiView.addGestureRecognizer(dismissKeyboardTapGestureRecognizer)
+    }
+    
+    @objc fileprivate func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
+    // MARK: - Helper Methods
     @objc func indexChanged(_ sender: UISegmentedControl) {
         viewWillAppear(true)
         super.viewDidLoad()
         
         switch sender.selectedSegmentIndex {
         case 0:
-            bmiView.weightTextField.text = "215"
-            bmiView.poundsLabel.text = "lbs"
-            bmiView.heightTextField.text = "5'9\""
-            bmiView.feetAndInchesLabel.text = "in"
+            bmiView.weightTextField.text = Constants.Strings.defaultPounds
+            bmiView.poundsLabel.text = Constants.Strings.pounds
+            bmiView.heightTextField.text = Constants.Strings.defaultFeetAndInches
+            bmiView.feetAndInchesLabel.text = Constants.Strings.inches
             setupImperialPickerViews()
         case 1:
-            bmiView.weightTextField.text = "97.5"
-            bmiView.poundsLabel.text = "kg"
-            bmiView.heightTextField.text = "174.0"
-            bmiView.feetAndInchesLabel.text = "cm"
+            bmiView.weightTextField.text = Constants.Strings.defaultKilograms
+            bmiView.poundsLabel.text = Constants.Strings.kilograms
+            bmiView.heightTextField.text = Constants.Strings.defaultCentimeters
+            bmiView.feetAndInchesLabel.text = Constants.Strings.centimeters
             setupMetricPickerViews()
         default:
             break
@@ -98,56 +88,38 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
     }
     
     @objc func calculateBMI() {
+        var bmi = String()
         if bmiView.segmentedControl.selectedSegmentIndex == 0 {
-            let lString: String = bmiView.weightTextField.text ?? "0"
-            var iString: String = bmiView.heightTextField.text ?? "0"
-            let lbs: Int = Int(lString) ?? 0
-            var ins: Int = (Int(String(iString.first ?? "0")) ?? 0) * 12
-            if iString.last == "\"" {
-                iString.removeFirst()
-                iString.removeFirst()
-                iString.removeLast()
-                ins += Int(iString) ?? 0
-            }
-            bmiView.calculationLabel.text = (lbs == 0 || ins == 0) ? String("0.0") : String(Double(Int(10.0 * (703.0 * Double(lbs) / Double(ins * ins)))) / 10.0)
+            bmi = bmiViewModel.calculateImperialBMI(with: bmiView.weightTextField.text,
+                                                    and: bmiView.heightTextField.text)
         } else {
-            let kString: String = bmiView.weightTextField.text ?? "0.0"
-            let cString: String = bmiView.heightTextField.text ?? "0.0"
-            let kg: Double = Double(kString) ?? 0.0
-            let m: Double = (Double(cString) ?? 0.0) / 100.0
-            bmiView.calculationLabel.text = (kg == 0.0 || m == 0.0) ? String("0.0") : String(Double(Int(10.0 * Double(kg) / Double(m * m))) / 10.0)
+            bmi = bmiViewModel.calculateMetricBMI(with: bmiView.weightTextField.text,
+            and: bmiView.heightTextField.text)
         }
-        let bmi: Double = Double(bmiView.calculationLabel.text ?? "0.0") ?? 0.0
-        switch bmi {
-        case 0.0...18.5:
-            bmiView.categoryLabel.text = "Underweight"
-        case 18.5...24.9:
-            bmiView.categoryLabel.text = "Normal Weight"
-        case 25.0...29.9:
-            bmiView.categoryLabel.text = "Overweight"
-        default:
-            bmiView.categoryLabel.text = "Obese"
-            
-        }
+        bmiView.calculationLabel.text = bmi
+        bmiView.categoryLabel.text = bmiViewModel.categorizeBMI(with: Double(bmi) ?? 0.0)
     }
     
+    // MARK: - UIPickerView Methods
     private func createPicker() {
+        // Setup Weight Picker
         weightPicker.delegate = self
         weightPicker.dataSource = self
         weightPicker.selectRow(bmiView.weightInPounds.firstIndex(of: 215) ?? 0, inComponent: 0, animated: true)
         weightPicker.backgroundColor = .backgroundColor
         bmiView.weightTextField.inputView = weightPicker
         
+        // Setup Height Picker
         heightPicker.delegate = self
         heightPicker.dataSource = self
-        heightPicker.selectRow(bmiView.heightInFeetAndInches.firstIndex(of: "5'9\"") ?? 0, inComponent: 0, animated: true)
+        heightPicker.selectRow(bmiView.heightInFeetAndInches.firstIndex(of: Constants.Strings.defaultFeetAndInches) ?? 0, inComponent: 0, animated: true)
         heightPicker.backgroundColor = .backgroundColor
         bmiView.heightTextField.inputView = heightPicker
     }
     
     func setupImperialPickerViews() {
         weightPicker.selectRow(bmiView.weightInPounds.firstIndex(of: 215) ?? 0, inComponent: 0, animated: true)
-        heightPicker.selectRow(bmiView.heightInFeetAndInches.firstIndex(of: "5'9\"") ?? 0, inComponent: 0, animated: true)
+        heightPicker.selectRow(bmiView.heightInFeetAndInches.firstIndex(of: Constants.Strings.defaultFeetAndInches) ?? 0, inComponent: 0, animated: true)
     }
     
     func setupMetricPickerViews() {
@@ -158,7 +130,7 @@ class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegat
     func createPickerToolBar() {
         let toolBar = UIToolbar()
         toolBar.sizeToFit()
-        let doneButton = UIBarButtonItem(title: "Done", style: .plain, target: self, action: #selector(dismissKeyboard))
+        let doneButton = UIBarButtonItem(title: Constants.Strings.done, style: .plain, target: self, action: #selector(dismissKeyboard))
         doneButton.tintColor = .secondaryBlue
         let flexibilitySpace = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
         toolBar.setItems([flexibilitySpace, doneButton], animated: false)
@@ -176,7 +148,6 @@ extension BMIController: UIPickerViewDelegate, UIPickerViewDataSource {
     }
     
     func pickerView(_ pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
-        
         if pickerView == weightPicker {
             return bmiView.segmentedControl.selectedSegmentIndex == 0 ? bmiView.weightInPounds.count : bmiView.weightInKg.count
         } else if pickerView == heightPicker {

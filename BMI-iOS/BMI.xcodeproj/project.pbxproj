@@ -9,12 +9,15 @@
 /* Begin PBXBuildFile section */
 		9B7D142EBD63D8CA64B09B37 /* Pods_BMI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 05C73907795D6DA3A75841D1 /* Pods_BMI.framework */; };
 		D70E0F79233FB1600031FF9C /* UIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D70E0F78233FB1600031FF9C /* UIView.swift */; };
+		D7E4278224438E470089D0E9 /* BMIViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E4278124438E470089D0E9 /* BMIViewModel.swift */; };
+		D7E4278424438F8D0089D0E9 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E4278324438F8D0089D0E9 /* Constants.swift */; };
+		D7E4278624438FC40089D0E9 /* Strings.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7E4278524438FC40089D0E9 /* Strings.swift */; };
 		D7FE79AF22AA15920032FA59 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FE79AE22AA15920032FA59 /* AppDelegate.swift */; };
 		D7FE79B122AA15920032FA59 /* BMIController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FE79B022AA15920032FA59 /* BMIController.swift */; };
 		D7FE79B622AA15950032FA59 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D7FE79B522AA15950032FA59 /* Assets.xcassets */; };
 		D7FE79C122AA15B90032FA59 /* BMIView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FE79C022AA15B90032FA59 /* BMIView.swift */; };
 		D7FE79C322AA17270032FA59 /* UIColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FE79C222AA17270032FA59 /* UIColor.swift */; };
-		D7FE79C522AA19480032FA59 /* UIElementSizes.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FE79C422AA19480032FA59 /* UIElementSizes.swift */; };
+		D7FE79C522AA19480032FA59 /* UIElementsManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7FE79C422AA19480032FA59 /* UIElementsManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,6 +25,9 @@
 		9A1FDAB0468DD7C0DEA957B8 /* Pods-BMI.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BMI.debug.xcconfig"; path = "Target Support Files/Pods-BMI/Pods-BMI.debug.xcconfig"; sourceTree = "<group>"; };
 		CB564FCD9E5E4EA1002A0B98 /* Pods-BMI.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-BMI.release.xcconfig"; path = "Target Support Files/Pods-BMI/Pods-BMI.release.xcconfig"; sourceTree = "<group>"; };
 		D70E0F78233FB1600031FF9C /* UIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIView.swift; sourceTree = "<group>"; };
+		D7E4278124438E470089D0E9 /* BMIViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BMIViewModel.swift; sourceTree = "<group>"; };
+		D7E4278324438F8D0089D0E9 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
+		D7E4278524438FC40089D0E9 /* Strings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Strings.swift; sourceTree = "<group>"; };
 		D7FE79AB22AA15920032FA59 /* BMI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BMI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D7FE79AE22AA15920032FA59 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		D7FE79B022AA15920032FA59 /* BMIController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BMIController.swift; sourceTree = "<group>"; };
@@ -29,7 +35,7 @@
 		D7FE79BA22AA15950032FA59 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D7FE79C022AA15B90032FA59 /* BMIView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BMIView.swift; sourceTree = "<group>"; };
 		D7FE79C222AA17270032FA59 /* UIColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIColor.swift; sourceTree = "<group>"; };
-		D7FE79C422AA19480032FA59 /* UIElementSizes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIElementSizes.swift; sourceTree = "<group>"; };
+		D7FE79C422AA19480032FA59 /* UIElementsManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIElementsManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,6 +57,49 @@
 				CB564FCD9E5E4EA1002A0B98 /* Pods-BMI.release.xcconfig */,
 			);
 			path = Pods;
+			sourceTree = "<group>";
+		};
+		D7E4277C24438DBC0089D0E9 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				D70E0F78233FB1600031FF9C /* UIView.swift */,
+				D7FE79C222AA17270032FA59 /* UIColor.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		D7E4277D24438DD40089D0E9 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				D7FE79C022AA15B90032FA59 /* BMIView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		D7E4277E24438DDF0089D0E9 /* Controllers */ = {
+			isa = PBXGroup;
+			children = (
+				D7FE79B022AA15920032FA59 /* BMIController.swift */,
+			);
+			path = Controllers;
+			sourceTree = "<group>";
+		};
+		D7E4277F24438DEC0089D0E9 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				D7E4278124438E470089D0E9 /* BMIViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		D7E4278024438DF40089D0E9 /* Custom Classes */ = {
+			isa = PBXGroup;
+			children = (
+				D7FE79C422AA19480032FA59 /* UIElementsManager.swift */,
+				D7E4278324438F8D0089D0E9 /* Constants.swift */,
+				D7E4278524438FC40089D0E9 /* Strings.swift */,
+			);
+			path = "Custom Classes";
 			sourceTree = "<group>";
 		};
 		D7FE79A222AA15920032FA59 = {
@@ -75,11 +124,11 @@
 			isa = PBXGroup;
 			children = (
 				D7FE79AE22AA15920032FA59 /* AppDelegate.swift */,
-				D7FE79C422AA19480032FA59 /* UIElementSizes.swift */,
-				D70E0F78233FB1600031FF9C /* UIView.swift */,
-				D7FE79C222AA17270032FA59 /* UIColor.swift */,
-				D7FE79C022AA15B90032FA59 /* BMIView.swift */,
-				D7FE79B022AA15920032FA59 /* BMIController.swift */,
+				D7E4277C24438DBC0089D0E9 /* Extensions */,
+				D7E4278024438DF40089D0E9 /* Custom Classes */,
+				D7E4277F24438DEC0089D0E9 /* ViewModels */,
+				D7E4277D24438DD40089D0E9 /* Views */,
+				D7E4277E24438DDF0089D0E9 /* Controllers */,
 				D7FE79B522AA15950032FA59 /* Assets.xcassets */,
 				D7FE79BA22AA15950032FA59 /* Info.plist */,
 			);
@@ -227,11 +276,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				D7FE79C122AA15B90032FA59 /* BMIView.swift in Sources */,
+				D7E4278624438FC40089D0E9 /* Strings.swift in Sources */,
 				D7FE79C322AA17270032FA59 /* UIColor.swift in Sources */,
 				D7FE79B122AA15920032FA59 /* BMIController.swift in Sources */,
 				D7FE79AF22AA15920032FA59 /* AppDelegate.swift in Sources */,
 				D70E0F79233FB1600031FF9C /* UIView.swift in Sources */,
-				D7FE79C522AA19480032FA59 /* UIElementSizes.swift in Sources */,
+				D7E4278224438E470089D0E9 /* BMIViewModel.swift in Sources */,
+				D7FE79C522AA19480032FA59 /* UIElementsManager.swift in Sources */,
+				D7E4278424438F8D0089D0E9 /* Constants.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
