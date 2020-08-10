@@ -11,7 +11,7 @@ import GoogleMobileAds
 
 class BMIController: UIViewController, UITextFieldDelegate, GADBannerViewDelegate {
     
-    let bmiView = BMIView()
+    let bmiView = BMIVie()
     let bmiViewModel = BMIViewModel()
     let weightPicker = UIPickerView()
     let heightPicker = UIPickerView()

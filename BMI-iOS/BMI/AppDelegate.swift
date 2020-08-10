@@ -15,7 +15,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        
+        UISegmentedControl.appearance().backgroundColor = UIColor(named: "secondary")
+        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor.gradient(frame: CGRect(x: 0, y: 0, width: 100, height: 100), colors: [UIColor(named: "blue") ?? UIColor(), UIColor(named: "darkBlue") ?? UIColor()])
+        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(named: "secondary") ?? .darkGray], for: .selected)
+        UISegmentedControl.appearance().setTitleTextAttributes([.foregroundColor: UIColor(named: "blue") ?? .blue], for: .normal)
         
         window = UIWindow(frame: UIScreen.main.bounds)
         window?.makeKeyAndVisible()
