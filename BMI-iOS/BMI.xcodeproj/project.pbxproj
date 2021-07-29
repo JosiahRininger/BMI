@@ -93,8 +93,8 @@
 			isa = PBXGroup;
 			children = (
 				8AB65E1D24DB524D005B2C60 /* EvaluteMetricsProtocol.swift */,
-				8AB65E1B24DB5217005B2C60 /* Imperial.swift */,
 				8A31D8B824DCEF0200A67910 /* Measurements.swift */,
+				8AB65E1B24DB5217005B2C60 /* Imperial.swift */,
 				8AB65E1924DB51FF005B2C60 /* Metric.swift */,
 				8AB65E2524DC3C0E005B2C60 /* Options.swift */,
 			);

@@ -9,7 +9,7 @@
 import Foundation
 
 enum Imperial: EvaluteMetricsProtocol {
-    case weight(Int), height(Int)
+    case weight(Double), height(Double)
 
     var header: String {
         switch self {
@@ -25,13 +25,13 @@ enum Imperial: EvaluteMetricsProtocol {
         }
     }
     
-    var value: Int {
+    var value: Double {
         switch self {
         case .weight(let num), .height(let num): return num
         }
     }
     
-    var getFormattedTitle: String {
+    var formattedTitle: String {
         switch self {
         case .weight(let value): return "\(value) lbs"
         case .height(let value): return "\(value) ft \(value) in"

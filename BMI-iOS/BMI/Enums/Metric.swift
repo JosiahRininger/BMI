@@ -9,7 +9,7 @@
 import Foundation
 
 enum Metric: EvaluteMetricsProtocol {
-    case weight(Int), height(Int)
+    case weight(Double), height(Double)
 
     var title: String {
         switch self {
@@ -25,13 +25,13 @@ enum Metric: EvaluteMetricsProtocol {
         }
     }
     
-    var value: Int {
+    var value: Double {
         switch self {
         case .weight(let num), .height(let num): return num
         }
     }
     
-    var getFormattedTitle: String {
+    var formattedTitle: String {
         switch self {
         case .weight(let value): return "\(value) kgs"
         case .height(let value): return "\(value) cms"

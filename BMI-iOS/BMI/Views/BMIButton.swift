@@ -13,23 +13,23 @@ struct BMIButton: View {
     
     var body: some View {
         ZStack {
-        Button(action: { self.action() }) {
-            Text("Calculate")
-                .modifier(TextStyle(fontSize: 28,
-                                    fontWeight: .semibold,
-                                    color: Color("secondary")))
-        }
-        .background(LinearGradient(gradient: Gradient(colors: [Color("blue"), Color("darkBlue")]),
-                                   startPoint: .top,
-                                   endPoint: .bottom)
-            .frame(width: UIScreen.main.bounds.width * 0.6,
-                   height: UIScreen.main.bounds.width * 0.15,
-                   alignment: .center)
-            .cornerRadius(9))
-            .frame(width: UIScreen.main.bounds.width * 0.6,
-                   height: UIScreen.main.bounds.width * 0.15,
-                   alignment: .center)
-            .cornerRadius(9)
+            Button(action: { self.action() }) {
+                Text("Calculate")
+                    .modifier(TextStyle(fontSize: 28,
+                                        fontWeight: .semibold,
+                                        color: Color("secondary")))
+            }
+            .background(LinearGradient(gradient: Gradient(colors: [Color("blue"), Color("darkBlue")]),
+                                       startPoint: .top,
+                                       endPoint: .bottom)
+                .frame(width: UIScreen.main.bounds.width * 0.6,
+                       height: UIScreen.main.bounds.width * 0.15,
+                       alignment: .center)
+                .cornerRadius(9))
+                .frame(width: UIScreen.main.bounds.width * 0.6,
+                       height: UIScreen.main.bounds.width * 0.15,
+                       alignment: .center)
+                .cornerRadius(9)
         }
     }
 }

@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct HeaderView: View {
-    @Binding var selection: Int
+    @Binding var selection: Options
     
     var body: some View {
         HStack {
@@ -17,13 +17,14 @@ struct HeaderView: View {
             Spacer()
                 .frame(width: 28,
                        height: 28)
-            
-            Picker(selection: $selection, label: Text("")) {
-                ForEach(0..<Options.allCases.count) {
-                    Text(Options.allCases[$0].rawValue)
+
+            Picker("", selection: $selection) {
+                ForEach(Options.allCases, id: \.self) {
+                    Text($0.rawValue)
                         .modifier(TextStyle(fontSize: 24,
                                             fontWeight: .bold,
                                             color: Color("blue")))
+                        .tag($0)
                 }
             }
             .pickerStyle(SegmentedPickerStyle())
@@ -31,6 +32,7 @@ struct HeaderView: View {
             
             Image("exclamationmark")
                 .font(Font.body.weight(.bold))
+            .foregroundColor(Color("background"))
                 .background(LinearGradient(gradient: Gradient(colors: [Color("blue"), Color("darkBlue")]), startPoint: .top, endPoint: .bottom)
                     .frame(width: 28, height: 28).cornerRadius(28 / 2))
                 .frame(width: 28,

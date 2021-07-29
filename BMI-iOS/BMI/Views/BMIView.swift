@@ -7,15 +7,12 @@
 //
 
 import SwiftUI
+import UIKit
 import GoogleMobileAds
 
 struct BMIView: View {
-    @State var option: Options = Options.Imperial
-    @State var selection: Int = 0 {
-        didSet {
-            option = Options.allCases[selection]
-        }
-    }
+    @State var selection: Options = .Imperial
+    @State var results = ("0.0", "Overweight")
     @State var imperialMetrics: [Imperial] = [
         .weight(0),
         .height(0)
@@ -24,9 +21,7 @@ struct BMIView: View {
         .weight(0),
         .height(0)
     ]
-    @State private var imperialType: Imperial? = nil
-    @State private var metricType: Metric? = nil
-    
+
     var body: some View {
         
         ZStack {
@@ -37,38 +32,56 @@ struct BMIView: View {
                 
                 HeaderView(selection: $selection)
                 
-                ResultsView(results: ("0.0", "Overweight"))
+                ResultsView(results: $results)
                 
-                Spacer()
-    
-                if option == Options.Imperial {
+                if selection == Options.Imperial {
+                    VStack {
+                        Spacer()
 
-                    InputView(firstInput: self.imperialMetrics[0].value == 0 ? "" : "\(self.imperialMetrics[0].value)",
-                        secondInput: "",
-                        measurement: Measurements.weight,
-                        abbreviation: ["lb"])
-                    
-                    InputView(firstInput: self.imperialMetrics[0].value == 0 ? "" : "\(Int(imperialMetrics[1].value / 12))",
-                        secondInput: self.imperialMetrics[0].value == 0 ? "" : "\(imperialMetrics[1].value % 12)",
-                        measurement: Measurements.height,
-                        abbreviation: ["ft", "in"])
+                        InputView(firstInput: self.imperialMetrics[0].value == 0 ? "" : "\(self.imperialMetrics[0].value)",
+                            secondInput: "",
+                            measurement: Measurements.weight,
+                            abbreviation: ["lb"]) { value in
+                                self.imperialMetrics[0] = Imperial.weight(Double(value) ?? 0.0)
+                        }
+                        
+                        Spacer()
+                        
+                        InputView(firstInput: self.imperialMetrics[0].value == 0 ? "" : "\(Int(self.imperialMetrics[1].value / 12))",
+                            secondInput: self.imperialMetrics[0].value == 0 ? "" : "\(Int(self.imperialMetrics[1].value) % 12)",
+                            measurement: Measurements.height,
+                            abbreviation: ["ft", "in"]) { value in
+                                self.imperialMetrics[1] = Imperial.height(Double(value) ?? 0.0)
+                        }
+                        
+                        Spacer()
+                    }
                     
                 } else {
-                    
-                    InputView(firstInput: self.metricMetrics[0].value == 0 ? "" : "\(self.metricMetrics[0].value)",
-                        secondInput: "",
-                        measurement: Measurements.weight,
-                        abbreviation: ["kg"])
-                    
-                    InputView(firstInput: self.metricMetrics[0].value == 0 ? "" : "\(self.metricMetrics[1].value)",
-                        secondInput: "",
-                        measurement: Measurements.height,
-                        abbreviation: ["cm"])
+                    VStack {
+                        Spacer()
+                        
+                        InputView(firstInput: self.metricMetrics[0].value == 0 ? "" : "\(self.metricMetrics[0].value)",
+                            secondInput: "",
+                            measurement: Measurements.weight,
+                            abbreviation: ["kg"]) { value in
+                                self.metricMetrics[0] = Metric.weight(Double(value) ?? 0.0)
+                        }
+                        
+                        Spacer()
+                        
+                        InputView(firstInput: self.metricMetrics[0].value == 0 ? "" : "\(self.metricMetrics[1].value)",
+                            secondInput: "",
+                            measurement: Measurements.height,
+                            abbreviation: ["cm"]) { value in
+                                self.metricMetrics[1] = Metric.height(Double(value) ?? 0.0)
+                        }
+                        
+                        Spacer()
+                    }
                     
                 }
-                
-                Spacer()
-                
+                                
                 BMIButton {
                     self.calculateBMI()
                 }
@@ -81,12 +94,32 @@ struct BMIView: View {
                 
             }
             .frame(width: UIScreen.main.bounds.width * 0.85)
-            
+        }
+        .onAppear {
+            let toolBar = UIElementsManager.createToolBar(with: UIBarButtonItem(title: "Done",
+                                                                                style: .plain,
+                                                                                target: self,
+                                                                                action: #selector(NewGameController.dismissKeyboard)))
+            newGameView.usernameTextField.inputAccessoryView = toolBar
+            newGameView.timeLimitTextField.inputAccessoryView = toolBar
+            let dismissKeyboardTapGestureRecognizer = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+            dismissKeyboardTapGestureRecognizer.cancelsTouchesInView = false
+            view.addGestureRecognizer(dismissKeyboardTapGestureRecognizer)
         }
     }
     
+    @objc
+    private func dismissKeyboard() {
+        view.endEditing(true)
+    }
+    
     private func calculateBMI() {
-        
+        switch selection {
+        case .Imperial: results = Measurements.calculateBMI(weight: imperialMetrics[0].value,
+                                                            height: Int(imperialMetrics[1].value))
+        case .Metric: results = Measurements.calculateBMI(weight: metricMetrics[0].value,
+                                                          height: metricMetrics[1].value)
+        }
     }
 }
 

@@ -9,7 +9,7 @@
 import SwiftUI
 
 struct ResultsView: View {
-    @State var results: (String, String)
+    @Binding var results: (String, String)
     
     var body: some View {
         VStack {

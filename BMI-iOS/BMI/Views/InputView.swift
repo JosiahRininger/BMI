@@ -13,6 +13,7 @@ struct InputView: View {
     @State var secondInput: String
     @State var measurement: Measurements
     @State var abbreviation: [String]
+    var action: (String) -> Void
     
     var body: some View {
         HStack {
@@ -21,7 +22,9 @@ struct InputView: View {
                 .modifier(TextStyle(fontSize: 30,
                                     fontWeight: .bold,
                                     color: Color("blue")))
-            TextField("0", text: $firstInput)
+            TextField("0", text: $firstInput, onCommit: {
+                self.action(self.firstInput)
+            })
                 .keyboardType(.numberPad)
                 .background(Color("secondary"))
                 .cornerRadius(9)
@@ -35,7 +38,9 @@ struct InputView: View {
                                     fontWeight: .bold,
                                     color: Color("blue")))
             if abbreviation.count == 2 {
-                TextField("0", text: $secondInput)
+                TextField("0", text: $secondInput, onCommit: {
+                    self.action(self.secondInput)
+                })
                     .keyboardType(.numberPad)
                     .background(Color("secondary"))
                     .cornerRadius(9)
@@ -51,5 +56,12 @@ struct InputView: View {
             }
             Spacer()
         }
+    }
+}
+
+// extension for keyboard to dismiss
+extension UIApplication {
+    func endEditing() {
+        sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }
