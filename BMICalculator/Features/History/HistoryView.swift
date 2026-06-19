@@ -73,6 +73,9 @@ public struct HistoryView: View {
         let calendar = Calendar.current
         let days = Set(records.map { calendar.startOfDay(for: $0.date) }).sorted(by: >)
         guard let first = days.first else { return 0 }
+        // A streak is only "active" if the most recent entry is today or yesterday;
+        // otherwise it has lapsed and we must not advertise it on the share card.
+        guard calendar.isDateInToday(first) || calendar.isDateInYesterday(first) else { return 0 }
         var streak = 1
         var previous = first
         for day in days.dropFirst() {

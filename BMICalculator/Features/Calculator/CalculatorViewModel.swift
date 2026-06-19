@@ -63,9 +63,11 @@ public protocol ReviewRequesting: AnyObject {
     /// called on every successful calc, or `maybePrompt()` can never fire.
     func recordSuccessfulCalc()
 
-    /// Called after a successful calculation. No-op unless the internal
-    /// heuristics decide a prompt is appropriate.
-    func maybePrompt()
+    /// Called after a successful calculation. Returns `true` if a review prompt
+    /// was actually presented, so the caller can avoid stacking an interstitial
+    /// on the same calc. No-op returning `false` unless the heuristics allow it.
+    @discardableResult
+    func maybePrompt() -> Bool
 }
 
 /// Records that the person logged a calculation, for retention surfaces (streak,
@@ -146,6 +148,11 @@ public final class CalculatorViewModel {
     /// Whether the result card should be revealed. Driven separately from
     /// `result` so the view can animate the reveal.
     public private(set) var hasCalculated: Bool = false
+
+    /// Bumped once per *real* calculation — NOT on a standard-toggle
+    /// re-categorize. The view keys the result card's identity on this so a
+    /// category-overlay change doesn't tear down and re-animate the whole card.
+    public private(set) var resultGeneration: Int = 0
 
     // MARK: Injected Dependencies
     //
@@ -276,6 +283,7 @@ public final class CalculatorViewModel {
         // `@Observable` auto-tracks these assignments; no manual withMutation.
         result = computed
         hasCalculated = true
+        resultGeneration += 1
 
         persistRecord(for: computed, into: context)
 
@@ -284,8 +292,10 @@ public final class CalculatorViewModel {
         // reminder), then maybe prompt for a review and maybe show an interstitial.
         reviewPrompter?.recordSuccessfulCalc()
         logRecorder?.recordEntry()
-        reviewPrompter?.maybePrompt()
-        ads?.maybeShowInterstitial()
+        // Don't stack two modals on one calc: prefer the rare, rate-limited review
+        // prompt; show an interstitial only when no review was presented.
+        let reviewed = reviewPrompter?.maybePrompt() ?? false
+        if !reviewed { ads?.maybeShowInterstitial() }
     }
 
     /// Resets the result (e.g. when a person heavily edits inputs) without

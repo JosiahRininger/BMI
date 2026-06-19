@@ -130,7 +130,7 @@ struct CalculatorView: View {
                         showsUpsell: model.showsUpsell,
                         onUpsellTapped: onShowPaywall
                     )
-                    .id(result) // re-trigger transition on meaningful change
+                    .id(model.resultGeneration) // identity per real calc, not per re-categorize
                 }
             }
             .padding(.horizontal, 20)

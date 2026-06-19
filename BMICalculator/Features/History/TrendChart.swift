@@ -41,9 +41,13 @@ public enum ChartRange: Int, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// The earliest date included by this range, relative to `now`.
+    /// The earliest date included by this range, relative to `now`. Anchored to
+    /// the start of the day `rawValue - 1` days ago so e.g. "7D" spans exactly 7
+    /// calendar days (today + 6 prior), rather than a 7×24h window off the current
+    /// instant that bleeds into an 8th day.
     public func startDate(relativeTo now: Date = Date()) -> Date {
-        Calendar.current.date(byAdding: .day, value: -rawValue, to: now) ?? now
+        let calendar = Calendar.current
+        return calendar.date(byAdding: .day, value: -(rawValue - 1), to: calendar.startOfDay(for: now)) ?? now
     }
 
     /// A reasonable axis stride (in days) for tick marks in this range.

@@ -189,11 +189,13 @@ final class ReviewRequesterAdapter: ReviewRequesting {
         prompter.recordSuccessfulCalc()
     }
 
-    /// No-op unless the prompter's heuristics allow a prompt *and* a
-    /// `RequestReviewAction` has been bound.
-    func maybePrompt() {
-        guard let requestReview else { return }
-        prompter.maybePrompt(using: requestReview)
+    /// Returns `true` if a prompt was actually presented. No-op + `false` unless
+    /// the prompter's heuristics allow a prompt *and* a `RequestReviewAction` has
+    /// been bound.
+    @discardableResult
+    func maybePrompt() -> Bool {
+        guard let requestReview else { return false }
+        return prompter.maybePrompt(using: requestReview)
     }
 }
 
@@ -242,7 +244,10 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
         guard response.actionIdentifier != NotificationService.snoozeActionID else { return }
         let info = response.notification.request.content.userInfo
         if let link = info["link"] as? String, let url = URL(string: link) {
-            Task { @MainActor in onDeepLink?(url) }
+            // UNUserNotificationCenter delivers responses on the main thread, so
+            // assume main-actor isolation to call the @MainActor closure without
+            // a cross-actor capture of non-Sendable `self` (Swift 6-clean).
+            MainActor.assumeIsolated { onDeepLink?(url) }
         }
     }
 }

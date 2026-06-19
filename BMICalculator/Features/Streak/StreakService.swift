@@ -33,11 +33,15 @@ public final class StreakService {
     public private(set) var currentStreak: Int = 0
     public private(set) var longestStreak: Int = 0
     public private(set) var entryCount: Int = 0
+    /// Distinct calendar days with at least one entry. Milestones are keyed on
+    /// THIS (not raw `entryCount`), so repeated same-day calcs can't fast-track a
+    /// "One week" / "One month" badge.
+    public private(set) var loggedDayCount: Int = 0
     public private(set) var earnedMilestones: [StreakMilestone] = []
 
     /// Set when a milestone is crossed during `recordEntry`; consumed once by the
-    /// UI to drive a one-time celebration.
-    private var pendingMilestone: StreakMilestone?
+    /// UI to drive a one-time celebration. A one-shot signal, not observed state.
+    @ObservationIgnored private var pendingMilestone: StreakMilestone?
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let calendar = Calendar.current
@@ -46,6 +50,7 @@ public final class StreakService {
         static let current = "streak.current"
         static let longest = "streak.longest"
         static let count = "streak.entryCount"
+        static let loggedDays = "streak.loggedDayCount"
         static let lastDay = "streak.lastEntryDay"   // timeIntervalSince1970 of start-of-day
         static let milestones = "streak.earnedMilestones"
     }
@@ -60,23 +65,26 @@ public final class StreakService {
         let day = calendar.startOfDay(for: date)
         let lastDay = (defaults.object(forKey: Key.lastDay) as? Double).map { Date(timeIntervalSince1970: $0) }
 
+        var isNewDay = true
         if let last = lastDay {
             if calendar.isDate(day, inSameDayAs: last) {
-                // Same day: counts as an entry, streak unchanged.
+                isNewDay = false           // same day: an entry, but streak/day unchanged
             } else {
                 let diff = calendar.dateComponents([.day], from: last, to: day).day ?? 0
                 if diff == 1 {
                     currentStreak += 1
                 } else if diff > 1 {
                     currentStreak = 1          // gap — shame-free reset, no penalty state
+                } else {
+                    isNewDay = false           // out-of-order/older entry: don't advance day count
                 }
-                // diff <= 0 (out-of-order) ignored
             }
         } else {
             currentStreak = 1
         }
 
         entryCount += 1
+        if isNewDay { loggedDayCount += 1 }
         longestStreak = max(longestStreak, currentStreak)
         defaults.set(day.timeIntervalSince1970, forKey: Key.lastDay)
         updateMilestones()
@@ -91,19 +99,19 @@ public final class StreakService {
 
     /// The next milestone the person hasn't reached yet (nil when all earned).
     public var nextMilestone: StreakMilestone? {
-        StreakMilestone.all.first { entryCount < $0.threshold }
+        StreakMilestone.all.first { loggedDayCount < $0.threshold }
     }
 
-    /// Entries remaining until `nextMilestone`.
+    /// Distinct logging days remaining until `nextMilestone`.
     public var entriesToNextMilestone: Int? {
-        nextMilestone.map { max(0, $0.threshold - entryCount) }
+        nextMilestone.map { max(0, $0.threshold - loggedDayCount) }
     }
 
     // MARK: - Private
 
     private func updateMilestones() {
         for milestone in StreakMilestone.all
-        where entryCount >= milestone.threshold && !earnedMilestones.contains(milestone) {
+        where loggedDayCount >= milestone.threshold && !earnedMilestones.contains(milestone) {
             earnedMilestones.append(milestone)
             pendingMilestone = milestone
         }
@@ -113,6 +121,7 @@ public final class StreakService {
         currentStreak = defaults.integer(forKey: Key.current)
         longestStreak = defaults.integer(forKey: Key.longest)
         entryCount = defaults.integer(forKey: Key.count)
+        loggedDayCount = defaults.integer(forKey: Key.loggedDays)
         if let data = defaults.data(forKey: Key.milestones),
            let decoded = try? JSONDecoder().decode([StreakMilestone].self, from: data) {
             earnedMilestones = decoded
@@ -126,6 +135,7 @@ public final class StreakService {
         defaults.set(currentStreak, forKey: Key.current)
         defaults.set(longestStreak, forKey: Key.longest)
         defaults.set(entryCount, forKey: Key.count)
+        defaults.set(loggedDayCount, forKey: Key.loggedDays)
         if let data = try? JSONEncoder().encode(earnedMilestones) {
             defaults.set(data, forKey: Key.milestones)
         }

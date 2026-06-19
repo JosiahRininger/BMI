@@ -62,6 +62,24 @@ From the two growth/feature research reports:
 
 ---
 
+## 🔬 Bug & performance audit (2026-06-18)
+
+A read-only adversarial audit (5 finders + per-finding skeptic verify) surfaced **28 candidates → 11
+confirmed**. **Fixed (9):**
+- **Stale streak on the share card** — `consecutiveDayStreak` reported a lapsed streak; now anchored to today/yesterday (returns 0 otherwise).
+- **Share card perf** — `ShareProgressSheet` re-rasterized the 1080×1920 image on *every* body pass; now cached in `@State`, regenerated only via `.task(id: payload)`.
+- **Result-card perf** — `.id(result)` tore down + re-animated the whole `ResultCard`/gauge on a standard toggle; now keyed on a `resultGeneration` counter bumped only per real calc.
+- **Swift-6 concurrency ×2** — `NotificationDelegate` now uses `MainActor.assumeIsolated` (no non-Sendable `self` capture); `AdsManager`'s `FullScreenContentDelegate` methods are `nonisolated` + `assumeIsolated`.
+- **Review/interstitial modal collision** — `maybePrompt()` now returns `Bool`; the interstitial fires only when no review was shown.
+- **Refund left ads off (revenue)** — `AdsManager.setPro(false)` now boots the SDK if the app launched Pro then reverted.
+- **Streak milestones** — keyed on **distinct logged days** (`loggedDayCount`), so same-day calc spam can't fast-track "One week"/"One month". **Verified: 4/4 unit tests pass via `swift test`.**
+- **Chart range off-by-one** — `ChartRange.startDate` anchored to start-of-day so "7D" = exactly 7 calendar days.
+
+**Documented, still open (2 confirmed + low-sev):**
+- [ ] **Milestone celebration not surfaced** — `MilestoneCelebrationView` exists but nothing presents it; wire it in `RootView` (observe `StreakService.earnedMilestones`, present on change; inject `StreakService` into the RootView preview).
+- [ ] **Spotlight provider race** — `BMIResultStore.configure(with:)` installs the provider asynchronously; an early `EntityQuery` can see an empty store. Make `configure` deterministic (await provider install) before relying on Shortcuts "recent results". (Spotlight is already an unwired TODO below.)
+- [ ] Low-sev: Siri `CalculateBMIIntent` ignores the chosen `HealthStandard`; `BMIResultEntity.deterministicID` can collide within one second at the same rounded BMI; `LeanMassView` can show a misleading implied-body-fat for impossible inputs.
+
 ## 🔧 Remaining work (yours, in Xcode) — none verifiable without a build
 
 ### A. Project assembly (mechanical — follow `INTEGRATION.md` §1–7)

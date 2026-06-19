@@ -114,6 +114,11 @@ public final class AdsManager: NSObject {
         } else if didStart {
             // Returned to free tier (e.g. refund) — repopulate.
             loadInterstitial()
+        } else {
+            // Launched Pro, then reverted to free (refund/expired Family Sharing)
+            // before the SDK was ever started — boot it now so ads resume.
+            // `start()` initializes the SDK and loads the first interstitial.
+            start()
         }
     }
 
@@ -228,20 +233,29 @@ public final class AdsManager: NSObject {
 
 #if canImport(GoogleMobileAds)
 extension AdsManager: FullScreenContentDelegate {
+    // These protocol requirements are nonisolated, so on a @MainActor type they
+    // must be marked `nonisolated`. The GMA SDK delivers them on the main thread,
+    // so `MainActor.assumeIsolated` lets us touch main-actor state synchronously
+    // without an actor hop (and satisfies Swift 6 strict concurrency).
+
     /// Preload the next interstitial as soon as the current one is dismissed.
-    public func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        isInterstitialReady = false
-        loadInterstitial()
+    public nonisolated func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        MainActor.assumeIsolated {
+            isInterstitialReady = false
+            loadInterstitial()
+        }
     }
 
     /// On a presentation failure, drop the ad and try to reload.
-    public func ad(
+    public nonisolated func ad(
         _ ad: FullScreenPresentingAd,
         didFailToPresentFullScreenContentWithError error: Error
     ) {
-        interstitial = nil
-        isInterstitialReady = false
-        loadInterstitial()
+        MainActor.assumeIsolated {
+            interstitial = nil
+            isInterstitialReady = false
+            loadInterstitial()
+        }
     }
 }
 #endif

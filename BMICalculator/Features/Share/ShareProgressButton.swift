@@ -48,7 +48,9 @@ private struct ShareProgressSheet: View {
         return p
     }
 
-    private var renderedImage: UIImage? { ShareCardRenderer.image(for: payload) }
+    // Rasterizing the 1080×1920 card is expensive, so cache it and regenerate
+    // ONLY when the payload changes (via `.task(id:)`) — never in `body`.
+    @State private var renderedImage: UIImage?
 
     var body: some View {
         NavigationStack {
@@ -82,6 +84,8 @@ private struct ShareProgressSheet: View {
                         }
                         .buttonStyle(.primaryGlass)
                         .padding(.horizontal)
+                    } else {
+                        ProgressView().padding()
                     }
                 }
                 .padding(.vertical, 24)
@@ -95,5 +99,10 @@ private struct ShareProgressSheet: View {
             }
         }
         .presentationDetents([.large])
+        // Re-render the shareable image only when the payload changes (e.g. the
+        // "include my number" toggle), not on every view update.
+        .task(id: payload) {
+            renderedImage = ShareCardRenderer.image(for: payload)
+        }
     }
 }

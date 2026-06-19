@@ -202,6 +202,21 @@ extension BMICategory {
         }
     }
 
+    /// An SF Symbol that conveys the category *without relying on color*, for
+    /// color-blind safety. Paired with the band color anywhere a band is shown
+    /// purely as a swatch (gauge legend, category dot, etc.). The shapes escalate
+    /// with risk so they're distinguishable in monochrome.
+    var bandSymbolName: String {
+        switch self {
+        case .underweight: return "arrow.down.circle.fill"
+        case .healthy:     return "checkmark.circle.fill"
+        case .overweight:  return "exclamationmark.circle.fill"
+        case .obesityI:    return "exclamationmark.triangle.fill"
+        case .obesityII:   return "exclamationmark.triangle.fill"
+        case .obesityIII:  return "exclamationmark.octagon.fill"
+        }
+    }
+
     /// A muted fill derived from the band color, for backgrounds behind
     /// category labels and chips.
     var bandSoftColor: Color {
