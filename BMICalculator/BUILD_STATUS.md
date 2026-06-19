@@ -138,9 +138,13 @@ confirmed**. **Fixed (9):**
       daily — weekly default) to Settings; gate the auth request behind the onboarding **soft-ask**, never cold.
 
 ### C. Strategy/content (from `ASO.md`)
-- [ ] `ASO.md` markets **body-fat & calorie features that aren't built yet**. Either build them
-      (research recommended US Navy body-fat + ideal-weight as the next feature — see research dimension
-      "competitive"/"feature expansion") **or** soften the subtitle/keywords to avoid metadata rejection.
+- [x] ✅ Body-fat / TDEE / ideal-weight calculators are now built + tested, so the `ASO.md` "body fat /
+      calorie" copy is backed by real features (no metadata-rejection risk).
+- [ ] **Localization** (see `LOCALIZATION.md`): roadmap is EN-GB → German → Spanish (ES-MX doubles as a
+      US-reach keyword hack). EN-GB needs the **stone** UI (below); the rest are metadata-only (MVL).
+- [ ] **Stone weight UI (UK)** — Core conversions are done + tested (`BMICalculator.kilograms(fromStone:pounds:)`,
+      `stoneAndPounds(fromKilograms:)`). Wire a 3rd weight option ("st", formatted `12 st 5 lb`) into the
+      weight picker / `UnitSystem` path using those helpers; height stays ft-in or cm; BMI math is unchanged.
 
 ---
 

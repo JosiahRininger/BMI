@@ -28,6 +28,9 @@ public enum BMICalculator {
     /// Inches in one foot.
     public static let inchesPerFoot: Int = 12
 
+    /// Pounds in one stone (UK/Ireland body-weight unit). 1 st = 14 lb ≈ 6.35029 kg.
+    public static let poundsPerStone: Double = 14
+
     // MARK: Core calculation
 
     /// Computes BMI as `weight / height²`.
@@ -115,5 +118,22 @@ public enum BMICalculator {
     /// Converts kilograms to pounds.
     public static func pounds(fromKilograms kg: Double) -> Double {
         kg / kilogramsPerPound
+    }
+
+    /// Converts a stone + pounds body weight to kilograms (UK/Ireland unit).
+    /// - Parameters:
+    ///   - stone: Whole stone.
+    ///   - pounds: Additional pounds (0..<14, may be fractional).
+    public static func kilograms(fromStone stone: Double, pounds: Double = 0) -> Double {
+        kilograms(fromPounds: stone * poundsPerStone + pounds)
+    }
+
+    /// Converts kilograms to stone + remainder pounds (e.g. 95.3 kg → 15 st 0.1 lb).
+    /// - Returns: Whole `stone` and the remaining `pounds` in `0..<14`.
+    public static func stoneAndPounds(fromKilograms kg: Double) -> (stone: Int, pounds: Double) {
+        let totalPounds = pounds(fromKilograms: kg)
+        let stone = Int((totalPounds / poundsPerStone).rounded(.down))
+        let remainderPounds = totalPounds - Double(stone) * poundsPerStone
+        return (stone, remainderPounds)
     }
 }

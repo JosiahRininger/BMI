@@ -155,6 +155,12 @@ Because traffic is modest, run **one treatment vs. the current default for the f
 
 ## 6. Added Localizations — English (UK) & English (Australia)
 
+> **Full roadmap → [`LOCALIZATION.md`](./LOCALIZATION.md).** Prioritize by *revenue-per-hour*: **EN-GB
+> first** (add the **stone** weight unit — a real product win in a top-3 eCPM market; Core conversions
+> are built + tested), then **German**, then **Spanish** — and fill the **Spanish (Mexico)** keyword
+> field in the *US* storefront with extra English terms as a US-reach hack. Deprioritize
+> Portuguese-BR / Hindi / Indonesian (high installs, low eCPM + IAP).
+
 Adding `en-GB` and `en-AU` localizations creates **two more indexed keyword fields** for English-speaking storefronts. The catch: do **not** copy the US keywords — duplicate keywords across these locales add nothing. Use **different, locale-distinct long-tail terms** so each storefront indexes incremental vocabulary.
 
 > Localized Title/Subtitle can stay close to US for brand consistency; the **keyword fields must differ**. Singular, comma-no-space, ≤100 chars, and still no overlap with that locale's Title/Subtitle tokens.

@@ -47,13 +47,14 @@ Bundling ad-removal with real capability converts better than ad-removal alone a
 - **Custom themes / alternate app icons.**
 - *(Defer Apple Watch + extra widgets to a possible richer $6.99 tier or v2.)*
 
-### ⚠️ Product decision to make: are the 6 extra calculators free or Pro?
-Research conflicts here. Monetization research lists "extra calculators" as the **highest-WTP Pro
-feature**. But the growth/ASO research treats them as **download + retention + keyword drivers** that
-argue for keeping them **free**. **Recommendation: keep the 6 calculators FREE** (they're the
-discovery/word-of-mouth engine and the `ASO.md` "body fat / calorie" keywords lean on them), and make
-**Pro = remove ads + export + profiles + themes**. If revenue underperforms, A/B moving body-fat/TDEE
-behind Pro is the lever — but lead with growth. *(You decide; the code gates on `isPro` either way.)*
+### ✅ Decided: the 6 extra calculators are FREE
+Research conflicted — monetization research listed "extra calculators" as the highest-WTP Pro feature,
+while growth/ASO research treats them as download + retention + keyword drivers. **Decision: keep the 6
+calculators FREE** (they're the discovery/word-of-mouth engine and the `ASO.md` "body fat / calorie"
+keywords lean on them; downloads are the stated #1 goal). **Pro = remove ads + history/CSV-PDF export +
+multiple profiles + themes.** This is how the code is already wired (no gate on the calculator screens).
+Revisit only if revenue underperforms — then A/B moving body-fat/TDEE behind Pro is the lever, but lead
+with growth.
 
 ## 4. StoreKit 2 checklist (status vs `Services/StoreService.swift`)
 
