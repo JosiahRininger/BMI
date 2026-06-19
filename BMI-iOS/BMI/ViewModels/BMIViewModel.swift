@@ -40,12 +40,15 @@ class BMIViewModel {
     }
     
     public func categorizeBMI(with bmi: Double) -> String {
+        // Half-open ranges matching the CDC adult BMI categories:
+        // Underweight < 18.5, Healthy 18.5–<25, Overweight 25–<30, Obesity ≥ 30.
+        // Using `..<` keeps each boundary in exactly one category and leaves no gaps.
         switch bmi {
-        case 0.0...18.5:
+        case ..<18.5:
             return Constants.Strings.underweight
-        case 18.5...24.9:
+        case 18.5..<25.0:
             return Constants.Strings.normalWeight
-        case 25.0...29.9:
+        case 25.0..<30.0:
             return Constants.Strings.overweight
         default:
             return Constants.Strings.obese
