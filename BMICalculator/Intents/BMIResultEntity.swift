@@ -167,7 +167,7 @@ extension BMIResultEntity {
         date: Date
     ) -> CSSearchableItemAttributeSet {
         let attributes = CSSearchableItemAttributeSet(contentType: UTType.text)
-        attributes.title = "BMI \(bmiText) — \(categoryTitle)"
+        attributes.title = "BMI \(bmiText), \(categoryTitle)"
         attributes.contentDescription = "Recorded \(dateFormatter.string(from: date)). Range \(categoryRange). BMI is a screening tool, not a diagnosis."
         attributes.contentCreationDate = date
         attributes.keywords = ["BMI", "Body Mass Index", "health", categoryTitle]

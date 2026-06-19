@@ -275,7 +275,7 @@ private struct PaywallSheet: View {
 
     private var buyButtonTitle: String {
         if storeState.isProcessing { return "Purchasing…" }
-        if let price = storeState.displayPrice { return "Remove Ads — \(price)" }
+        if let price = storeState.displayPrice { return "Remove Ads (\(price))" }
         return "Remove Ads"
     }
 

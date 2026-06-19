@@ -70,7 +70,7 @@ private struct ShareProgressSheet: View {
                         .padding(.horizontal)
                         .accessibilityHint("When on, your card shows your current BMI number and category. Off by default.")
 
-                    Text("By default your card shows your streak and trend shape — never an absolute BMI or weight. Your data stays on your device.")
+                    Text("By default your card shows your streak and trend shape, never an absolute BMI or weight. Your data stays on your device.")
                         .font(.footnote)
                         .foregroundStyle(Theme.textSecondary)
                         .multilineTextAlignment(.center)

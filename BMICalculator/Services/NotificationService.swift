@@ -45,7 +45,7 @@ public final class NotificationService {
         public var subtitle: String {
             switch self {
             case .off:            return "No reminders"
-            case .weekly:         return "Recommended — a gentle nudge"
+            case .weekly:         return "A gentle nudge, recommended"
             case .threeTimesWeek: return "Mon · Wed · Fri"
             case .daily:          return "For an active goal"
             }

@@ -223,7 +223,7 @@ struct SettingsView: View {
                     .foregroundStyle(DSColor.secondaryText)
             } else {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("Remove Ads — BMI Pro")
+                    Text("Remove Ads & BMI Pro")
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
                     Text("A one-time purchase removes the banner and the post-calculation ad. No subscription, ever.")
@@ -259,7 +259,7 @@ struct SettingsView: View {
 
     private var purchaseTitle: String {
         if let price = store.displayPrice {
-            return "Remove Ads — \(price)"
+            return "Remove Ads (\(price))"
         }
         return "Remove Ads"
     }
@@ -423,7 +423,7 @@ private struct DisclaimerSheet: View {
                         .font(DSFont.body)
                         .foregroundStyle(DSColor.primaryText)
 
-                    Text("BMI was developed from population averages. It does not account for muscle mass, bone density, body-fat distribution, sex, or ethnicity at the individual level. Use it as a starting point for a conversation with a healthcare provider — not as a verdict about a person's health.")
+                    Text("BMI was developed from population averages. It does not account for muscle mass, bone density, body-fat distribution, sex, or ethnicity at the individual level. Use it as a starting point for a conversation with a healthcare provider, not as a verdict about a person's health.")
                         .font(DSFont.subheadline)
                         .foregroundStyle(DSColor.secondaryText)
                 }

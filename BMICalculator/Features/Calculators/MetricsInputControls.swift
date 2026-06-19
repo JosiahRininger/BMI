@@ -32,7 +32,7 @@ enum MetricsDisclaimer {
     static let hub = "These are screening estimates, not diagnoses. They can be off for athletes, older adults, during pregnancy, and across body types. For anything about your health, talk to a healthcare provider."
 
     /// A one-line caveat for the energy (BMR / TDEE) result.
-    static let energy = "These calorie figures are estimates, not a diagnosis or a prescription. Needs vary day to day — talk to a healthcare provider or dietitian before making big changes."
+    static let energy = "These calorie figures are estimates, not a diagnosis or a prescription. Needs vary day to day. Talk to a healthcare provider or dietitian before making big changes."
 
     /// A one-line caveat for the US Navy body-fat result.
     static let bodyFat = "A circumference estimate, not a diagnosis, and accurate to only about ±3–4 points versus a clinical scan. Talk to a healthcare provider."
@@ -41,10 +41,10 @@ enum MetricsDisclaimer {
     static let waistHeight = "A screening estimate of central adiposity, not a diagnosis. Talk to a healthcare provider about what it means for you."
 
     /// A one-line caveat for the ideal-weight result.
-    static let idealWeight = "These are old clinical/actuarial formulas shown as a range of estimates — not a personal target or a diagnosis. A healthy weight is individual; talk to a healthcare provider."
+    static let idealWeight = "These are old clinical/actuarial formulas shown as a range of estimates, not a personal target or a diagnosis. A healthy weight is individual; talk to a healthcare provider."
 
     /// A one-line caveat for the lean-mass result.
-    static let leanMass = "Estimates from body-composition formulas, shown as a range — not a measurement or a diagnosis. Talk to a healthcare provider."
+    static let leanMass = "Estimates from body-composition formulas, shown as a range, not a measurement or a diagnosis. Talk to a healthcare provider."
 
     /// A one-line caveat for the body-frame result.
     static let frameSize = "A rough actuarial heuristic, not a measurement or a diagnosis. Use it only as loose context."

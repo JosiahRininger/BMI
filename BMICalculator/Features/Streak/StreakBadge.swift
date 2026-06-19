@@ -49,7 +49,7 @@ public struct StreakBadge: View {
     private var headline: String {
         switch currentStreak {
         case 0:  return "Start your streak"
-        case 1:  return "1-day streak — nice start"
+        case 1:  return "1-day streak. Nice start."
         default: return "\(currentStreak)-day streak"
         }
     }

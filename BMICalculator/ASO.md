@@ -186,7 +186,7 @@ Cross-locale check: US uses `calorie`/`imperial`/`ideal`/`muscle`/`health`; UK u
 Compliance constraints honored: **no diagnostic/medical claims** (no "diagnose", "detect", "treat", "medical-grade"), **person-first** language, explicit **screening-tool disclaimer**, and it highlights the features the app actually ships (widgets, Spotlight/App Shortcuts, Apple Health, history/trends).
 
 ```
-BMI Calculator helps you understand your body mass index and track it over time — fast, private, and free.
+BMI Calculator helps you understand your body mass index and track it over time. Fast, private, and free.
 
 Enter your height and weight and get your BMI instantly, with a clear, color-coded category and a plain-language explanation of what the number means. Switch between metric and imperial units, and choose the BMI standard that fits you, including WHO/CDC cutoffs and WHO Asian action points.
 
