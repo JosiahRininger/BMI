@@ -20,7 +20,7 @@ struct BMIShortcuts: AppShortcutsProvider {
 
     /// Tint shown behind shortcut tiles in the Shortcuts app. Brand blue #19BEF4
     /// maps closest to the system teal/cyan tile color.
-    static var shortcutTileColor: ShortcutTileColor = .teal
+    static let shortcutTileColor: ShortcutTileColor = .teal
 
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

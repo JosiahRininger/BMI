@@ -629,16 +629,10 @@ private struct ConnectHealthRow: View {
     private func connect() {
         state = .working
         Task {
-            let granted = await healthKit.requestAuthorization()
-            if granted, let metric = input.metricValues(for: unitSystem) {
-                await healthKit.saveWeight(
-                    kilograms: metric.weightKilograms,
-                    date: .now
-                )
-                state = .connected
-            } else {
-                state = granted ? .connected : .failed
-            }
+            try? await healthKit.requestAuthorization()
+            // HealthKit doesn't reliably report read-grant; treat a completed
+            // request as connected (prefill simply no-ops if the user declined).
+            state = healthKit.hasRequestedAuthorization ? .connected : .failed
         }
     }
 }

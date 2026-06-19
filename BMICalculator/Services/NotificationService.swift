@@ -54,14 +54,16 @@ public final class NotificationService {
 
     // MARK: Identifiers
 
-    public static let reminderIDPrefix = "com.bmi.notifications.weighIn"
+    // `nonisolated` so the nonisolated `NotificationDelegate` (and other off-actor
+    // callers) can read these compile-time string constants.
+    nonisolated public static let reminderIDPrefix = "com.bmi.notifications.weighIn"
     /// Back-compat identifier for the single weekly request.
-    public static let weeklyReminderID = "\(reminderIDPrefix).weekly.0"
-    public static let categoryID = "WEIGH_IN_REMINDER"
-    public static let logActionID = "LOG_NOW"
-    public static let snoozeActionID = "SNOOZE"
+    nonisolated public static let weeklyReminderID = "\(reminderIDPrefix).weekly.0"
+    nonisolated public static let categoryID = "WEIGH_IN_REMINDER"
+    nonisolated public static let logActionID = "LOG_NOW"
+    nonisolated public static let snoozeActionID = "SNOOZE"
     /// Deep link the tap / "Log now" action routes to (register `bmicalculator` URL scheme).
-    public static let deepLink = "bmicalculator://new-entry"
+    nonisolated public static let deepLink = "bmicalculator://new-entry"
 
     // MARK: Observable state
 

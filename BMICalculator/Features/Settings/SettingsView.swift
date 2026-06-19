@@ -346,14 +346,14 @@ struct SettingsView: View {
     // MARK: Actions
 
     private func refreshHealthState() async {
-        healthState = healthKit.isAuthorized ? .connected : .notConnected
+        healthState = healthKit.hasRequestedAuthorization ? .connected : .notConnected
     }
 
     private func connectHealth() {
         healthState = .working
         Task {
-            let granted = await healthKit.requestAuthorization()
-            healthState = granted ? .connected : .notConnected
+            try? await healthKit.requestAuthorization()
+            healthState = healthKit.hasRequestedAuthorization ? .connected : .notConnected
         }
     }
 

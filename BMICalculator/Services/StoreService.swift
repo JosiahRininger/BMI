@@ -66,6 +66,7 @@ public enum StoreError: LocalizedError {
 /// Loads the product, handles purchase / restore, and keeps `StoreState.isPro`
 /// in sync with the customer's entitlements for the lifetime of the app.
 @MainActor
+@Observable
 public final class StoreService {
 
     /// The single non-consumable product identifier (must match App Store Connect).
@@ -76,7 +77,9 @@ public final class StoreService {
 
     /// Background task listening for `Transaction.updates` ( to react to
     /// purchases made on other devices, Ask-to-Buy approvals, refunds, etc.).
-    private var updatesTask: Task<Void, Never>?
+    // `nonisolated(unsafe)` so `deinit` (nonisolated) can cancel it; the value is
+    // only ever assigned on the main actor and Task.cancel() is thread-safe.
+    @ObservationIgnored nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
     /// Soft local cache of the last known entitlement. StoreKit remains the
     /// source of truth, but this (a) prevents an ad "flash" before the async
@@ -85,7 +88,7 @@ public final class StoreService {
     private static let proCacheKey = "store.isPro.cache"
     private var cacheDefaults: UserDefaults { UserDefaults(suiteName: "group.com.jdr.BMI") ?? .standard }
 
-    public init(state: StoreState = StoreState()) {
+    public init(state: StoreState) {
         self.state = state
         // Optimistically reflect the last known entitlement so the UI doesn't
         // briefly show ads to a paying user before `start()` reconciles.

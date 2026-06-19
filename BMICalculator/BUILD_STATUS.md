@@ -1,9 +1,17 @@
 # BMI Calculator — Rebuild Status (read me first)
 
-_Generated 2026-06-18 in an Opus 4.8 ultracode session. This is a complete SwiftUI/iOS 26
-source scaffold, **not a compiled app** — it has never been through an Xcode build (no iOS SDK
-in the generating environment). It's designed to drop into an Xcode 26 project per
-`INTEGRATION.md`. Below is exactly what's verified, what was fixed, and what's left._
+_Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a real Xcode build._
+
+> ## ✅ IT COMPILES, LAUNCHES, AND PASSES TESTS (2026-06-19)
+> The full app was generated with `xcodegen` (`project.yml`) and **built for the iOS 26.3 simulator
+> with Xcode 26.2** — `** BUILD SUCCEEDED **`. It **launches on iPhone 17** and the bundled
+> **Swift Testing suite passes 31/31** (`✔ Test run with 31 tests in 6 suites passed`).
+> Two notable workarounds: (1) the project is in **Swift 5 language mode** — Swift 6 mode hit a
+> `swift-frontend` IRGen **compiler crash** (an Apple bug) on an async/actor thunk in `SettingsView`;
+> the code keeps `@MainActor`/`@Observable` so runtime safety is intact. (2) `makeModelContainer`
+> now **guards the App Group** (it only opens the shared store when the capability is provisioned,
+> else falls back to a local store) so the app doesn't trap on an unsigned/dev build.
+> To reproduce: `xcodegen generate && xcodebuild -scheme BMICalculator -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO test`.
 
 ---
 

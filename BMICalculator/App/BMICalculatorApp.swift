@@ -24,6 +24,7 @@
 import SwiftUI
 import SwiftData
 import UserNotifications
+import StoreKit
 
 // MARK: - App Configuration
 
@@ -171,6 +172,7 @@ final class InterstitialAdapter: InterstitialPresenting {
 /// captures that action so the Calculator can call the no-argument
 /// `ReviewRequesting.maybePrompt()` from its view model.
 @MainActor
+@Observable
 final class ReviewRequesterAdapter: ReviewRequesting {
 
     private let prompter: ReviewPrompter
@@ -225,28 +227,28 @@ final class LogRecorderAdapter: LogRecording {
 /// `bmicalculator://…` deep link carried in the notification's `userInfo`.
 /// Snooze is a no-op (the reminder is a repeating trigger, so the next
 /// occurrence is already scheduled).
+@MainActor
 final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
 
     /// Set by the App to forward to the `DeepLinkRouter`.
-    var onDeepLink: (@MainActor (URL) -> Void)?
+    var onDeepLink: ((URL) -> Void)?
 
     /// Show banners while the app is foregrounded.
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                willPresent notification: UNNotification,
-                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            willPresent notification: UNNotification,
+                                            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         completionHandler([.banner, .sound])
     }
 
-    func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                didReceive response: UNNotificationResponse,
-                                withCompletionHandler completionHandler: @escaping () -> Void) {
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                            didReceive response: UNNotificationResponse,
+                                            withCompletionHandler completionHandler: @escaping () -> Void) {
         defer { completionHandler() }
         guard response.actionIdentifier != NotificationService.snoozeActionID else { return }
         let info = response.notification.request.content.userInfo
         if let link = info["link"] as? String, let url = URL(string: link) {
-            // UNUserNotificationCenter delivers responses on the main thread, so
-            // assume main-actor isolation to call the @MainActor closure without
-            // a cross-actor capture of non-Sendable `self` (Swift 6-clean).
+            // Delivered on the main thread; `self` is @MainActor (Sendable), so
+            // assumeIsolated reads the @MainActor `onDeepLink` without a hop.
             MainActor.assumeIsolated { onDeepLink?(url) }
         }
     }
@@ -415,10 +417,16 @@ struct BMICalculatorApp: App {
     /// 2. Local on-disk store — if the App Group is unavailable/misconfigured.
     /// 3. In-memory store — last resort so the UI still launches.
     private static func makeModelContainer() -> ModelContainer {
-        do {
-            return try PersistenceController.shared(appGroupID: AppConfig.appGroupID)
-        } catch {
-            assertionFailure("App Group SwiftData store failed: \(error)")
+        // The App Group store is only usable when the App Groups capability is
+        // actually provisioned. On an unsigned/dev build (or in the test host) it
+        // isn't, and SwiftData would TRAP (not throw) — so only attempt it when the
+        // container URL resolves, otherwise fall through to a local store.
+        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: AppConfig.appGroupID) != nil {
+            do {
+                return try PersistenceController.shared(appGroupID: AppConfig.appGroupID)
+            } catch {
+                assertionFailure("App Group SwiftData store failed: \(error)")
+            }
         }
 
         do {

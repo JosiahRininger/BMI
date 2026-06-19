@@ -142,10 +142,10 @@ struct PrimaryGlassButton: View {
 /// onboarding). Glass on iOS 26, `.ultraThinMaterial` fallback below.
 struct DSCircularGlassButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        Body(configuration: configuration)
+        CircularBody(configuration: configuration)
     }
 
-    private struct Body: View {
+    private struct CircularBody: View {
         let configuration: Configuration
         @Environment(\.isEnabled) private var isEnabled
 
@@ -168,10 +168,10 @@ struct DSCircularGlassButtonStyle: ButtonStyle {
 /// "Connect" buttons in Onboarding/Settings).
 struct DSCompactGlassButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
-        Body(configuration: configuration)
+        CompactBody(configuration: configuration)
     }
 
-    private struct Body: View {
+    private struct CompactBody: View {
         let configuration: Configuration
         @Environment(\.isEnabled) private var isEnabled
 

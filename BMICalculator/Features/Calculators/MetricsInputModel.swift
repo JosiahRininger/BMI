@@ -232,7 +232,7 @@ struct BodyInputSection: View {
                 inchesRange: model.inchesRange
             )
 
-            if showsHealthPrefill, let healthKit, healthKit.isHealthDataAvailable {
+            if showsHealthPrefill, healthKit.isHealthDataAvailable {
                 healthPrefillButton(service: healthKit)
             }
         }

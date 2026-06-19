@@ -315,7 +315,7 @@ private struct PaywallSheet: View {
 
 #Preview("Root") {
     let storeState = StoreState()
-    return RootView()
+    RootView()
         .environment(DeepLinkRouter())
         .environment(storeState)
         .environment(StoreService(state: storeState))

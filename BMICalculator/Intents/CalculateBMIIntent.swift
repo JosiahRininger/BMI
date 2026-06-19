@@ -18,7 +18,7 @@ import SwiftUI
 
 /// Surfaces Core's `UnitSystem` to the Shortcuts/Siri parameter UI without making
 /// Core import AppIntents. Cases mirror `UnitSystem` exactly.
-extension UnitSystem: @retroactive AppEnum {
+extension UnitSystem: AppEnum {
 
     public static var typeDisplayRepresentation: TypeDisplayRepresentation {
         "Unit System"
@@ -40,9 +40,9 @@ struct CalculateBMIIntent: AppIntent {
 
     // MARK: Intent metadata
 
-    static var title: LocalizedStringResource = "Calculate BMI"
+    static let title: LocalizedStringResource = "Calculate BMI"
 
-    static var description = IntentDescription(
+    static let description = IntentDescription(
         "Calculate your Body Mass Index from your weight and height. BMI is a screening tool, not a diagnosis.",
         categoryName: "Health",
         searchKeywords: ["BMI", "body mass index", "weight", "health"]
@@ -50,7 +50,7 @@ struct CalculateBMIIntent: AppIntent {
 
     /// Run silently when invoked from a button so the calculation completes
     /// without forcing the app open; we still return a dialog + snippet.
-    static var openAppWhenRun: Bool = false
+    static let openAppWhenRun: Bool = false
 
     // MARK: Parameters
 

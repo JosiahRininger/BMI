@@ -22,8 +22,12 @@ options:
 
 settings:
   base:
-    SWIFT_VERSION: "6.0"
-    SWIFT_STRICT_CONCURRENCY: minimal       # start permissive to surface only real errors; tighten later
+    # Swift 5 language mode: Swift 6 mode hits a swift-frontend IRGen CRASH (an
+    # Apple compiler bug) on an async/actor reabstraction thunk in SettingsView.
+    # The code still uses @MainActor/@Observable so runtime concurrency safety is
+    # intact; revisit Swift 6 mode after an Xcode update or by isolating that thunk.
+    SWIFT_VERSION: "5.0"
+    SWIFT_STRICT_CONCURRENCY: minimal
     CODE_SIGNING_ALLOWED: "NO"
     CODE_SIGNING_REQUIRED: "NO"
     CODE_SIGN_IDENTITY: ""

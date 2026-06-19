@@ -36,7 +36,7 @@ struct BMIResultEntity: AppEntity, Identifiable {
 
     /// The query used by the system to resolve entities by id and to list
     /// suggested (recent) entities.
-    static var defaultQuery = BMIResultEntityQuery()
+    static let defaultQuery = BMIResultEntityQuery()
 
     // MARK: Stored properties
 
@@ -44,20 +44,22 @@ struct BMIResultEntity: AppEntity, Identifiable {
     /// for ad-hoc results it is a deterministic hash of value + date.
     var id: String
 
+    // NOTE: these were `@Property(title:)` (exposing them as Shortcuts output
+    // variables), but that wrapper can't be set from a plain memberwise init.
+    // Dropped to plain stored properties for the Spotlight use case (the
+    // `displayRepresentation` drives what users see). Re-add `@Property` with a
+    // backing-storage init if Shortcuts variable exposure is wanted later.
+
     /// The BMI value rounded to one decimal place, ready for display.
-    @Property(title: "BMI")
     var bmi: Double
 
     /// The category title, person-first (e.g. "Healthy weight").
-    @Property(title: "Category")
     var categoryTitle: String
 
     /// The category's display range string (e.g. "18.5 – < 25").
-    @Property(title: "Range")
     var categoryRange: String
 
     /// When the measurement was taken / saved.
-    @Property(title: "Date")
     var date: Date
 
     /// The raw category case value, kept for filtering / reconstruction.
@@ -164,14 +166,7 @@ extension BMIResultEntity {
         categoryRange: String,
         date: Date
     ) -> CSSearchableItemAttributeSet {
-        let contentType: String
-        #if canImport(UniformTypeIdentifiers)
-        contentType = UTType.text.identifier
-        #else
-        contentType = "public.text"
-        #endif
-
-        let attributes = CSSearchableItemAttributeSet(contentType: contentType)
+        let attributes = CSSearchableItemAttributeSet(contentType: UTType.text)
         attributes.title = "BMI \(bmiText) — \(categoryTitle)"
         attributes.contentDescription = "Recorded \(dateFormatter.string(from: date)). Range \(categoryRange). BMI is a screening tool, not a diagnosis."
         attributes.contentCreationDate = date

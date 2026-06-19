@@ -261,9 +261,10 @@ struct BMIGauge: View {
         let radius = min(rect.width, rect.height) / 2
         let startAngle = 90 + (360 - sweepDegrees) / 2
         let angle = Angle.degrees(startAngle + sweepDegrees * animatedFraction)
+        let r = Double(radius)
         let knob = CGPoint(
-            x: rect.midX + radius * cos(angle.radians),
-            y: rect.midY + radius * sin(angle.radians)
+            x: rect.midX + CGFloat(r * cos(angle.radians)),
+            y: rect.midY + CGFloat(r * sin(angle.radians))
         )
 
         return Circle()
