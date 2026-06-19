@@ -165,6 +165,10 @@ struct BMIGauge: View {
     /// state so the needle springs smoothly when `bmi` changes.
     @State private var animatedFraction: Double = 0
 
+    /// When the person has Reduce Motion enabled, the indicator snaps instead of
+    /// springing so the sweep doesn't trigger motion discomfort.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     // MARK: Init
 
     init(
@@ -280,22 +284,49 @@ struct BMIGauge: View {
                 .font(.system(size: 44, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(Theme.textPrimary)
+                // Fixed-size hero number: allow Dynamic Type to scale it up to a
+                // sensible cap so it never grows past the gauge's open center.
+                .dynamicTypeSize(...DynamicTypeSize.accessibility2)
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
                 .contentTransition(.numericText(value: bmi))
-                .animation(.spring(response: 0.5, dampingFraction: 0.8), value: bmi)
+                .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.8), value: bmi)
 
-            Text(category.title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(category.bandOnSoftColor)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4)
-                .background(
-                    Capsule().fill(category.bandSoftColor)
-                )
+            // Category is conveyed by an SF Symbol + text (not color alone) so
+            // the band reads for color-blind people.
+            Label {
+                Text(category.title)
+            } icon: {
+                Image(systemName: categorySymbolName)
+            }
+            .labelStyle(.titleAndIcon)
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(category.bandOnSoftColor)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(
+                Capsule().fill(category.bandSoftColor)
+            )
 
             Text("BMI")
                 .font(.caption2.weight(.semibold))
                 .tracking(1.5)
                 .foregroundStyle(Theme.textSecondary)
+        }
+    }
+
+    /// SF Symbol that distinguishes the category without relying on band color,
+    /// for color-blind safety.
+    private var categorySymbolName: String {
+        switch category {
+        case .underweight:
+            return "arrow.down.circle.fill"
+        case .healthy:
+            return "checkmark.circle.fill"
+        case .overweight:
+            return "arrow.up.circle.fill"
+        case .obesityI, .obesityII, .obesityIII:
+            return "exclamationmark.circle.fill"
         }
     }
 
@@ -306,15 +337,21 @@ struct BMIGauge: View {
         String(format: "%.1f", bmi)
     }
 
-    /// Spoken description for VoiceOver.
+    /// Spoken description for VoiceOver. Conveys the value, the named category,
+    /// and its numeric range so the verdict never depends on band color.
     private var accessibilityDescription: String {
-        "BMI \(formattedBMI), \(category.title)"
+        "BMI \(formattedBMI), \(category.title), range \(category.displayRange)"
     }
 
-    /// Springs the indicator to a new normalized fraction.
+    /// Springs the indicator to a new normalized fraction. Snaps without
+    /// animation when Reduce Motion is enabled.
     private func animateIndicator(to fraction: Double) {
-        withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+        if reduceMotion {
             animatedFraction = fraction
+        } else {
+            withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
+                animatedFraction = fraction
+            }
         }
     }
 }

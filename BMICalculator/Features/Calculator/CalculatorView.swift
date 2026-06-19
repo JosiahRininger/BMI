@@ -97,6 +97,9 @@ struct CalculatorView: View {
 
     @State private var model: CalculatorViewModel
 
+    /// When Reduce Motion is on, result insertion crossfades rather than springs.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// Forwarded to the parent to present the Pro paywall / IAP sheet.
     var onShowPaywall: () -> Void
 
@@ -136,7 +139,12 @@ struct CalculatorView: View {
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 24)
-            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: model.result)
+            // Constrain primary content on iPad / large widths so the form
+            // isn't stretched edge-to-edge; centered within the scroll view.
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
+            .animation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.85),
+                       value: model.result)
         }
         .scrollDismissesKeyboard(.interactively)
         .background(backgroundGradient)

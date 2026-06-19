@@ -81,7 +81,7 @@ struct WeightField: View {
                     .keyboardType(.decimalPad)
                     .multilineTextAlignment(.trailing)
                     .font(.title3.monospacedDigit())
-                    .frame(minWidth: 64)
+                    .frame(minWidth: 64, minHeight: 44)
                     .onChange(of: value) { _, newValue in
                         value = min(max(newValue, range.lowerBound), range.upperBound)
                     }
@@ -89,7 +89,9 @@ struct WeightField: View {
                 Text(unitLabel)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .frame(width: 28, alignment: .leading)
+                    // No fixed width — let the unit suffix grow at large
+                    // Dynamic Type instead of clipping.
+                    .fixedSize(horizontal: true, vertical: false)
 
                 Stepper("Adjust weight", value: $value, in: range, step: step)
                     .labelsHidden()
@@ -98,6 +100,7 @@ struct WeightField: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Weight")
         .accessibilityValue(Text(verbatim: String(format: "%.1f %@", value, unitLabel)))
+        .accessibilityHint("Adjustable. Swipe up or down to change the weight.")
     }
 }
 
@@ -236,6 +239,7 @@ struct LabeledInputRow<Content: View>: View {
             Label(title, systemImage: systemImage)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
             content()
         }
         .padding(16)

@@ -269,6 +269,15 @@ struct MetricResultCard: View {
     var rows: [MetricResultRow] = []
     let disclaimer: String
 
+    /// A concise spoken summary of the headline result for VoiceOver, e.g.
+    /// "24.1 %, Healthy weight" — folds in the unit and category badge so the
+    /// result reads as one sentence rather than disconnected fragments.
+    private var resultSpokenValue: String {
+        var parts: [String] = [unit.map { "\(headline) \($0)" } ?? headline]
+        if let badge { parts.append(badge) }
+        return parts.joined(separator: ", ")
+    }
+
     var body: some View {
         GlassCard {
             VStack(alignment: .leading, spacing: 16) {
@@ -281,6 +290,13 @@ struct MetricResultCard: View {
                         .font(.system(size: 44, weight: .bold, design: .rounded))
                         .monospacedDigit()
                         .foregroundStyle(accent)
+                        // Let the fixed-size hero figure scale with Dynamic Type up
+                        // to a sensible cap, and shrink/wrap rather than clip when a
+                        // long headline (e.g. a weight range) meets large text.
+                        .dynamicTypeSize(...DynamicTypeSize.accessibility3)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
                     if let unit {
                         Text(unit)
                             .font(.title3.weight(.medium))
@@ -289,17 +305,21 @@ struct MetricResultCard: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(title)
-                .accessibilityValue(unit.map { "\(headline) \($0)" } ?? headline)
+                .accessibilityValue(resultSpokenValue)
 
                 if let badge {
                     Text(badge)
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(accent)
+                        .fixedSize(horizontal: false, vertical: true)
                         .padding(.vertical, 6)
                         .padding(.horizontal, 12)
                         .background(
                             Capsule(style: .continuous).fill(accent.opacity(0.16))
                         )
+                        // Folded into the headline's spoken value above; avoid
+                        // VoiceOver reading the category twice.
+                        .accessibilityHidden(true)
                 }
 
                 if let caption {
@@ -395,6 +415,10 @@ struct MetricsScreen<Content: View>: View {
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 28)
+            // Constrain primary content on iPad / large widths so the form isn't
+            // stretched edge-to-edge; centered within the scroll view.
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
         }
         .scrollDismissesKeyboard(.interactively)
         .background(metricsBackground)

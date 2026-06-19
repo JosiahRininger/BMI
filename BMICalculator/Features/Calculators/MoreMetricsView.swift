@@ -90,6 +90,10 @@ struct MoreMetricsView: View {
             .padding(.horizontal, 20)
             .padding(.top, 12)
             .padding(.bottom, 24)
+            // Constrain primary content on iPad / large widths so the cards don't
+            // stretch edge-to-edge; centered within the scroll view.
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
         }
         .background(metricsBackground)
         .navigationTitle("More metrics")
@@ -167,6 +171,7 @@ private struct MetricRowCard: View {
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .fill(Theme.brand.opacity(0.14))
                     )
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(destination.title)
@@ -183,6 +188,7 @@ private struct MetricRowCard: View {
                 Image(systemName: "chevron.right")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(Theme.textSecondary)
+                    .accessibilityHidden(true)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }

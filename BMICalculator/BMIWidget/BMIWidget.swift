@@ -154,6 +154,43 @@ private struct BMIReadout: View {
                     .lineLimit(2)
             }
         }
+        // Speak one concise summary ("BMI 24.1, Healthy weight") rather than three
+        // disconnected fragments, and never a bare number with no context.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(BMIWidgetAccessibility.readoutLabel(for: entry))
+    }
+}
+
+// MARK: - Accessibility Summaries
+
+/// Builds concise VoiceOver summaries for the widget so categories/values are
+/// always spoken with context (and never as a bare number).
+enum BMIWidgetAccessibility {
+
+    /// e.g. "BMI 24.1, Healthy weight" — or a friendly prompt when empty.
+    static func readoutLabel(for entry: BMIWidgetEntry) -> String {
+        guard let latest = entry.latest else {
+            return "BMI. No measurement yet. Tap to add a measurement."
+        }
+        let value = latest.rounded.formatted(.number.precision(.fractionLength(1)))
+        return "BMI \(value), \(latest.category.title)"
+    }
+
+    /// A short trend summary describing the direction of recent values, so the
+    /// otherwise-decorative sparkline conveys meaning to VoiceOver.
+    static func trendLabel(for trend: [Double]) -> String? {
+        guard let first = trend.first, let last = trend.last, trend.count > 1 else {
+            return nil
+        }
+        let direction: String
+        if last < first {
+            direction = "trending down"
+        } else if last > first {
+            direction = "trending up"
+        } else {
+            direction = "holding steady"
+        }
+        return "Recent BMI trend, \(direction) over the last \(trend.count) entries"
     }
 }
 
@@ -170,6 +207,9 @@ private struct BMISmallView: View {
             if entry.trend.count > 1 {
                 TrendSparkline(values: entry.trend, lineColor: BMIWidgetPalette.brand)
                     .frame(height: 26)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(BMIWidgetAccessibility.trendLabel(for: entry.trend) ?? "")
+                    .accessibilityHidden(BMIWidgetAccessibility.trendLabel(for: entry.trend) == nil)
             }
         }
     }
@@ -198,6 +238,8 @@ private struct BMIMediumView: View {
                     .foregroundStyle(.secondary)
                 if entry.trend.count > 1 {
                     TrendSparkline(values: entry.trend, lineColor: BMIWidgetPalette.brand)
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel(BMIWidgetAccessibility.trendLabel(for: entry.trend) ?? "7-entry trend")
                 } else {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(.quaternary)
@@ -208,6 +250,8 @@ private struct BMIMediumView: View {
                                 .foregroundStyle(.secondary)
                                 .padding(6)
                         )
+                        .accessibilityElement(children: .ignore)
+                        .accessibilityLabel("Add a few entries to see your trend")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -243,6 +287,20 @@ private struct BMIAccessoryRectangularView: View {
                     .frame(width: 46)
             }
         }
+        // One combined summary so the lock-screen accessory never speaks a bare
+        // "BMI 24.1" without its category context.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+    }
+
+    /// Concise spoken summary for the lock-screen accessory, including the trend
+    /// direction when available.
+    private var accessibilityLabel: String {
+        let readout = BMIWidgetAccessibility.readoutLabel(for: entry)
+        guard let trend = BMIWidgetAccessibility.trendLabel(for: entry.trend) else {
+            return readout
+        }
+        return "\(readout). \(trend)"
     }
 }
 

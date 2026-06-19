@@ -24,14 +24,17 @@ public struct StreakBadge: View {
             Image(systemName: currentStreak >= 1 ? "flame.fill" : "sparkles")
                 .font(.title2)
                 .foregroundStyle(Theme.brand)
+                .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(headline)
                     .font(.headline)
                     .foregroundStyle(Theme.textPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
                 if let next = nextMilestone, let remaining = entriesToNext {
                     Text("\(remaining) more to “\(next.title)”")
                         .font(.caption)
                         .foregroundStyle(Theme.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
             Spacer(minLength: 0)
@@ -40,7 +43,7 @@ public struct StreakBadge: View {
         .padding(.horizontal, 18)
         .glassCard(cornerRadius: 18, padding: 0)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(headline)
+        .accessibilityLabel(accessibilitySummary)
     }
 
     private var headline: String {
@@ -49,6 +52,15 @@ public struct StreakBadge: View {
         case 1:  return "1-day streak — nice start"
         default: return "\(currentStreak)-day streak"
         }
+    }
+
+    /// A single spoken summary combining the streak headline and the progress
+    /// toward the next milestone, so VoiceOver doesn't drop the "X more" detail.
+    private var accessibilitySummary: String {
+        guard let next = nextMilestone, let remaining = entriesToNext else {
+            return headline
+        }
+        return "\(headline). \(remaining) more to \(next.title)."
     }
 }
 
@@ -65,23 +77,34 @@ public struct MilestoneCelebrationView: View {
 
     public var body: some View {
         VStack(spacing: 20) {
-            Image(systemName: milestone.systemImage)
-                .font(.system(size: 72))
-                .foregroundStyle(Theme.brandGradient)
-                .symbolRenderingMode(.hierarchical)
-            Text("“\(milestone.title)” unlocked")
-                .font(.title2.weight(.bold))
-                .foregroundStyle(Theme.textPrimary)
-            Text("\(milestone.threshold) check-ins logged. Thanks for showing up for yourself.")
-                .font(.subheadline)
-                .foregroundStyle(Theme.textSecondary)
-                .multilineTextAlignment(.center)
+            VStack(spacing: 20) {
+                Image(systemName: milestone.systemImage)
+                    .font(.system(size: 72))
+                    .foregroundStyle(Theme.brandGradient)
+                    .symbolRenderingMode(.hierarchical)
+                    .accessibilityHidden(true)
+                Text("“\(milestone.title)” unlocked")
+                    .font(.title2.weight(.bold))
+                    .foregroundStyle(Theme.textPrimary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(milestone.threshold) check-ins logged. Thanks for showing up for yourself.")
+                    .font(.subheadline)
+                    .foregroundStyle(Theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("\(milestone.title) unlocked. \(milestone.threshold) check-ins logged. Thanks for showing up for yourself.")
+
             Button {
                 onDismiss()
             } label: {
                 Text("Keep going")
             }
             .buttonStyle(.primaryGlass)
+            .accessibilityLabel("Keep going")
+            .accessibilityHint("Dismisses this celebration")
         }
         .padding(28)
         .frame(maxWidth: 360)

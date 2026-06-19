@@ -166,7 +166,14 @@ struct Sparkline: Shape {
 }
 
 #Preview {
-    ShareCardView(payload: .preview)
-        .frame(width: ShareCardView.canvas.width, height: ShareCardView.canvas.height)
-        .scaleEffect(0.3)
+    // The card is a fixed 1080×1920 render canvas. For an on-screen Xcode preview
+    // we only scale the DISPLAY of that canvas to fit; the canvas itself is never
+    // restructured or made adaptive (that is owned by the share sheet's preview).
+    GeometryReader { proxy in
+        let scale = proxy.size.width / ShareCardView.canvas.width
+        ShareCardView(payload: .preview)
+            .frame(width: ShareCardView.canvas.width, height: ShareCardView.canvas.height)
+            .scaleEffect(scale, anchor: .topLeading)
+            .frame(width: proxy.size.width, height: ShareCardView.canvas.height * scale)
+    }
 }

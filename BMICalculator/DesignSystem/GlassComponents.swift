@@ -178,6 +178,7 @@ struct PrimaryGlassButtonStyle: ButtonStyle {
         let configuration: Configuration
         let prominent: Bool
         @Environment(\.isEnabled) private var isEnabled
+        @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
         var body: some View {
             let shape = Capsule(style: .continuous)
@@ -188,6 +189,8 @@ struct PrimaryGlassButtonStyle: ButtonStyle {
                 .padding(.vertical, 14)
                 .padding(.horizontal, 24)
                 .frame(maxWidth: .infinity)
+                // Guarantee a comfortable 44pt minimum tap target.
+                .frame(minHeight: 44)
                 .modifier(
                     GlassButtonBackground(
                         shape: shape,
@@ -196,8 +199,9 @@ struct PrimaryGlassButtonStyle: ButtonStyle {
                     )
                 )
                 .opacity(isEnabled ? 1 : 0.5)
-                .scaleEffect(configuration.isPressed ? 0.97 : 1)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7),
+                // Reduce Motion: skip the press scale/spring entirely.
+                .scaleEffect(reduceMotion ? 1 : (configuration.isPressed ? 0.97 : 1))
+                .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.7),
                            value: configuration.isPressed)
                 .contentShape(shape)
         }

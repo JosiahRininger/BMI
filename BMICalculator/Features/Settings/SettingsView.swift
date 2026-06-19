@@ -141,7 +141,9 @@ struct SettingsView: View {
                     Text("Apple Health")
                         .foregroundStyle(DSColor.primaryText)
                 } icon: {
-                    Image(systemName: "heart.fill").foregroundStyle(.pink)
+                    Image(systemName: "heart.fill")
+                        .foregroundStyle(.pink)
+                        .accessibilityHidden(true)
                 }
                 Spacer()
                 healthConnectControl
@@ -153,18 +155,22 @@ struct SettingsView: View {
                     Text("Weekly check-in reminder")
                         .foregroundStyle(DSColor.primaryText)
                 } icon: {
-                    Image(systemName: "bell.badge.fill").foregroundStyle(DSColor.brand)
+                    Image(systemName: "bell.badge.fill")
+                        .foregroundStyle(DSColor.brand)
+                        .accessibilityHidden(true)
                 }
                 Spacer()
                 if isReminderRequesting {
                     ProgressView()
+                        .accessibilityLabel("Setting up weekly reminder")
                 } else {
-                    Toggle("", isOn: Binding(
+                    Toggle("Weekly check-in reminder", isOn: Binding(
                         get: { weeklyReminderEnabled },
                         set: setReminderEnabled
                     ))
                     .labelsHidden()
                     .tint(DSColor.brand)
+                    .accessibilityHint("Sends a gentle reminder to check in once a week")
                 }
             }
         }
@@ -176,13 +182,17 @@ struct SettingsView: View {
         switch healthState {
         case .working:
             ProgressView()
+                .accessibilityLabel("Connecting to Apple Health")
         case .connected:
             Text("Connected")
                 .font(DSFont.subheadline)
                 .foregroundStyle(DSColor.category(.healthy))
+                .accessibilityLabel("Apple Health connected")
         case .notConnected, .unknown:
             Button("Connect") { connectHealth() }
                 .buttonStyle(.dsCompactGlass)
+                .accessibilityLabel("Connect Apple Health")
+                .accessibilityHint("Syncs your weight privately with Apple Health")
         }
     }
 
@@ -199,11 +209,15 @@ struct SettingsView: View {
                     } icon: {
                         Image(systemName: "checkmark.seal.fill")
                             .foregroundStyle(DSColor.brand)
+                            .accessibilityHidden(true)
                     }
                     Spacer()
                     Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(DSColor.category(.healthy))
+                        .accessibilityHidden(true)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("BMI Pro is active")
                 Text("Thank you. Ads are removed across the app.")
                     .font(DSFont.caption)
                     .foregroundStyle(DSColor.secondaryText)
@@ -223,12 +237,17 @@ struct SettingsView: View {
                         purchasePro()
                     }
                     .disabled(store.isProcessing || store.displayPrice == nil)
+                    .accessibilityLabel(store.isProcessing ? "Purchasing BMI Pro" : purchaseTitle)
+                    .accessibilityHint("One-time purchase to remove ads")
 
                     Button("Restore Purchases") { restore() }
                         .font(DSFont.subheadline)
                         .foregroundStyle(DSColor.brand)
-                        .frame(maxWidth: .infinity)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .contentShape(Rectangle())
                         .disabled(store.isProcessing)
+                        .accessibilityLabel("Restore purchases")
+                        .accessibilityHint("Restores a previous BMI Pro purchase on this Apple ID")
                 }
                 .padding(.vertical, DSSpacing.xs)
             }
@@ -298,16 +317,24 @@ struct SettingsView: View {
             Label {
                 Text(title).foregroundStyle(DSColor.primaryText)
             } icon: {
-                Image(systemName: systemImage).foregroundStyle(DSColor.brand)
+                Image(systemName: systemImage)
+                    .foregroundStyle(DSColor.brand)
+                    .accessibilityHidden(true)
             }
             Spacer()
             if showsChevron {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(DSColor.secondaryText)
+                    .accessibilityHidden(true)
             }
         }
+        // Guarantee the whole row is a single ~44pt-tall tap target and reads as
+        // one VoiceOver element with the row title as its label.
+        .frame(minHeight: 44)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
     }
 
     private var appVersionString: String {

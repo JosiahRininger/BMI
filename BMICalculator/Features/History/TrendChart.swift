@@ -91,6 +91,19 @@ enum BMIBandPalette {
     static func bandFill(for category: BMICategory) -> Color {
         color(for: category).opacity(0.12)
     }
+
+    /// A distinct point-mark shape per category so the trend reads without
+    /// relying on color alone (color-blind safety).
+    static func symbol(for category: BMICategory) -> BasicChartSymbolShape {
+        switch category {
+        case .underweight:  return .circle
+        case .healthy:      return .square
+        case .overweight:   return .triangle
+        case .obesityI:     return .diamond
+        case .obesityII:    return .cross
+        case .obesityIII:   return .pentagon
+        }
+    }
 }
 
 // MARK: - TrendChart
@@ -222,7 +235,9 @@ public struct TrendChart: View {
                 .lineStyle(StrokeStyle(lineWidth: 2.5))
             }
 
-            // Color-coded points on top of the line.
+            // Color-coded points on top of the line. The symbol shape also varies
+            // by category so the trend is distinguishable without relying on color
+            // alone (color-blind safety).
             ForEach(visibleRecords) { record in
                 let category = record.category(standard: standard)
                 PointMark(
@@ -230,6 +245,7 @@ public struct TrendChart: View {
                     y: .value("BMI", record.bmi)
                 )
                 .symbolSize(60)
+                .symbol(BMIBandPalette.symbol(for: category))
                 .foregroundStyle(BMIBandPalette.color(for: category))
             }
         }
@@ -254,6 +270,9 @@ public struct TrendChart: View {
             }
         }
         .frame(height: 220)
+        // Collapse the individual marks into one summarized element so VoiceOver
+        // speaks a concise trend instead of reading every point.
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel("BMI trend chart, \(range.accessibilityLabel)")
         .accessibilityValue(accessibilitySummary)
     }
@@ -263,15 +282,19 @@ public struct TrendChart: View {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(.system(size: 32, weight: .regular))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
             Text("No measurements in this range")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, minHeight: 220)
         .accessibilityElement(children: .combine)
     }
 
-    /// A spoken summary of the visible trend for VoiceOver.
+    /// A spoken summary of the visible trend for VoiceOver. Names the latest
+    /// category in words so the colored bands are conveyed without relying on
+    /// color (color-blind / non-visual access).
     private var accessibilitySummary: String {
         guard let first = visibleRecords.first, let last = visibleRecords.last else {
             return "No data"
@@ -282,7 +305,8 @@ public struct TrendChart: View {
         if lastBMI > firstBMI { direction = "increasing" }
         else if lastBMI < firstBMI { direction = "decreasing" }
         else { direction = "steady" }
-        return "BMI \(direction) from \(firstBMI) to \(lastBMI) over \(visibleRecords.count) measurements."
+        let latestCategory = last.category(standard: standard).title
+        return "BMI \(direction) from \(firstBMI) to \(lastBMI) over \(visibleRecords.count) measurements. Latest reading \(lastBMI), \(latestCategory)."
     }
 }
 

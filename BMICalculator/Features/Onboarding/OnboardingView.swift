@@ -37,6 +37,7 @@ struct OnboardingView: View {
 
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// Optional Services injected from the app root. Marked optional so this
     /// view still compiles and previews even before the Services module lands.
@@ -61,6 +62,12 @@ struct OnboardingView: View {
         UnitSystem(rawValue: storedUnitSystemRaw) ?? .metric
     }
 
+    /// Page-transition animation, suppressed when Reduce Motion is on so the
+    /// large horizontal slide becomes an instant (crossfade-style) change.
+    private var pageAnimation: Animation? {
+        reduceMotion ? nil : .snappy
+    }
+
     // MARK: Body
 
     var body: some View {
@@ -76,15 +83,18 @@ struct OnboardingView: View {
                     connectPage.tag(Page.connect)
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
-                .animation(.snappy, value: page)
+                .animation(pageAnimation, value: page)
 
                 pageControl
                     .padding(.vertical, DSSpacing.md)
             }
             .padding(.horizontal, DSSpacing.lg)
+            // Keep the flow comfortably readable on iPad / large widths instead
+            // of stretching the content edge-to-edge.
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
         }
         .interactiveDismissDisabled()
-        .accessibilityLabel("Welcome to the BMI calculator")
     }
 
     // MARK: Header
@@ -103,9 +113,12 @@ struct OnboardingView: View {
             }
             .font(DSFont.body)
             .foregroundStyle(DSColor.secondaryText)
+            .frame(minWidth: 44, minHeight: 44)
             .opacity(page == .connect ? 0 : 1)
             .disabled(page == .connect)
             .accessibilityHidden(page == .connect)
+            .accessibilityLabel("Skip onboarding")
+            .accessibilityHint("Skips setup and goes straight to the calculator")
         }
         .padding(.top, DSSpacing.lg)
         .padding(.bottom, DSSpacing.sm)
@@ -178,7 +191,7 @@ struct OnboardingView: View {
                 Spacer(minLength: DSSpacing.lg)
 
                 PrimaryGlassButton(title: "Continue", systemImage: "arrow.right") {
-                    withAnimation(.snappy) { page = .connect }
+                    withAnimation(pageAnimation) { page = .connect }
                 }
             }
             .padding(.vertical, DSSpacing.lg)
@@ -223,7 +236,7 @@ struct OnboardingView: View {
                 Capsule()
                     .fill(p == page ? DSColor.brand : DSColor.secondaryText.opacity(0.25))
                     .frame(width: p == page ? 22 : 8, height: 8)
-                    .animation(.snappy, value: page)
+                    .animation(pageAnimation, value: page)
             }
         }
         .accessibilityHidden(true)
@@ -243,7 +256,7 @@ struct OnboardingView: View {
             heightMeters: metric.heightMeters,
             standard: standard
         )
-        withAnimation(.snappy) { page = .result }
+        withAnimation(pageAnimation) { page = .result }
     }
 
     /// Persists the `hasOnboarded` flag, optionally writes the first record,
@@ -407,6 +420,11 @@ private struct FeetInchesStepper: View {
                         .font(DSFont.title3.monospacedDigit())
                         .foregroundStyle(DSColor.primaryText)
                 }
+                // Combine only the read-out text; leave the Picker and the
+                // inch steppers as individually operable VoiceOver elements.
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Height")
+                .accessibilityValue("\(feet) feet \(String(format: "%.0f", inches)) inches")
                 Spacer()
                 HStack(spacing: DSSpacing.sm) {
                     Picker("Feet", selection: $feet) {
@@ -414,6 +432,7 @@ private struct FeetInchesStepper: View {
                     }
                     .pickerStyle(.menu)
                     .tint(DSColor.brand)
+                    .accessibilityLabel("Height in feet")
 
                     StepperButtons(
                         value: $inches,
@@ -421,10 +440,11 @@ private struct FeetInchesStepper: View {
                         step: 1,
                         wrap: true
                     )
+                    .accessibilityLabel("Inches")
+                    .accessibilityValue("\(String(format: "%.0f", inches)) inches")
                 }
             }
         }
-        .accessibilityElement(children: .combine)
     }
 }
 
@@ -461,6 +481,9 @@ private struct StepperButtons: View {
                 .frame(width: 40, height: 40)
         }
         .buttonStyle(.dsCircularGlass)
+        // Ensure at least a 44x44pt hit target while keeping the 40pt glass visual.
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Rectangle())
         .accessibilityLabel(systemImage == "plus" ? "Increase" : "Decrease")
     }
 }
@@ -479,15 +502,23 @@ private struct ResultHeroCard: View {
                     .font(.system(size: 64, weight: .bold, design: .rounded))
                     .foregroundStyle(DSColor.category(result.category))
                     .contentTransition(.numericText())
-                    .accessibilityLabel("BMI \(String(format: "%.1f", result.rounded))")
+                    .minimumScaleFactor(0.5)
+                    // Let the hero number grow with Dynamic Type but cap it so it
+                    // can't run away and clip the rest of the card at AX5.
+                    .dynamicTypeSize(...DynamicTypeSize.accessibility3)
+                    .accessibilityHidden(true)
 
+                // Category conveyed via text (and the band color), so it is never
+                // color-alone for color-blind readers.
                 Text(result.category.title)
                     .font(DSFont.title3)
                     .foregroundStyle(DSColor.primaryText)
+                    .multilineTextAlignment(.center)
 
                 Text(result.category.displayRange)
                     .font(DSFont.subheadline.monospacedDigit())
                     .foregroundStyle(DSColor.secondaryText)
+                    .multilineTextAlignment(.center)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, DSSpacing.md)
@@ -496,6 +527,11 @@ private struct ResultHeroCard: View {
             RoundedRectangle(cornerRadius: DSRadius.card, style: .continuous)
                 .strokeBorder(DSColor.category(result.category).opacity(0.4), lineWidth: 1)
         )
+        // Speak a single concise summary, e.g. "BMI 24.1, Healthy weight,
+        // range 18.5 – < 25", instead of three separate fragments.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("BMI \(String(format: "%.1f", result.rounded)), \(result.category.title)")
+        .accessibilityValue("Range \(result.category.displayRange)")
     }
 }
 
@@ -510,6 +546,7 @@ private struct FirstChartPoint: View {
                 Image(systemName: "chart.xyaxis.line")
                     .font(.title2)
                     .foregroundStyle(DSColor.brand)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Your first data point")
                         .font(DSFont.subheadline)
@@ -545,6 +582,7 @@ private struct ConnectHealthRow: View {
                     .font(.title2)
                     .foregroundStyle(.pink)
                     .frame(width: 32)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Connect Apple Health")
@@ -575,8 +613,11 @@ private struct ConnectHealthRow: View {
         case .idle, .failed:
             Button("Connect") { connect() }
                 .buttonStyle(.dsCompactGlass)
+                .accessibilityLabel("Connect Apple Health")
+                .accessibilityHint("Syncs your weight privately so you don't have to type it each time")
         case .working:
             ProgressView()
+                .accessibilityLabel("Connecting to Apple Health")
         case .connected:
             Image(systemName: "checkmark.circle.fill")
                 .font(.title2)
@@ -617,6 +658,7 @@ private struct WeeklyReminderRow: View {
                     .font(.title2)
                     .foregroundStyle(DSColor.brand)
                     .frame(width: 32)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Weekly check-in reminder")
@@ -626,18 +668,20 @@ private struct WeeklyReminderRow: View {
                         .font(DSFont.caption)
                         .foregroundStyle(DSColor.secondaryText)
                 }
+                .accessibilityElement(children: .combine)
                 Spacer()
 
                 if isRequesting {
                     ProgressView()
+                        .accessibilityLabel("Setting up weekly reminder")
                 } else {
-                    Toggle("", isOn: Binding(get: { enabled }, set: setEnabled))
+                    Toggle("Weekly check-in reminder", isOn: Binding(get: { enabled }, set: setEnabled))
                         .labelsHidden()
                         .tint(DSColor.brand)
+                        .accessibilityHint("Sends a gentle reminder to check in once a week")
                 }
             }
         }
-        .accessibilityElement(children: .combine)
     }
 
     private func setEnabled(_ newValue: Bool) {
@@ -688,6 +732,7 @@ private struct DisclaimerNote: View {
         HStack(alignment: .top, spacing: DSSpacing.sm) {
             Image(systemName: "info.circle")
                 .foregroundStyle(DSColor.secondaryText)
+                .accessibilityHidden(true)
             Text("BMI is a screening tool, not a diagnosis. It can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider.")
                 .font(DSFont.caption)
                 .foregroundStyle(DSColor.secondaryText)

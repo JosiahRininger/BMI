@@ -21,6 +21,21 @@ import SwiftUI
 
 extension BMICategory {
 
+    /// An SF Symbol that distinguishes the band by shape (not color alone), so
+    /// the category reads for color-blind people.
+    var symbolName: String {
+        switch self {
+        case .underweight:
+            return "arrow.down.circle.fill"
+        case .healthy:
+            return "checkmark.circle.fill"
+        case .overweight:
+            return "arrow.up.circle.fill"
+        case .obesityI, .obesityII, .obesityIII:
+            return "exclamationmark.circle.fill"
+        }
+    }
+
     /// A short, supportive one-liner describing the band in person-first terms.
     /// Intentionally avoids second-person blame.
     var supportiveNote: String {
@@ -70,6 +85,9 @@ struct ResultCard: View {
     /// paywall — this view never touches StoreKit directly.
     var onUpsellTapped: () -> Void = {}
 
+    /// When Reduce Motion is on, the card crossfades in instead of sliding up.
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             header
@@ -79,6 +97,7 @@ struct ResultCard: View {
                 scale: result.standard.gaugeScale,
                 showsCenterLabel: false
             )
+            .frame(maxWidth: .infinity)
             .frame(height: 160)
             categoryBlock
             disclaimer
@@ -89,7 +108,22 @@ struct ResultCard: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .calcGlassCard()
-        .transition(.move(edge: .bottom).combined(with: .opacity))
+        .transition(reduceMotion
+            ? .opacity
+            : .move(edge: .bottom).combined(with: .opacity))
+        // The card speaks a single concise summary so VoiceOver conveys the
+        // verdict without the person hunting through child elements.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(verbatim: resultSummary))
+    }
+
+    /// Concise spoken summary of the whole result, e.g.
+    /// "BMI 24.1, Healthy weight, range 18.5 – < 25".
+    private var resultSummary: String {
+        String(format: "BMI %.1f, %@, range %@",
+               result.rounded,
+               result.category.title,
+               result.category.displayRange)
     }
 
     // MARK: Header — big number
@@ -100,8 +134,13 @@ struct ResultCard: View {
                 .font(.system(size: 56, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .foregroundStyle(result.category.bandColor)
+                // Fixed-size hero number: let it scale with Dynamic Type up to a
+                // sensible cap, and shrink-to-fit rather than clip at AX5.
+                .dynamicTypeSize(...DynamicTypeSize.accessibility3)
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
                 .contentTransition(.numericText())
-                .animation(.snappy, value: result.rounded)
+                .animation(reduceMotion ? nil : .snappy, value: result.rounded)
 
             Text("BMI")
                 .font(.title3.weight(.semibold))
@@ -117,21 +156,27 @@ struct ResultCard: View {
 
     private var categoryBlock: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(result.category.bandColor)
-                    .frame(width: 12, height: 12)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                // SF Symbol (shape, not just color) so the band reads for
+                // color-blind people.
+                Image(systemName: result.category.symbolName)
+                    .font(.subheadline)
+                    .foregroundStyle(result.category.bandColor)
+                    .accessibilityHidden(true)
                 Text(result.category.title)
                     .font(.headline)
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(result.category.displayRange)
                     .font(.subheadline.monospacedDigit())
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             Text(result.category.supportiveNote)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .accessibilityElement(children: .combine)
     }
 
     // MARK: Disclaimer
@@ -150,6 +195,7 @@ struct ResultCard: View {
         Button(action: onUpsellTapped) {
             HStack(spacing: 10) {
                 Image(systemName: "sparkles")
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Remove Ads with Pro")
                         .font(.subheadline.weight(.semibold))
@@ -161,13 +207,16 @@ struct ResultCard: View {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
+                    .accessibilityHidden(true)
             }
             .padding(.vertical, 10)
             .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         }
         .buttonStyle(.plain)
         .calcUpsellChrome()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Remove ads with Pro")
         .accessibilityHint("Opens the one-time purchase to remove ads.")
     }
 }

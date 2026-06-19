@@ -209,10 +209,15 @@ private struct StatTile: View {
             Text(title)
                 .font(.caption)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             Text(displayValue)
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
                 .contentTransition(.numericText())
+                // Three tiles share a fixed-width row; let the value shrink a
+                // little before clipping at large Dynamic Type sizes.
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
