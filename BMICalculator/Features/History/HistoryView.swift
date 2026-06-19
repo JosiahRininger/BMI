@@ -55,6 +55,34 @@ public struct HistoryView: View {
             .sorted { $0.day > $1.day }
     }
 
+    /// Progress-framed payload for the shareable card. Computed from records so
+    /// History needs no extra dependency. The card defaults to streak + trend
+    /// shape (no absolute BMI unless the person opts in inside the share sheet).
+    private var sharePayload: SharePayload {
+        let trend = Array(rangedRecords.prefix(20)).reversed().map(\.bmi) // oldest → newest
+        return SharePayload(
+            streakDays: consecutiveDayStreak,
+            entryCount: records.count,
+            recentTrend: Array(trend),
+            dateRangeText: range.label
+        )
+    }
+
+    /// Consecutive-calendar-day streak ending at the most recent entry.
+    private var consecutiveDayStreak: Int {
+        let calendar = Calendar.current
+        let days = Set(records.map { calendar.startOfDay(for: $0.date) }).sorted(by: >)
+        guard let first = days.first else { return 0 }
+        var streak = 1
+        var previous = first
+        for day in days.dropFirst() {
+            guard let diff = calendar.dateComponents([.day], from: day, to: previous).day, diff == 1 else { break }
+            streak += 1
+            previous = day
+        }
+        return streak
+    }
+
     // MARK: Body
 
     public var body: some View {
@@ -80,6 +108,11 @@ public struct HistoryView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 8, trailing: 8))
 
                 SummaryStatsRow(records: rangedRecords)
+
+                // Opt-in, progress-framed share card (organic-growth mechanic).
+                ShareProgressButton(payload: sharePayload)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
             .listRowSeparator(.hidden)
 

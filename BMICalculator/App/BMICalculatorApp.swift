@@ -23,6 +23,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 // MARK: - App Configuration
 
@@ -183,11 +184,66 @@ final class ReviewRequesterAdapter: ReviewRequesting {
         self.requestReview = requestReview
     }
 
+    /// Forwards the successful-calc count so review eligibility can advance.
+    func recordSuccessfulCalc() {
+        prompter.recordSuccessfulCalc()
+    }
+
     /// No-op unless the prompter's heuristics allow a prompt *and* a
     /// `RequestReviewAction` has been bound.
     func maybePrompt() {
         guard let requestReview else { return }
         prompter.maybePrompt(using: requestReview)
+    }
+}
+
+/// Bridges the Calculator's `LogRecording` contract to the retention services:
+/// records a streak entry and reschedules the weigh-in reminder so a just-logged
+/// person isn't pinged immediately. Receives no health data (firewall-safe).
+@MainActor
+final class LogRecorderAdapter: LogRecording {
+
+    private let streak: StreakService
+    private let notifications: NotificationService
+
+    init(streak: StreakService, notifications: NotificationService) {
+        self.streak = streak
+        self.notifications = notifications
+    }
+
+    func recordEntry() {
+        streak.recordEntry()
+        Task { await notifications.rescheduleAfterLog() }
+    }
+}
+
+// MARK: - Notification Delegate
+
+/// Routes notification taps and the "Log now" action into the app via the
+/// `bmicalculator://…` deep link carried in the notification's `userInfo`.
+/// Snooze is a no-op (the reminder is a repeating trigger, so the next
+/// occurrence is already scheduled).
+final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
+
+    /// Set by the App to forward to the `DeepLinkRouter`.
+    var onDeepLink: (@MainActor (URL) -> Void)?
+
+    /// Show banners while the app is foregrounded.
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        defer { completionHandler() }
+        guard response.actionIdentifier != NotificationService.snoozeActionID else { return }
+        let info = response.notification.request.content.userInfo
+        if let link = info["link"] as? String, let url = URL(string: link) {
+            Task { @MainActor in onDeepLink?(url) }
+        }
     }
 }
 
@@ -212,9 +268,13 @@ final class AppServices {
     let notifications: NotificationService
     let reviewPrompter: ReviewPrompter
 
+    // Retention
+    let streak: StreakService
+
     // Calculator-contract adapters
     let interstitialAdapter: InterstitialAdapter
     let reviewRequester: ReviewRequesterAdapter
+    let logRecorder: LogRecorderAdapter
 
     init() {
         let storeState = StoreState()
@@ -225,13 +285,18 @@ final class AppServices {
         self.adsManager = adsManager
 
         self.healthKit = HealthKitService()
-        self.notifications = NotificationService()
+        let notifications = NotificationService()
+        self.notifications = notifications
 
         let reviewPrompter = ReviewPrompter()
         self.reviewPrompter = reviewPrompter
 
+        let streak = StreakService()
+        self.streak = streak
+
         self.interstitialAdapter = InterstitialAdapter(adsManager)
         self.reviewRequester = ReviewRequesterAdapter(reviewPrompter)
+        self.logRecorder = LogRecorderAdapter(streak: streak, notifications: notifications)
     }
 
     /// Starts purchase observation, loads the product, syncs entitlements, and
@@ -247,7 +312,8 @@ final class AppServices {
             adsManager.start()
         }
 
-        // Keep the notification authorization snapshot fresh for Settings.
+        // Register the "Log now" / "Snooze" actions and refresh the auth snapshot.
+        notifications.registerCategories()
         await notifications.refreshStatus()
     }
 
@@ -269,6 +335,9 @@ struct BMICalculatorApp: App {
     /// Routes deep links (URLs / App Intents) to tabs.
     @State private var router = DeepLinkRouter()
 
+    /// Routes notification taps / actions into the app via the deep-link router.
+    @State private var notificationDelegate = NotificationDelegate()
+
     /// First-run gate. When `false`, onboarding is presented before the app.
     @AppStorage(AppStorageKey.hasOnboarded) private var hasOnboarded = false
 
@@ -287,22 +356,29 @@ struct BMICalculatorApp: App {
                 .environment(services.healthKit)
                 .environment(services.notifications)
                 .environment(services.reviewPrompter)
+                .environment(services.streak)
                 // The concrete review adapter is injected so a view with access
                 // to `@Environment(\.requestReview)` (RootView) can bind the
                 // live action into it — see `ReviewRequesterAdapter.bind`.
                 .environment(services.reviewRequester)
                 .environment(router)
                 // Bind the Calculator module's environment-key contract so its
-                // view model can read Pro status, fire interstitials, and ask
-                // for reviews without importing the Services module.
+                // view model can read Pro status, fire interstitials, ask for
+                // reviews, and record streak/log entries without importing Services.
                 .environment(\.proState, services.storeState)
                 .environment(\.interstitialPresenter, services.interstitialAdapter)
                 .environment(\.reviewRequester, services.reviewRequester)
+                .environment(\.logRecorder, services.logRecorder)
                 // Keep ads in sync the moment Pro status flips.
                 .onChange(of: services.storeState.isPro) { _, _ in
                     services.applyProStateToAds()
                 }
-                .task { await services.start() }
+                .task {
+                    // Route notification taps / "Log now" actions into the app.
+                    notificationDelegate.onDeepLink = { url in router.handle(url: url) }
+                    UNUserNotificationCenter.current().delegate = notificationDelegate
+                    await services.start()
+                }
                 // Deep links from the widget, Control Center control, and App
                 // Shortcuts all arrive as `bmicalculator://…` URLs (the control
                 // and `OpenBMICalculatorIntent` use `OpenURLIntent`), so a

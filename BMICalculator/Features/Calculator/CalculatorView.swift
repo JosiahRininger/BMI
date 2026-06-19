@@ -42,6 +42,10 @@ extension EnvironmentValues {
 
     /// Review-prompt coordinator. Injected by the App from `ReviewPrompter`.
     @Entry var reviewRequester: (any ReviewRequesting)? = nil
+
+    /// Streak / weigh-in-reminder coordinator. Injected by the App over
+    /// `StreakService` + `NotificationService`.
+    @Entry var logRecorder: (any LogRecording)? = nil
 }
 
 // MARK: - Banner Slot
@@ -87,6 +91,7 @@ struct CalculatorView: View {
     @Environment(\.proState) private var proState
     @Environment(\.interstitialPresenter) private var interstitialPresenter
     @Environment(\.reviewRequester) private var reviewRequester
+    @Environment(\.logRecorder) private var logRecorder
 
     // MARK: State
 
@@ -208,7 +213,8 @@ struct CalculatorView: View {
         model.lateBind(
             store: proState,
             ads: interstitialPresenter,
-            reviewPrompter: reviewRequester
+            reviewPrompter: reviewRequester,
+            logRecorder: logRecorder
         )
     }
 }

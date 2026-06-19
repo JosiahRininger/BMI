@@ -23,6 +23,7 @@ import SwiftUI
 enum RootTab: Int, Hashable, CaseIterable {
     case calculator
     case history
+    case metrics
     case settings
 }
 
@@ -63,6 +64,16 @@ struct RootView: View {
                     Label("History", systemImage: "chart.xyaxis.line")
                 }
                 .tag(RootTab.history)
+
+            // MARK: Metrics (the 6 extra calculators). Wrapped in its own
+            // NavigationStack because MoreMetricsView pushes via NavigationLink.
+            NavigationStack {
+                MoreMetricsView()
+            }
+            .tabItem {
+                Label("Metrics", systemImage: "square.grid.2x2")
+            }
+            .tag(RootTab.metrics)
 
             // MARK: Settings
             SettingsView()

@@ -59,9 +59,24 @@ public protocol InterstitialPresenting: AnyObject {
 /// calculations, respecting Apple's annual cap). Receives no health data.
 @MainActor
 public protocol ReviewRequesting: AnyObject {
+    /// Increment the successful-calc counter that gates eligibility. Must be
+    /// called on every successful calc, or `maybePrompt()` can never fire.
+    func recordSuccessfulCalc()
+
     /// Called after a successful calculation. No-op unless the internal
     /// heuristics decide a prompt is appropriate.
     func maybePrompt()
+}
+
+/// Records that the person logged a calculation, for retention surfaces (streak,
+/// weigh-in-reminder rescheduling). Implemented by an app-level adapter over
+/// `StreakService` + `NotificationService`.
+///
+/// CONTRACT: receives NO health data — only the fact that a calc happened.
+@MainActor
+public protocol LogRecording: AnyObject {
+    /// Called once per successful calculation.
+    func recordEntry()
 }
 
 // MARK: - Imperial Height Components
@@ -141,6 +156,7 @@ public final class CalculatorViewModel {
     @ObservationIgnored private var store: (any ProState)?
     @ObservationIgnored private var ads: (any InterstitialPresenting)?
     @ObservationIgnored private var reviewPrompter: (any ReviewRequesting)?
+    @ObservationIgnored private var logRecorder: (any LogRecording)?
 
     // MARK: Input Bounds (sane, person-first limits)
 
@@ -181,13 +197,15 @@ public final class CalculatorViewModel {
         standard: HealthStandard = .standard,
         store: (any ProState)? = nil,
         ads: (any InterstitialPresenting)? = nil,
-        reviewPrompter: (any ReviewRequesting)? = nil
+        reviewPrompter: (any ReviewRequesting)? = nil,
+        logRecorder: (any LogRecording)? = nil
     ) {
         self.unitSystem = unitSystem
         self.standard = standard
         self.store = store
         self.ads = ads
         self.reviewPrompter = reviewPrompter
+        self.logRecorder = logRecorder
 
         // Default body: 70 kg, 170 cm (≈ 5'7", ≈ 154 lb).
         if unitSystem == .metric {
@@ -261,7 +279,11 @@ public final class CalculatorViewModel {
 
         persistRecord(for: computed, into: context)
 
-        // Health firewall: neither of these calls receives any health value.
+        // Retention engine — firewall-safe, none of these receive a health value:
+        // count the calc, record a streak/log entry (reschedules the weigh-in
+        // reminder), then maybe prompt for a review and maybe show an interstitial.
+        reviewPrompter?.recordSuccessfulCalc()
+        logRecorder?.recordEntry()
         reviewPrompter?.maybePrompt()
         ads?.maybeShowInterstitial()
     }
@@ -281,11 +303,13 @@ public final class CalculatorViewModel {
     public func lateBind(
         store: (any ProState)?,
         ads: (any InterstitialPresenting)?,
-        reviewPrompter: (any ReviewRequesting)?
+        reviewPrompter: (any ReviewRequesting)?,
+        logRecorder: (any LogRecording)? = nil
     ) {
         if let store { self.store = store }
         if let ads { self.ads = ads }
         if let reviewPrompter { self.reviewPrompter = reviewPrompter }
+        if let logRecorder { self.logRecorder = logRecorder }
     }
 
     // MARK: Persistence

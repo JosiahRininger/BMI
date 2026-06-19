@@ -76,6 +76,18 @@ From the two growth/feature research reports:
   `josiahrininger.com/bmi/privacy` placeholder).
 
 ### B. Real code TODOs the generators left as integration points (small, but functional gaps)
+
+> **✅ Wired this session** (symbol-verified, not yet Xcode-compiled): the **review-prompt counter**
+> (`recordSuccessfulCalc()` now called on every calc via the `ReviewRequesting` protocol + adapter — the
+> ratings strategy is no longer dark); the **streak + weigh-in-reminder reschedule** (new `LogRecording`
+> protocol → `LogRecorderAdapter` over `StreakService` + `NotificationService`, called in
+> `CalculatorViewModel.calculate()`); the **Metrics tab** (4th `RootTab` hosting `MoreMetricsView`); the
+> **share card** (`ShareProgressButton` in `HistoryView`, payload built from records); and **notifications**
+> (`registerCategories()` at launch + a `NotificationDelegate` routing taps/"Log now" → `bmicalculator://new-entry`).
+> Still open below: widget writer, Spotlight activation, ad-unit ids, the **Settings cadence picker** (the
+> `NotificationService` cadence API exists; Settings still calls the weekly convenience), the interstitial-vs-review
+> collision gate, and the dedupe/preview checks.
+
 - [ ] **Widget data writer** — the app must, after each calc, map recent `BMIRecord`s →
       `[BMIWidgetEntryData]`, JSON-encode to `UserDefaults(suiteName:"group.com.jdr.BMI")` key
       `widget.recentEntries.v1`, then `WidgetCenter.shared.reloadAllTimelines()`. (Widget reads it; writer was out of widget scope.)
