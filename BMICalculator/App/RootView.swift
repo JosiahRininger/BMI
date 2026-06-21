@@ -43,8 +43,14 @@ struct RootView: View {
     /// SwiftUI's review-prompt action, only available inside a view hierarchy.
     @Environment(\.requestReview) private var requestReview
 
+    /// Streak service, observed so a newly-earned milestone can be celebrated.
+    @Environment(StreakService.self) private var streak
+
     /// Controls the Pro / Remove-Ads paywall sheet.
     @State private var isPaywallPresented = false
+
+    /// A just-earned milestone awaiting its one-time celebration sheet.
+    @State private var milestoneToCelebrate: StreakMilestone?
 
     var body: some View {
         @Bindable var router = router
@@ -99,6 +105,16 @@ struct RootView: View {
         }
         .sheet(isPresented: $isPaywallPresented) {
             PaywallSheet()
+        }
+        // Celebrate a newly-earned streak milestone (fires only on a fresh add,
+        // never on initial load — `onChange` doesn't run on first appearance).
+        .onChange(of: streak.earnedMilestones) { _, milestones in
+            milestoneToCelebrate = milestones.last
+        }
+        .sheet(item: $milestoneToCelebrate) { milestone in
+            MilestoneCelebrationView(milestone: milestone) { milestoneToCelebrate = nil }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
         }
     }
 
@@ -320,5 +336,6 @@ private struct PaywallSheet: View {
         .environment(storeState)
         .environment(StoreService(state: storeState))
         .environment(ReviewRequesterAdapter(ReviewPrompter()))
+        .environment(StreakService())
         .modelContainer(for: BMIRecord.self, inMemory: true)
 }

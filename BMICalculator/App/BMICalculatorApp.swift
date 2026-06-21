@@ -384,6 +384,8 @@ struct BMICalculatorApp: App {
                     // Route notification taps / "Log now" actions into the app.
                     notificationDelegate.onDeepLink = { url in router.handle(url: url) }
                     UNUserNotificationCenter.current().delegate = notificationDelegate
+                    // Back the Spotlight/Siri "recent BMI results" query with SwiftData.
+                    BMIResultStore.configure(with: SpotlightResultProvider(container: modelContainer))
                     await services.start()
                 }
                 // Deep links from the widget, Control Center control, and App
