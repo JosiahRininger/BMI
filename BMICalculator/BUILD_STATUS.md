@@ -13,6 +13,27 @@ _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a rea
 > else falls back to a local store) so the app doesn't trap on an unsigned/dev build.
 > To reproduce: `xcodegen generate && xcodebuild -scheme BMICalculator -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO test`.
 
+> ## ✅ FEATURES BUILT OUT (2026-06-21) — all compiling, tests still 31/31
+> - **Widget + Control Center extension** — now a real `app-extension` target embedded in the app
+>   (`project.yml`), compiling Core + the SwiftData-free intents via multi-target membership.
+> - **Widget data writer** — `WidgetSync` snapshots the 7 most recent records to the App Group after
+>   each calc (`LogRecorderAdapter`) and reloads timelines; shared store/DTO extracted to `BMISharedStore.swift`.
+> - **Spotlight/Siri** — `SpotlightResultProvider` installed via `BMIResultStore.configure` at launch,
+>   so "recent BMI" resolves in Spotlight/Shortcuts.
+> - **Milestone celebration** — `RootView` observes `StreakService.earnedMilestones` and presents `MilestoneCelebrationView`.
+> - **Reminder cadence picker** in Settings (off / weekly / 3× / daily).
+>
+> **Still open — needs you, or a scoped follow-up:**
+> - **AdMob (#2):** the `GoogleMobileAds` SPM package isn't added (the fetch is impractical over the
+>   current VPN/slow link), so ad code stays `#if canImport`-excluded and the app builds ad-free. When
+>   added, replace `AdUnit.prodBanner`/`prodInterstitial` placeholders with **real ad-unit IDs** (your AdMob account).
+> - **Stone weight UI (#6):** Core conversions are built + tested, but the UI needs a third weight mode
+>   wired through `UnitSystem` → `CalculatorViewModel` (convert logic) → `InputControls` (a stone+lb field).
+>   A deliberate refactor, deferred to keep the build green.
+> - **Signing + capabilities** (HealthKit, In-App Purchase, App Groups `group.com.jdr.BMI`) for a device/TestFlight build.
+> - **StoreKit**: create `com.bmi.removeads` at $4.99 in App Store Connect + a `.storekit` test config.
+> - **App icon** asset catalog; **privacy manifest** + a live privacy-policy URL (replace the placeholder).
+
 ---
 
 ## ✅ Verified (compiled + runtime-tested here)
