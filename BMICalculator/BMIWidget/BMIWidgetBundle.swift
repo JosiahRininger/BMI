@@ -14,7 +14,6 @@
 import WidgetKit
 import SwiftUI
 import AppIntents
-import Core
 
 // MARK: - Widget Bundle
 

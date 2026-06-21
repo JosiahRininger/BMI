@@ -57,6 +57,8 @@ targets:
         INFOPLIST_KEY_NSHealthShareUsageDescription: "BMI Calculator reads your height and weight from Health to prefill the calculator. Health data never leaves your device and is never used for ads."
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: "BMI Calculator can save your weight and BMI to Health after a calculation, if you choose."
         INFOPLIST_KEY_CFBundleURLTypes: ""   # URL scheme added via Info if needed; not required to compile
+    dependencies:
+      - target: BMIWidget            # embeds the widget extension into the app
 
   BMICalculatorTests:
     type: bundle.unit-test
@@ -69,3 +71,32 @@ targets:
       base:
         GENERATE_INFOPLIST_FILE: "YES"
         PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI.Tests
+
+  # Widget + Control Center extension. Compiles the Foundation-only Core files
+  # and the SwiftData-free intents directly (multi-target membership), so the
+  # widget files use Core types in-module (no `import Core`).
+  BMIWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: BMIWidget
+        excludes:
+          - Info.plist
+      - path: Core/UnitSystem.swift
+      - path: Core/HealthStandard.swift
+      - path: Core/BMICategory.swift
+      - path: Core/BMIResult.swift
+      - path: Core/BMICalculator.swift
+      - path: Core/HealthCalculators.swift
+      - path: Intents/CalculateBMIIntent.swift
+      - path: Intents/BMIResultEntity.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI.BMIWidget
+        PRODUCT_NAME: BMIWidget
+        INFOPLIST_FILE: BMIWidget/Info.plist
+        GENERATE_INFOPLIST_FILE: "NO"
+        MARKETING_VERSION: "1.3"
+        CURRENT_PROJECT_VERSION: "1"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SKIP_INSTALL: "YES"

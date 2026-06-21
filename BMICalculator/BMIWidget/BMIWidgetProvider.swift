@@ -14,7 +14,6 @@
 
 import Foundation
 import WidgetKit
-import Core
 
 // MARK: - Shared App Group
 
@@ -102,20 +101,20 @@ public struct BMIWidgetEntryData: Codable, Hashable, Sendable {
 /// Carries the latest measurement plus up to seven recent values for the
 /// trend sparkline. `configuration` allows the user to pick a health standard
 /// via the widget's edit sheet (AppIntent configuration).
-public struct BMIWidgetEntry: TimelineEntry {
+struct BMIWidgetEntry: TimelineEntry {
 
-    public let date: Date
+    let date: Date
 
     /// The most recent measurement, or `nil` when the person has no history.
-    public let latest: BMIWidgetEntryData?
+    let latest: BMIWidgetEntryData?
 
     /// Up to seven recent BMI values, oldest → newest, for the sparkline.
-    public let trend: [Double]
+    let trend: [Double]
 
     /// The selected configuration (health standard).
-    public let configuration: BMIWidgetConfigurationIntent
+    let configuration: BMIWidgetConfigurationIntent
 
-    public init(
+    init(
         date: Date,
         latest: BMIWidgetEntryData?,
         trend: [Double],
@@ -128,7 +127,7 @@ public struct BMIWidgetEntry: TimelineEntry {
     }
 
     /// A representative entry used for previews and the gallery.
-    public static func sample(
+    static func sample(
         configuration: BMIWidgetConfigurationIntent = BMIWidgetConfigurationIntent()
     ) -> BMIWidgetEntry {
         let now = Date()
@@ -138,7 +137,7 @@ public struct BMIWidgetEntry: TimelineEntry {
     }
 
     /// A redacted/empty entry shown when there is no saved history yet.
-    public static func empty(
+    static func empty(
         configuration: BMIWidgetConfigurationIntent = BMIWidgetConfigurationIntent()
     ) -> BMIWidgetEntry {
         BMIWidgetEntry(date: Date(), latest: nil, trend: [], configuration: configuration)
@@ -153,16 +152,16 @@ public struct BMIWidgetEntry: TimelineEntry {
 /// there is no value in frequent refreshes. We publish a single entry and ask
 /// WidgetKit to reload after a day; the app additionally calls
 /// `WidgetCenter.shared.reloadAllTimelines()` whenever it writes a new record.
-public struct BMIWidgetProvider: AppIntentTimelineProvider {
+struct BMIWidgetProvider: AppIntentTimelineProvider {
 
-    public init() {}
+    init() {}
 
-    public func placeholder(in context: Context) -> BMIWidgetEntry {
+    func placeholder(in context: Context) -> BMIWidgetEntry {
         // Shown while the real snapshot loads — redacted by WidgetKit.
         .sample()
     }
 
-    public func snapshot(
+    func snapshot(
         for configuration: BMIWidgetConfigurationIntent,
         in context: Context
     ) -> BMIWidgetEntry {
@@ -174,7 +173,7 @@ public struct BMIWidgetProvider: AppIntentTimelineProvider {
         return makeEntry(for: configuration)
     }
 
-    public func timeline(
+    func timeline(
         for configuration: BMIWidgetConfigurationIntent,
         in context: Context
     ) -> Timeline<BMIWidgetEntry> {

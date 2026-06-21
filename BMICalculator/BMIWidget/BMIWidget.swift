@@ -13,7 +13,6 @@
 
 import SwiftUI
 import WidgetKit
-import Core
 
 // MARK: - Deep Links
 
