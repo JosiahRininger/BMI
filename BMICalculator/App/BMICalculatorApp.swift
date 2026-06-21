@@ -67,8 +67,11 @@ enum AppStorageKey {
     /// `String` — the chosen ``HealthStandard`` raw value (standard/asian).
     static let healthStandard = "app.healthStandard"
 
-    /// `Bool` — whether the weekly weigh-in reminder is enabled.
+    /// `Bool` — whether the weekly weigh-in reminder is enabled (onboarding's simple opt-in).
     static let weeklyReminderEnabled = "app.weeklyReminderEnabled"
+
+    /// `String` — the chosen ``NotificationService/ReminderCadence`` raw value (Settings).
+    static let reminderCadence = "app.reminderCadence"
 }
 
 // MARK: - Deep Link Routing

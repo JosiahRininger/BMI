@@ -22,7 +22,7 @@ struct SettingsView: View {
 
     @AppStorage(AppStorageKey.unitSystem) private var unitSystemRaw: String = UnitSystem.metric.rawValue
     @AppStorage(AppStorageKey.healthStandard) private var healthStandardRaw: String = HealthStandard.standard.rawValue
-    @AppStorage(AppStorageKey.weeklyReminderEnabled) private var weeklyReminderEnabled: Bool = false
+    @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String = NotificationService.ReminderCadence.weekly.rawValue
 
     // MARK: Services
 
@@ -149,10 +149,10 @@ struct SettingsView: View {
                 healthConnectControl
             }
 
-            // Weekly reminder
+            // Check-in reminder cadence
             HStack {
                 Label {
-                    Text("Weekly check-in reminder")
+                    Text("Check-in reminder")
                         .foregroundStyle(DSColor.primaryText)
                 } icon: {
                     Image(systemName: "bell.badge.fill")
@@ -162,15 +162,20 @@ struct SettingsView: View {
                 Spacer()
                 if isReminderRequesting {
                     ProgressView()
-                        .accessibilityLabel("Setting up weekly reminder")
+                        .accessibilityLabel("Setting up reminder")
                 } else {
-                    Toggle("Weekly check-in reminder", isOn: Binding(
-                        get: { weeklyReminderEnabled },
-                        set: setReminderEnabled
-                    ))
+                    Picker("Check-in reminder", selection: Binding(
+                        get: { reminderCadence },
+                        set: setCadence
+                    )) {
+                        ForEach(NotificationService.ReminderCadence.allCases) { cadence in
+                            Text(cadence.title).tag(cadence)
+                        }
+                    }
                     .labelsHidden()
+                    .pickerStyle(.menu)
                     .tint(DSColor.brand)
-                    .accessibilityHint("Sends a gentle reminder to check in once a week")
+                    .accessibilityHint("Choose how often to get a gentle check-in reminder")
                 }
             }
         }
@@ -357,20 +362,23 @@ struct SettingsView: View {
         }
     }
 
-    private func setReminderEnabled(_ newValue: Bool) {
-        guard newValue else {
-            weeklyReminderEnabled = false
-            notifications.cancelWeeklyReminder()
+    private var reminderCadence: NotificationService.ReminderCadence {
+        NotificationService.ReminderCadence(rawValue: reminderCadenceRaw) ?? .weekly
+    }
+
+    private func setCadence(_ cadence: NotificationService.ReminderCadence) {
+        reminderCadenceRaw = cadence.rawValue
+        guard cadence != .off else {
+            notifications.cancelAll()
             return
         }
         isReminderRequesting = true
         Task {
             let granted = await notifications.requestAuthorization()
             if granted {
-                await notifications.scheduleWeeklyReminder()
-                weeklyReminderEnabled = true
+                await notifications.schedule(cadence: cadence)
             } else {
-                weeklyReminderEnabled = false
+                reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
             }
             isReminderRequesting = false
         }
