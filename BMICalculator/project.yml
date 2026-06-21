@@ -44,6 +44,7 @@ targets:
       - path: Features
       - path: Services
       - path: Intents
+      - path: BMIWidget/BMISharedStore.swift   # shared App-Group store (also in widget)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI

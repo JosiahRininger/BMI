@@ -209,14 +209,18 @@ final class LogRecorderAdapter: LogRecording {
 
     private let streak: StreakService
     private let notifications: NotificationService
+    private let modelContainer: ModelContainer
 
-    init(streak: StreakService, notifications: NotificationService) {
+    init(streak: StreakService, notifications: NotificationService, modelContainer: ModelContainer) {
         self.streak = streak
         self.notifications = notifications
+        self.modelContainer = modelContainer
     }
 
     func recordEntry() {
         streak.recordEntry()
+        // Publish the latest history to the App Group + refresh the widget.
+        WidgetSync.update(from: modelContainer)
         Task { await notifications.rescheduleAfterLog() }
     }
 }
@@ -283,7 +287,7 @@ final class AppServices {
     let reviewRequester: ReviewRequesterAdapter
     let logRecorder: LogRecorderAdapter
 
-    init() {
+    init(modelContainer: ModelContainer) {
         let storeState = StoreState()
         self.storeState = storeState
         self.storeService = StoreService(state: storeState)
@@ -303,7 +307,7 @@ final class AppServices {
 
         self.interstitialAdapter = InterstitialAdapter(adsManager)
         self.reviewRequester = ReviewRequesterAdapter(reviewPrompter)
-        self.logRecorder = LogRecorderAdapter(streak: streak, notifications: notifications)
+        self.logRecorder = LogRecorderAdapter(streak: streak, notifications: notifications, modelContainer: modelContainer)
     }
 
     /// Starts purchase observation, loads the product, syncs entitlements, and
@@ -337,7 +341,7 @@ final class AppServices {
 struct BMICalculatorApp: App {
 
     /// The composition root for all app-scoped services.
-    @State private var services = AppServices()
+    @State private var services: AppServices
 
     /// Routes deep links (URLs / App Intents) to tabs.
     @State private var router = DeepLinkRouter()
@@ -351,7 +355,15 @@ struct BMICalculatorApp: App {
     /// The shared SwiftData container, placed in the App Group when possible so
     /// the widget can read saved history. Falls back to a local store, then to
     /// an in-memory store, so the app always launches rather than crashing.
-    private let modelContainer: ModelContainer = Self.makeModelContainer()
+    private let modelContainer: ModelContainer
+
+    init() {
+        // Build the container first so it can be shared with the services
+        // (the widget writer needs it) and the SwiftData model container.
+        let container = Self.makeModelContainer()
+        self.modelContainer = container
+        _services = State(initialValue: AppServices(modelContainer: container))
+    }
 
     var body: some Scene {
         WindowGroup {
