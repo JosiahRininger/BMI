@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  Partial Info.plist. GENERATE_INFOPLIST_FILE stays YES, so Xcode merges the
+	  build-setting-derived keys (versions, scene manifest, launch screen, the
+	  HealthKit usage strings from INFOPLIST_KEY_*) on top of this base. The only
+	  thing that can't be expressed as an INFOPLIST_KEY scalar is the URL-types
+	  array below, which registers the bmicalculator:// scheme the widget, Control
+	  Center control, and App Shortcuts deep-link into.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.jdr.BMI</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>bmicalculator</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

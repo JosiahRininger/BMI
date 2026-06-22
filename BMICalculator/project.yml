@@ -50,6 +50,11 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI
         PRODUCT_NAME: BMICalculator
         GENERATE_INFOPLIST_FILE: "YES"
+        # Partial Info.plist supplies CFBundleURLTypes (the bmicalculator:// scheme
+        # the widget / Control Center / Siri deep-link into — it can't be expressed
+        # as an INFOPLIST_KEY scalar). Xcode merges the generated keys + the
+        # INFOPLIST_KEY_* values below on top of this file.
+        INFOPLIST_FILE: Info.plist
         CURRENT_PROJECT_VERSION: "1"
         MARKETING_VERSION: "1.3"
         TARGETED_DEVICE_FAMILY: "1,2"        # iPhone + iPad
@@ -57,7 +62,6 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
         INFOPLIST_KEY_NSHealthShareUsageDescription: "BMI Calculator reads your height and weight from Health to prefill the calculator. Health data never leaves your device and is never used for ads."
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: "BMI Calculator can save your weight and BMI to Health after a calculation, if you choose."
-        INFOPLIST_KEY_CFBundleURLTypes: ""   # URL scheme added via Info if needed; not required to compile
     dependencies:
       - target: BMIWidget            # embeds the widget extension into the app
 
