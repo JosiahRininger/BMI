@@ -30,9 +30,19 @@ public struct HistoryView: View {
     @Environment(\.modelContext) private var modelContext
 
     @State private var range: ChartRange = .month
+    @State private var showExportSheet = false
 
-    public init(standard: HealthStandard = .standard) {
+    /// Whether the person owns Pro (gates export). Injected by the app shell.
+    private let isPro: Bool
+    /// Presents the Pro paywall when a non-Pro person taps a Pro feature.
+    private let onShowPaywall: () -> Void
+
+    public init(standard: HealthStandard = .standard,
+                isPro: Bool = false,
+                onShowPaywall: @escaping () -> Void = {}) {
         self.standard = standard
+        self.isPro = isPro
+        self.onShowPaywall = onShowPaywall
     }
 
     // MARK: Derived data
@@ -98,6 +108,20 @@ public struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        if isPro { showExportSheet = true } else { onShowPaywall() }
+                    } label: {
+                        Label("Export", systemImage: isPro ? "square.and.arrow.up" : "lock.fill")
+                    }
+                    .disabled(records.isEmpty)
+                    .accessibilityLabel(isPro ? "Export history" : "Export history, a Pro feature")
+                }
+            }
+            .sheet(isPresented: $showExportSheet) {
+                ExportSheet(records: records, standard: standard)
+            }
         }
     }
 
@@ -305,6 +329,55 @@ private struct DisclaimerFootnote: View {
             .foregroundStyle(.secondary)
             .padding(.top, 4)
             .accessibilityLabel("Disclaimer")
+    }
+}
+
+// MARK: - Export Sheet (Pro)
+
+/// Generates a CSV and a PDF of the history on appearance and offers them via
+/// the system share sheet. Local-first: files are written to a temp directory.
+private struct ExportSheet: View {
+    let records: [BMIRecord]
+    let standard: HealthStandard
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var csvURL: URL?
+    @State private var pdfURL: URL?
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    if let csvURL {
+                        ShareLink(item: csvURL) {
+                            Label("Export as CSV", systemImage: "tablecells")
+                        }
+                    }
+                    if let pdfURL {
+                        ShareLink(item: pdfURL) {
+                            Label("Export as PDF", systemImage: "doc.richtext")
+                        }
+                    }
+                    if csvURL == nil, pdfURL == nil {
+                        HStack { ProgressView(); Text("Preparing export…") }
+                    }
+                } footer: {
+                    Text("Your data stays on your device until you choose where to share it.")
+                }
+            }
+            .navigationTitle("Export history")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium])
+        .task {
+            csvURL = HistoryExporter.csvFileURL(records: records, standard: standard)
+            pdfURL = HistoryExporter.pdfFileURL(records: records, standard: standard)
+        }
     }
 }
 

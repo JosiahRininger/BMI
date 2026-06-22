@@ -43,6 +43,9 @@ struct RootView: View {
     /// SwiftUI's review-prompt action, only available inside a view hierarchy.
     @Environment(\.requestReview) private var requestReview
 
+    /// Pro/purchase state, to gate Pro features (e.g. history export).
+    @Environment(StoreState.self) private var storeState
+
     /// Streak service, observed so a newly-earned milestone can be celebrated.
     @Environment(StreakService.self) private var streak
 
@@ -65,7 +68,9 @@ struct RootView: View {
                 .tag(RootTab.calculator)
 
             // MARK: History
-            HistoryView(standard: currentStandard)
+            HistoryView(standard: currentStandard,
+                        isPro: storeState.isPro,
+                        onShowPaywall: { isPaywallPresented = true })
                 .tabItem {
                     Label("History", systemImage: "chart.xyaxis.line")
                 }
@@ -206,7 +211,7 @@ private struct PaywallSheet: View {
                 .font(.system(size: 44, weight: .semibold))
                 .foregroundStyle(Theme.brandGradient)
 
-            Text("Remove Ads")
+            Text("BMI Pro")
                 .font(.title.bold())
 
             Text("A one-time purchase. No subscription, ever.")
@@ -219,8 +224,8 @@ private struct PaywallSheet: View {
 
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 14) {
-            featureRow("rectangle.slash", "No banner ads")
-            featureRow("hand.tap", "No post-calculation ads")
+            featureRow("rectangle.slash", "Remove all ads")
+            featureRow("square.and.arrow.up", "Export your history (CSV & PDF)")
             featureRow("heart.text.square", "Support ongoing updates")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -291,8 +296,8 @@ private struct PaywallSheet: View {
 
     private var buyButtonTitle: String {
         if storeState.isProcessing { return "Purchasing…" }
-        if let price = storeState.displayPrice { return "Remove Ads (\(price))" }
-        return "Remove Ads"
+        if let price = storeState.displayPrice { return "Unlock Pro (\(price))" }
+        return "Unlock Pro"
     }
 
     /// Subtle glass/material backdrop behind the sheet content.
