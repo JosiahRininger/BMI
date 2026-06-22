@@ -92,6 +92,7 @@ struct CalculatorView: View {
     @Environment(\.interstitialPresenter) private var interstitialPresenter
     @Environment(\.reviewRequester) private var reviewRequester
     @Environment(\.logRecorder) private var logRecorder
+    @Environment(ProfileStore.self) private var profiles
 
     // MARK: State
 
@@ -187,7 +188,7 @@ struct CalculatorView: View {
 
     private var calculateButton: some View {
         Button {
-            model.calculate(persistingInto: modelContext)
+            model.calculate(persistingInto: modelContext, profileID: profiles.activeProfileID)
         } label: {
             Text("Calculate")
                 .font(.headline)
@@ -253,17 +254,21 @@ private extension View {
 // MARK: - Previews
 
 #Preview("Default") {
-    NavigationStack {
+    let container = PersistenceController.inMemory()
+    return NavigationStack {
         CalculatorView()
     }
-    .modelContainer(for: BMIRecord.self, inMemory: true)
+    .environment(ProfileStore(container: container))
+    .modelContainer(container)
 }
 
 #Preview("With result, non-Pro") {
+    let container = PersistenceController.inMemory()
     let vm = CalculatorViewModel()
     vm.calculate(persistingInto: nil)
     return NavigationStack {
         CalculatorView(model: vm)
     }
-    .modelContainer(for: BMIRecord.self, inMemory: true)
+    .environment(ProfileStore(container: container))
+    .modelContainer(container)
 }

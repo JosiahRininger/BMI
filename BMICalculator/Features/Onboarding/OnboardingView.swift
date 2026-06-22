@@ -43,6 +43,7 @@ struct OnboardingView: View {
     /// view still compiles and previews even before the Services module lands.
     @Environment(HealthKitService.self) private var healthKit
     @Environment(NotificationService.self) private var notifications
+    @Environment(ProfileStore.self) private var profiles
 
     // MARK: Local State
 
@@ -270,7 +271,8 @@ struct OnboardingView: View {
                 bmi: result.value,
                 weightKilograms: metric.weightKilograms,
                 heightMeters: metric.heightMeters,
-                unitSystemRaw: unitSystem.rawValue
+                unitSystemRaw: unitSystem.rawValue,
+                profileID: profiles.activeProfileID
             )
             modelContext.insert(record)
             try? modelContext.save()
@@ -741,6 +743,10 @@ private struct DisclaimerNote: View {
 // MARK: - Preview
 
 #Preview("Onboarding") {
-    OnboardingView()
-        .modelContainer(for: BMIRecord.self, inMemory: true)
+    let container = PersistenceController.inMemory()
+    return OnboardingView()
+        .environment(HealthKitService())
+        .environment(NotificationService())
+        .environment(ProfileStore(container: container))
+        .modelContainer(container)
 }

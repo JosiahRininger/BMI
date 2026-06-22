@@ -23,14 +23,15 @@ public struct HistoryView: View {
     /// Defaults to the universal CDC/WHO cutoffs.
     private let standard: HealthStandard
 
-    /// All records, newest first. SwiftData keeps this live.
-    @Query(sort: \BMIRecord.date, order: .reverse)
-    private var records: [BMIRecord]
+    /// Records for the active profile, newest first. SwiftData keeps this live.
+    @Query private var records: [BMIRecord]
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(ProfileStore.self) private var profiles
 
     @State private var range: ChartRange = .month
     @State private var showExportSheet = false
+    @State private var showManageProfiles = false
 
     /// Whether the person owns Pro (gates export). Injected by the app shell.
     private let isPro: Bool
@@ -39,10 +40,21 @@ public struct HistoryView: View {
 
     public init(standard: HealthStandard = .standard,
                 isPro: Bool = false,
-                onShowPaywall: @escaping () -> Void = {}) {
+                onShowPaywall: @escaping () -> Void = {},
+                profileID: UUID? = nil) {
         self.standard = standard
         self.isPro = isPro
         self.onShowPaywall = onShowPaywall
+
+        // Scope history to the active profile. With no active profile (e.g.
+        // pre-migration or previews) show every record.
+        let sort = [SortDescriptor(\BMIRecord.date, order: .reverse)]
+        if let profileID {
+            let pid: UUID? = profileID
+            _records = Query(filter: #Predicate<BMIRecord> { $0.profileID == pid }, sort: sort)
+        } else {
+            _records = Query(sort: sort)
+        }
     }
 
     // MARK: Derived data
@@ -109,6 +121,13 @@ public struct HistoryView: View {
             }
             .navigationTitle("History")
             .toolbar {
+                // Profile switcher — only for Pro with more than one profile to
+                // switch between (free users are single-profile by entitlement).
+                ToolbarItem(placement: .topBarLeading) {
+                    if isPro, profiles.profiles.count > 1 {
+                        profileSwitcher
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         if isPro { showExportSheet = true } else { onShowPaywall() }
@@ -122,7 +141,41 @@ public struct HistoryView: View {
             .sheet(isPresented: $showExportSheet) {
                 ExportSheet(records: records, standard: standard)
             }
+            .sheet(isPresented: $showManageProfiles) {
+                ProfilesView()
+            }
         }
+    }
+
+    // MARK: Profile switcher
+
+    private var profileSwitcher: some View {
+        Menu {
+            Picker("Profile", selection: Binding(
+                get: { profiles.activeProfileID ?? profiles.profiles.first?.id },
+                set: { if let id = $0 { profiles.setActive(id) } }
+            )) {
+                ForEach(profiles.profiles) { profile in
+                    Text(profile.name).tag(Optional(profile.id))
+                }
+            }
+            Divider()
+            Button {
+                showManageProfiles = true
+            } label: {
+                Label("Manage Profiles…", systemImage: "person.2")
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "person.crop.circle")
+                Text(profiles.activeProfile?.name ?? "Profile")
+                    .lineLimit(1)
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
+            }
+        }
+        .accessibilityLabel("Active profile: \(profiles.activeProfile?.name ?? "none")")
+        .accessibilityHint("Switch or manage profiles")
     }
 
     private var content: some View {
@@ -384,11 +437,15 @@ private struct ExportSheet: View {
 // MARK: - Previews
 
 #Preview("With history") {
-    HistoryView()
-        .modelContainer(.previewWithSampleHistory)
+    let container = ModelContainer.previewWithSampleHistory
+    return HistoryView()
+        .environment(ProfileStore(container: container))
+        .modelContainer(container)
 }
 
 #Preview("Empty") {
-    HistoryView()
-        .modelContainer(PersistenceController.inMemory())
+    let container = PersistenceController.inMemory()
+    return HistoryView()
+        .environment(ProfileStore(container: container))
+        .modelContainer(container)
 }

@@ -41,11 +41,13 @@ cite price → test $3.99/$2.99. If conversion > ~3% with few price complaints �
 
 Bundling ad-removal with real capability converts better than ad-removal alone and justifies $4.99.
 
-- **Remove all ads** (banner + interstitial). *(`StoreState.isPro` → `AdsManager.setPro(true)` — wired.)*
-- **History + trend chart export (CSV / PDF)** — local-first, high perceived value.
-- **Multiple profiles** (family / clients).
-- **Custom themes / alternate app icons.**
+- [x] **Remove all ads** (banner + interstitial). *(`StoreState.isPro` → `AdsManager.setPro(true)` — wired.)*
+- [x] **History export (CSV / PDF)** — local-first (`HistoryExporter`; `UIGraphicsPDFRenderer`). Pro-gated export button in History; free → paywall.
+- [x] **Multiple profiles** (family / clients) — `BMIProfile` @Model + `ProfileStore` (safe lightweight migration, legacy records backfilled into a default profile, free tier capped at 1). Switcher in History, manager in Settings.
+- [x] **Custom accent themes** — 9 palettes via `AppTheme` + `AppearanceStore` (`Theme.brand` runtime-themeable). *(Alternate app icons deferred — needs real icon assets.)*
 - *(Defer Apple Watch + extra widgets to a possible richer $6.99 tier or v2.)*
+
+**Status:** ads, export, themes, and profiles all ship in this build; only alternate app icons remain (deferred — needs real assets). Paywall + Settings copy list exactly what ships.
 
 ### ✅ Decided: the 6 extra calculators are FREE
 Research conflicted — monetization research listed "extra calculators" as the highest-WTP Pro feature,

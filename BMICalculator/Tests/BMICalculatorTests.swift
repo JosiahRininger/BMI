@@ -9,6 +9,7 @@
 
 import Testing
 import Foundation
+import SwiftData
 @testable import BMICalculator
 
 // MARK: - Standard category boundaries
@@ -288,5 +289,141 @@ struct AppearanceStoreTests {
 
         store.enforceEntitlement(isPro: false)     // already free → no-op
         #expect(store.theme == .classic)
+    }
+}
+
+// MARK: - Profiles (BMI Pro multi-person tracking)
+
+@Suite("Profile store")
+@MainActor
+struct ProfileStoreTests {
+
+    /// A clean in-memory container with a reset active-profile preference, so
+    /// each test bootstraps deterministically.
+    private func freshContainer() -> ModelContainer {
+        ProfilePreferences.setActiveID(nil)
+        return PersistenceController.inMemory()
+    }
+
+    @Test("Bootstrap creates a default profile and makes it active")
+    func bootstrapCreatesDefault() {
+        let store = ProfileStore(container: freshContainer())
+        #expect(store.profiles.count == 1)
+        #expect(store.profiles.first?.name == "Me")
+        #expect(store.activeProfileID == store.profiles.first?.id)
+    }
+
+    @Test("Legacy records with no profile are adopted into the default profile")
+    func backfillsLegacyRecords() {
+        let container = freshContainer()
+        let seed = ModelContext(container)
+        seed.insert(BMIRecord(date: .now, bmi: 22, weightKilograms: 70,
+                              heightMeters: 1.78, unitSystemRaw: "metric"))
+        try? seed.save()
+
+        let store = ProfileStore(container: container)
+        let defaultID = store.profiles.first?.id
+
+        let fetched = (try? ModelContext(container).fetch(FetchDescriptor<BMIRecord>())) ?? []
+        #expect(fetched.count == 1)
+        #expect(fetched.first?.profileID == defaultID)
+    }
+
+    @Test("Free tier is capped at one profile; Pro is unlimited")
+    func entitlementCap() {
+        let store = ProfileStore(container: freshContainer())
+        #expect(store.canAddProfile(isPro: false) == false)   // already has the 1 free
+        #expect(store.canAddProfile(isPro: true) == true)
+    }
+
+    @Test("Adding a profile trims the name, creates it, and makes it active")
+    func addProfile() {
+        let store = ProfileStore(container: freshContainer())
+        let added = store.addProfile(name: "  Alex  ", isPro: true)
+        #expect(added != nil)
+        #expect(store.profiles.count == 2)
+        #expect(store.profiles.contains { $0.name == "Alex" })
+        #expect(store.activeProfileID == added?.id)
+    }
+
+    @Test("Empty names are rejected")
+    func rejectsEmptyName() {
+        let store = ProfileStore(container: freshContainer())
+        #expect(store.addProfile(name: "   ", isPro: true) == nil)
+        #expect(store.profiles.count == 1)
+    }
+
+    @Test("The store itself blocks a second profile for free users (no UI bypass)")
+    func storeSideAddGuard() {
+        let store = ProfileStore(container: freshContainer())
+        #expect(store.addProfile(name: "Alex", isPro: false) == nil)
+        #expect(store.profiles.count == 1)
+        #expect(store.addProfile(name: "Alex", isPro: true) != nil)
+        #expect(store.profiles.count == 2)
+    }
+
+    @Test("Losing Pro collapses the active profile to the default but keeps the data")
+    func enforceFreeTierCollapses() {
+        let store = ProfileStore(container: freshContainer())
+        let me = store.profiles[0]
+        let alex = store.addProfile(name: "Alex", isPro: true)!
+        #expect(store.activeProfileID == alex.id)
+
+        store.enforceFreeTier(isPro: true)     // still Pro → unchanged
+        #expect(store.activeProfileID == alex.id)
+
+        store.enforceFreeTier(isPro: false)    // lost Pro → back to default
+        #expect(store.activeProfileID == me.id)
+        #expect(store.profiles.count == 2)     // profiles preserved, not deleted
+    }
+
+    @Test("Records pointing at an unknown profile are re-homed to the default")
+    func rehomesDanglingRecords() {
+        let container = freshContainer()
+        let seed = ModelContext(container)
+        seed.insert(BMIRecord(date: .now, bmi: 24, weightKilograms: 75,
+                              heightMeters: 1.8, unitSystemRaw: "metric", profileID: UUID()))
+        try? seed.save()
+
+        let store = ProfileStore(container: container)
+        let defaultID = store.profiles.first?.id
+
+        let fetched = (try? ModelContext(container).fetch(FetchDescriptor<BMIRecord>())) ?? []
+        #expect(fetched.first?.profileID == defaultID)
+    }
+
+    @Test("Renaming updates the stored name")
+    func rename() {
+        let store = ProfileStore(container: freshContainer())
+        store.rename(store.profiles[0], to: "Jordan")
+        #expect(store.profiles.first?.name == "Jordan")
+    }
+
+    @Test("Deleting a profile reassigns its records and moves the active pointer")
+    func deleteReassignsRecords() {
+        let container = freshContainer()
+        let store = ProfileStore(container: container)
+        let me = store.profiles[0]
+        let alex = store.addProfile(name: "Alex", isPro: true)!   // active becomes Alex
+
+        let seed = ModelContext(container)
+        seed.insert(BMIRecord(date: .now, bmi: 25, weightKilograms: 80,
+                              heightMeters: 1.78, unitSystemRaw: "metric", profileID: alex.id))
+        try? seed.save()
+
+        store.delete(alex)
+        #expect(store.profiles.count == 1)
+        #expect(store.activeProfileID == me.id)        // moved off the deleted profile
+
+        let fetched = (try? ModelContext(container).fetch(FetchDescriptor<BMIRecord>())) ?? []
+        #expect(fetched.count == 1)
+        #expect(fetched.allSatisfy { $0.profileID == me.id })   // record preserved, reassigned
+    }
+
+    @Test("The last remaining profile cannot be deleted")
+    func cannotDeleteLast() {
+        let store = ProfileStore(container: freshContainer())
+        store.delete(store.profiles[0])
+        #expect(store.profiles.count == 1)
     }
 }

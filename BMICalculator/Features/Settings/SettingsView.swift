@@ -31,6 +31,7 @@ struct SettingsView: View {
     @Environment(HealthKitService.self) private var healthKit
     @Environment(NotificationService.self) private var notifications
     @Environment(AppearanceStore.self) private var appearance
+    @Environment(ProfileStore.self) private var profiles
     @Environment(\.openURL) private var openURL
 
     // MARK: Local State
@@ -40,6 +41,7 @@ struct SettingsView: View {
     @State private var purchaseError: String?
     @State private var showFullDisclaimer = false
     @State private var showPaywall = false
+    @State private var showProfiles = false
 
     private enum HealthConnectState { case unknown, connected, notConnected, working }
 
@@ -62,6 +64,7 @@ struct SettingsView: View {
             Form {
                 preferencesSection
                 appearanceSection
+                profilesSection
                 healthStandardSection
                 integrationsSection
                 proSection
@@ -75,6 +78,9 @@ struct SettingsView: View {
             .task { await refreshHealthState() }
             .sheet(isPresented: $showPaywall) {
                 PaywallSheet()
+            }
+            .sheet(isPresented: $showProfiles) {
+                ProfilesView()
             }
             .alert("Purchase issue", isPresented: Binding(
                 get: { purchaseError != nil },
@@ -140,6 +146,51 @@ struct SettingsView: View {
         } else {
             appearance.theme = theme
         }
+    }
+
+    // MARK: Profiles (Pro multi-person tracking)
+
+    private var profilesSection: some View {
+        Section {
+            Button {
+                showProfiles = true
+            } label: {
+                HStack {
+                    Label {
+                        Text("Profiles").foregroundStyle(DSColor.primaryText)
+                    } icon: {
+                        Image(systemName: "person.2.fill")
+                            .foregroundStyle(DSColor.brand)
+                            .accessibilityHidden(true)
+                    }
+                    Spacer()
+                    Text(profilesSummary)
+                        .foregroundStyle(DSColor.secondaryText)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(DSColor.secondaryText)
+                        .accessibilityHidden(true)
+                }
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Profiles")
+            .accessibilityValue(profilesSummary)
+            .accessibilityHint("Track more than one person with BMI Pro")
+        } header: {
+            Text("People")
+        }
+        .listRowBackground(DSColor.secondaryBackground)
+    }
+
+    private var profilesSummary: String {
+        let count = profiles.profiles.count
+        if count <= 1 {
+            return profiles.activeProfile?.name ?? "Me"
+        }
+        return "\(count) profiles"
     }
 
     // MARK: Health Standard
@@ -276,7 +327,7 @@ struct SettingsView: View {
                     Text("Unlock BMI Pro")
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
-                    Text("One purchase removes all ads, unlocks history export, and adds custom accent themes. No subscription, ever.")
+                    Text("One purchase removes all ads, unlocks history export and custom themes, and lets you track multiple people. No subscription, ever.")
                         .font(DSFont.caption)
                         .foregroundStyle(DSColor.secondaryText)
 
@@ -571,5 +622,14 @@ enum Disclaimer {
 // MARK: - Preview
 
 #Preview("Settings") {
-    SettingsView()
+    let container = PersistenceController.inMemory()
+    let storeState = StoreState()
+    return SettingsView()
+        .environment(storeState)
+        .environment(StoreService(state: storeState))
+        .environment(HealthKitService())
+        .environment(NotificationService())
+        .environment(AppearanceStore())
+        .environment(ProfileStore(container: container))
+        .modelContainer(container)
 }

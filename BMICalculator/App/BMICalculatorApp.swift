@@ -291,6 +291,9 @@ final class AppServices {
     // Appearance (Pro accent theme)
     let appearance: AppearanceStore
 
+    // Profiles (Pro multi-person tracking)
+    let profiles: ProfileStore
+
     // Calculator-contract adapters
     let interstitialAdapter: InterstitialAdapter
     let reviewRequester: ReviewRequesterAdapter
@@ -316,6 +319,9 @@ final class AppServices {
 
         self.appearance = AppearanceStore()
 
+        // Builds profiles + adopts any legacy records into the default profile.
+        self.profiles = ProfileStore(container: modelContainer)
+
         self.interstitialAdapter = InterstitialAdapter(adsManager)
         self.reviewRequester = ReviewRequesterAdapter(reviewPrompter)
         self.logRecorder = LogRecorderAdapter(streak: streak, notifications: notifications, modelContainer: modelContainer)
@@ -334,8 +340,10 @@ final class AppServices {
             adsManager.start()
         }
 
-        // A Pro accent theme must not survive a lost entitlement.
+        // A Pro accent theme must not survive a lost entitlement, and the free
+        // tier is a single profile — collapse to the default when not Pro.
         appearance.enforceEntitlement(isPro: storeState.isPro)
+        profiles.enforceFreeTier(isPro: storeState.isPro)
 
         // Register the "Log now" / "Snooze" actions and refresh the auth snapshot.
         notifications.registerCategories()
@@ -386,6 +394,7 @@ struct BMICalculatorApp: App {
                 // here makes the tint reactive so a theme change recolors at once.
                 .tint(services.appearance.theme.accent)
                 .environment(services.appearance)
+                .environment(services.profiles)
                 .environment(services.storeState)
                 .environment(services.storeService)
                 .environment(services.adsManager)
@@ -409,6 +418,7 @@ struct BMICalculatorApp: App {
                 .onChange(of: services.storeState.isPro) { _, isPro in
                     services.applyProStateToAds()
                     services.appearance.enforceEntitlement(isPro: isPro)
+                    services.profiles.enforceFreeTier(isPro: isPro)
                 }
                 .task {
                     // Route notification taps / "Log now" actions into the app.

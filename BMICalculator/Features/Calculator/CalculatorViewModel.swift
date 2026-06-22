@@ -271,9 +271,11 @@ public final class CalculatorViewModel {
     /// from `@Environment(\.modelContext)` and this type stays free of any
     /// environment plumbing.
     ///
-    /// - Parameter context: the SwiftData context to persist the record into.
-    ///   Pass `nil` (e.g. in previews/tests) to skip persistence.
-    public func calculate(persistingInto context: ModelContext?) {
+    /// - Parameters:
+    ///   - context: the SwiftData context to persist the record into. Pass `nil`
+    ///     (e.g. in previews/tests) to skip persistence.
+    ///   - profileID: the active profile to tag the saved record with, or `nil`.
+    public func calculate(persistingInto context: ModelContext?, profileID: UUID? = nil) {
         let computed = BMICalculator.result(
             weightKilograms: weightKilograms,
             heightMeters: heightMeters,
@@ -285,7 +287,7 @@ public final class CalculatorViewModel {
         hasCalculated = true
         resultGeneration += 1
 
-        persistRecord(for: computed, into: context)
+        persistRecord(for: computed, into: context, profileID: profileID)
 
         // Retention engine — firewall-safe, none of these receive a health value:
         // count the calc, record a streak/log entry (reschedules the weigh-in
@@ -327,14 +329,15 @@ public final class CalculatorViewModel {
     /// Inserts a `BMIRecord` describing this calculation. Stores canonical metric
     /// values plus the unit the person was using, so history can render in their
     /// preferred unit later.
-    private func persistRecord(for result: BMIResult, into context: ModelContext?) {
+    private func persistRecord(for result: BMIResult, into context: ModelContext?, profileID: UUID?) {
         guard let context else { return }
         let record = BMIRecord(
             date: Date(),
             bmi: result.value,
             weightKilograms: weightKilograms,
             heightMeters: heightMeters,
-            unitSystemRaw: unitSystem.rawValue
+            unitSystemRaw: unitSystem.rawValue,
+            profileID: profileID
         )
         context.insert(record)
         // Best-effort save; SwiftData autosaves on most contexts, but an

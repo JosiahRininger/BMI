@@ -46,6 +46,12 @@ public final class BMIRecord {
     /// schema stays stable and decoupled from enum evolution.
     public var unitSystemRaw: String
 
+    /// The ``BMIProfile`` this record belongs to, by id. Optional so adding it
+    /// is a lightweight migration: every pre-existing record decodes as `nil`
+    /// and is adopted into the default profile on first launch (see
+    /// `ProfileStore`). `nil` therefore means "not yet assigned / default".
+    public var profileID: UUID?
+
     /// Creates a new BMI record.
     /// - Parameters:
     ///   - date: When the measurement was taken/saved.
@@ -53,18 +59,21 @@ public final class BMIRecord {
     ///   - weightKilograms: Weight normalized to kilograms.
     ///   - heightMeters: Height normalized to meters.
     ///   - unitSystemRaw: The `UnitSystem.rawValue` in use at entry time.
+    ///   - profileID: The owning profile's id, or `nil` for the default profile.
     public init(
         date: Date,
         bmi: Double,
         weightKilograms: Double,
         heightMeters: Double,
-        unitSystemRaw: String
+        unitSystemRaw: String,
+        profileID: UUID? = nil
     ) {
         self.date = date
         self.bmi = bmi
         self.weightKilograms = weightKilograms
         self.heightMeters = heightMeters
         self.unitSystemRaw = unitSystemRaw
+        self.profileID = profileID
     }
 }
 

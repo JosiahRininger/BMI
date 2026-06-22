@@ -50,6 +50,10 @@ struct RootView: View {
     /// visible tab and its content picks up the new `Theme.brand` immediately.
     @Environment(AppearanceStore.self) private var appearance
 
+    /// Active profile, so History scopes its query to the right person and
+    /// re-renders when the person switches profiles.
+    @Environment(ProfileStore.self) private var profiles
+
     /// Streak service, observed so a newly-earned milestone can be celebrated.
     @Environment(StreakService.self) private var streak
 
@@ -74,7 +78,8 @@ struct RootView: View {
             // MARK: History
             HistoryView(standard: currentStandard,
                         isPro: storeState.isPro,
-                        onShowPaywall: { isPaywallPresented = true })
+                        onShowPaywall: { isPaywallPresented = true },
+                        profileID: profiles.activeProfileID)
                 .tabItem {
                     Label("History", systemImage: "chart.xyaxis.line")
                 }
@@ -231,6 +236,7 @@ struct PaywallSheet: View {
             featureRow("rectangle.slash", "Remove all ads")
             featureRow("square.and.arrow.up", "Export your history (CSV & PDF)")
             featureRow("paintpalette", "Custom accent themes")
+            featureRow("person.2.fill", "Track multiple people")
             featureRow("heart.text.square", "Support ongoing updates")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -341,12 +347,14 @@ struct PaywallSheet: View {
 
 #Preview("Root") {
     let storeState = StoreState()
-    RootView()
+    let container = PersistenceController.inMemory()
+    return RootView()
         .environment(DeepLinkRouter())
         .environment(storeState)
         .environment(StoreService(state: storeState))
         .environment(ReviewRequesterAdapter(ReviewPrompter()))
         .environment(StreakService())
         .environment(AppearanceStore())
-        .modelContainer(for: BMIRecord.self, inMemory: true)
+        .environment(ProfileStore(container: container))
+        .modelContainer(container)
 }
