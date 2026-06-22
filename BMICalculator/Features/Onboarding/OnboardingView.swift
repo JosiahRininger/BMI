@@ -595,12 +595,22 @@ private struct ConnectHealthRow: View {
                     Text(subtitle)
                         .font(DSFont.caption)
                         .foregroundStyle(DSColor.secondaryText)
+                        // Reserve two lines so the card height stays constant as the
+                        // subtitle switches between states (a source of the jolt);
+                        // scale slightly rather than truncate on narrow widths.
+                        .lineLimit(2, reservesSpace: true)
+                        .minimumScaleFactor(0.85)
                 }
                 Spacer()
 
+                // Fixed-size slot so swapping Connect button → spinner → checkmark
+                // never resizes the row.
                 connectControl
+                    .frame(minWidth: 92, minHeight: 36, alignment: .trailing)
             }
         }
+        // Ease the state change instead of snapping the layout.
+        .animation(.smooth(duration: 0.25), value: state)
     }
 
     private var subtitle: String {
@@ -669,17 +679,22 @@ private struct WeeklyReminderRow: View {
                 .accessibilityElement(children: .combine)
                 Spacer()
 
-                if isRequesting {
-                    ProgressView()
-                        .accessibilityLabel("Setting up weekly reminder")
-                } else {
-                    Toggle("Weekly check-in reminder", isOn: Binding(get: { enabled }, set: setEnabled))
-                        .labelsHidden()
-                        .tint(DSColor.brand)
-                        .accessibilityHint("Sends a gentle reminder to check in once a week")
+                // Fixed-size slot so the spinner ↔ toggle swap doesn't shift the row.
+                Group {
+                    if isRequesting {
+                        ProgressView()
+                            .accessibilityLabel("Setting up weekly reminder")
+                    } else {
+                        Toggle("Weekly check-in reminder", isOn: Binding(get: { enabled }, set: setEnabled))
+                            .labelsHidden()
+                            .tint(DSColor.brand)
+                            .accessibilityHint("Sends a gentle reminder to check in once a week")
+                    }
                 }
+                .frame(width: 56, height: 32, alignment: .trailing)
             }
         }
+        .animation(.smooth(duration: 0.25), value: isRequesting)
     }
 
     private func setEnabled(_ newValue: Bool) {
