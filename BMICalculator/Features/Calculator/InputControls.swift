@@ -21,8 +21,10 @@ import SwiftUI
 // finalized.
 
 enum CalcPalette {
-    /// Brand blue #19BEF4 (sRGB 0.098, 0.745, 0.957).
-    static let brandBlue = Color(.sRGB, red: 0.098, green: 0.745, blue: 0.957, opacity: 1)
+    /// The app accent. Follows the chosen Pro theme via `Theme.brand` (defaults
+    /// to brand blue #19BEF4) so the Calculator's tints recolor with everything
+    /// else. Used only as an accent here — never as a category/band color.
+    static var brandBlue: Color { Theme.brand }
 }
 
 // MARK: - UnitSystemToggle

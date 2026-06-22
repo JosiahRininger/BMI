@@ -46,6 +46,10 @@ struct RootView: View {
     /// Pro/purchase state, to gate Pro features (e.g. history export).
     @Environment(StoreState.self) private var storeState
 
+    /// Chosen accent theme. Read in `body` so a theme change re-renders the
+    /// visible tab and its content picks up the new `Theme.brand` immediately.
+    @Environment(AppearanceStore.self) private var appearance
+
     /// Streak service, observed so a newly-earned milestone can be celebrated.
     @Environment(StreakService.self) private var streak
 
@@ -93,7 +97,7 @@ struct RootView: View {
                 }
                 .tag(RootTab.settings)
         }
-        .tint(Theme.brand)
+        .tint(appearance.theme.accent)
         // React to deep links: switch to the matching tab, then clear the
         // one-shot signal so a repeat of the same route still fires.
         .onChange(of: router.pendingRoute) { _, route in
@@ -152,7 +156,7 @@ struct RootView: View {
 /// an upsell. The full purchase UI also lives in Settings; both drive the same
 /// `StoreService`, so buying here removes ads everywhere immediately. There is
 /// no subscription — a single non-consumable unlock.
-private struct PaywallSheet: View {
+struct PaywallSheet: View {
 
     @Environment(\.dismiss) private var dismiss
     @Environment(StoreState.self) private var storeState
@@ -226,6 +230,7 @@ private struct PaywallSheet: View {
         VStack(alignment: .leading, spacing: 14) {
             featureRow("rectangle.slash", "Remove all ads")
             featureRow("square.and.arrow.up", "Export your history (CSV & PDF)")
+            featureRow("paintpalette", "Custom accent themes")
             featureRow("heart.text.square", "Support ongoing updates")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -342,5 +347,6 @@ private struct PaywallSheet: View {
         .environment(StoreService(state: storeState))
         .environment(ReviewRequesterAdapter(ReviewPrompter()))
         .environment(StreakService())
+        .environment(AppearanceStore())
         .modelContainer(for: BMIRecord.self, inMemory: true)
 }

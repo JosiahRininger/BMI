@@ -72,6 +72,9 @@ enum AppStorageKey {
 
     /// `String` — the chosen ``NotificationService/ReminderCadence`` raw value (Settings).
     static let reminderCadence = "app.reminderCadence"
+
+    /// `String` — the chosen ``AppTheme`` raw value (BMI Pro accent palette).
+    static let appTheme = "app.appTheme"
 }
 
 // MARK: - Deep Link Routing
@@ -285,6 +288,9 @@ final class AppServices {
     // Retention
     let streak: StreakService
 
+    // Appearance (Pro accent theme)
+    let appearance: AppearanceStore
+
     // Calculator-contract adapters
     let interstitialAdapter: InterstitialAdapter
     let reviewRequester: ReviewRequesterAdapter
@@ -308,6 +314,8 @@ final class AppServices {
         let streak = StreakService()
         self.streak = streak
 
+        self.appearance = AppearanceStore()
+
         self.interstitialAdapter = InterstitialAdapter(adsManager)
         self.reviewRequester = ReviewRequesterAdapter(reviewPrompter)
         self.logRecorder = LogRecorderAdapter(streak: streak, notifications: notifications, modelContainer: modelContainer)
@@ -325,6 +333,9 @@ final class AppServices {
         if !storeState.isPro {
             adsManager.start()
         }
+
+        // A Pro accent theme must not survive a lost entitlement.
+        appearance.enforceEntitlement(isPro: storeState.isPro)
 
         // Register the "Log now" / "Snooze" actions and refresh the auth snapshot.
         notifications.registerCategories()
@@ -371,7 +382,10 @@ struct BMICalculatorApp: App {
     var body: some Scene {
         WindowGroup {
             content
-                .tint(Theme.brand)                       // brand-blue accent app-wide
+                // Accent follows the chosen Pro theme; reading `appearance.theme`
+                // here makes the tint reactive so a theme change recolors at once.
+                .tint(services.appearance.theme.accent)
+                .environment(services.appearance)
                 .environment(services.storeState)
                 .environment(services.storeService)
                 .environment(services.adsManager)
@@ -391,9 +405,10 @@ struct BMICalculatorApp: App {
                 .environment(\.interstitialPresenter, services.interstitialAdapter)
                 .environment(\.reviewRequester, services.reviewRequester)
                 .environment(\.logRecorder, services.logRecorder)
-                // Keep ads in sync the moment Pro status flips.
-                .onChange(of: services.storeState.isPro) { _, _ in
+                // Keep ads + theme entitlement in sync the moment Pro flips.
+                .onChange(of: services.storeState.isPro) { _, isPro in
                     services.applyProStateToAds()
+                    services.appearance.enforceEntitlement(isPro: isPro)
                 }
                 .task {
                     // Route notification taps / "Log now" actions into the app.

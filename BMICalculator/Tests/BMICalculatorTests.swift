@@ -221,3 +221,72 @@ struct CodableTests {
         #expect(BMICategory.obesityIII.rawValue == "obesityIII")
     }
 }
+
+// MARK: - Accent theme (BMI Pro)
+
+@Suite("Accent theme")
+struct AccentThemeTests {
+
+    @Test("Only Classic Blue is free; every other palette is Pro")
+    func entitlementFlags() {
+        #expect(AppTheme.free == .classic)
+        #expect(AppTheme.classic.isPro == false)
+        for theme in AppTheme.allCases where theme != .classic {
+            #expect(theme.isPro, "\(theme.displayName) should require Pro")
+        }
+    }
+
+    @Test("Raw values round-trip so the persisted choice survives relaunch")
+    func rawValueRoundTrip() {
+        for theme in AppTheme.allCases {
+            #expect(AppTheme(rawValue: theme.rawValue) == theme)
+        }
+    }
+
+    @Test("Every palette exposes a distinct display name")
+    func distinctNames() {
+        let names = Set(AppTheme.allCases.map(\.displayName))
+        #expect(names.count == AppTheme.allCases.count)
+    }
+}
+
+@Suite("Appearance store")
+@MainActor
+struct AppearanceStoreTests {
+
+    /// Builds a store against a clean persisted value so the default is deterministic.
+    private func makeCleanStore() -> AppearanceStore {
+        UserDefaults.standard.removeObject(forKey: AppStorageKey.appTheme)
+        return AppearanceStore()
+    }
+
+    @Test("Defaults to the free Classic Blue and mirrors it into Theme.brand")
+    func defaultsToClassic() {
+        let store = makeCleanStore()
+        #expect(store.theme == .classic)
+        #expect(Theme.currentAccent == .classic)
+    }
+
+    @Test("Selecting a theme updates the global accent the app reads")
+    func selectionUpdatesGlobal() {
+        let store = makeCleanStore()
+        store.theme = .violet
+        #expect(Theme.currentAccent == .violet)
+    }
+
+    @Test("Losing Pro reverts a Pro palette but keeps Classic Blue")
+    func enforceEntitlement() {
+        let store = makeCleanStore()
+
+        store.theme = .ocean
+        store.enforceEntitlement(isPro: true)      // owns Pro → keep it
+        #expect(store.theme == .ocean)
+
+        store.enforceEntitlement(isPro: false)     // lost Pro → revert
+        #expect(store.theme == .classic)
+        #expect(Theme.currentAccent == .classic)
+
+        store.enforceEntitlement(isPro: false)     // already free → no-op
+        #expect(store.theme == .classic)
+    }
+}

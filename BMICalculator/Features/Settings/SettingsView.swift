@@ -30,6 +30,7 @@ struct SettingsView: View {
     @Environment(StoreService.self) private var storeService
     @Environment(HealthKitService.self) private var healthKit
     @Environment(NotificationService.self) private var notifications
+    @Environment(AppearanceStore.self) private var appearance
     @Environment(\.openURL) private var openURL
 
     // MARK: Local State
@@ -38,6 +39,7 @@ struct SettingsView: View {
     @State private var healthState: HealthConnectState = .unknown
     @State private var purchaseError: String?
     @State private var showFullDisclaimer = false
+    @State private var showPaywall = false
 
     private enum HealthConnectState { case unknown, connected, notConnected, working }
 
@@ -59,6 +61,7 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 preferencesSection
+                appearanceSection
                 healthStandardSection
                 integrationsSection
                 proSection
@@ -70,6 +73,9 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .task { await refreshHealthState() }
+            .sheet(isPresented: $showPaywall) {
+                PaywallSheet()
+            }
             .alert("Purchase issue", isPresented: Binding(
                 get: { purchaseError != nil },
                 set: { if !$0 { purchaseError = nil } }
@@ -95,6 +101,45 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
         }
         .listRowBackground(DSColor.secondaryBackground)
+    }
+
+    // MARK: Appearance (Pro accent theme)
+
+    private var appearanceSection: some View {
+        Section {
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: 64, maximum: 84), spacing: DSSpacing.md)],
+                spacing: DSSpacing.md
+            ) {
+                ForEach(AppTheme.allCases) { theme in
+                    ThemeSwatch(
+                        theme: theme,
+                        isSelected: appearance.theme == theme,
+                        isLocked: theme.isPro && !store.isPro
+                    ) {
+                        selectTheme(theme)
+                    }
+                }
+            }
+            .padding(.vertical, DSSpacing.xs)
+
+            if !store.isPro {
+                Text("More palettes are part of BMI Pro.")
+                    .font(DSFont.caption)
+                    .foregroundStyle(DSColor.secondaryText)
+            }
+        } header: {
+            Text("Accent theme")
+        }
+        .listRowBackground(DSColor.secondaryBackground)
+    }
+
+    private func selectTheme(_ theme: AppTheme) {
+        if theme.isPro && !store.isPro {
+            showPaywall = true
+        } else {
+            appearance.theme = theme
+        }
     }
 
     // MARK: Health Standard
@@ -223,15 +268,15 @@ struct SettingsView: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("BMI Pro is active")
-                Text("Thank you. Ads are removed across the app.")
+                Text("Thank you. Pro is unlocked across the app.")
                     .font(DSFont.caption)
                     .foregroundStyle(DSColor.secondaryText)
             } else {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("Remove Ads & BMI Pro")
+                    Text("Unlock BMI Pro")
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
-                    Text("A one-time purchase removes the banner and the post-calculation ad. No subscription, ever.")
+                    Text("One purchase removes all ads, unlocks history export, and adds custom accent themes. No subscription, ever.")
                         .font(DSFont.caption)
                         .foregroundStyle(DSColor.secondaryText)
 
@@ -243,7 +288,7 @@ struct SettingsView: View {
                     }
                     .disabled(store.isProcessing || store.displayPrice == nil)
                     .accessibilityLabel(store.isProcessing ? "Purchasing BMI Pro" : purchaseTitle)
-                    .accessibilityHint("One-time purchase to remove ads")
+                    .accessibilityHint("One-time purchase to unlock BMI Pro")
 
                     Button("Restore Purchases") { restore() }
                         .font(DSFont.subheadline)
@@ -264,9 +309,9 @@ struct SettingsView: View {
 
     private var purchaseTitle: String {
         if let price = store.displayPrice {
-            return "Remove Ads (\(price))"
+            return "Unlock Pro (\(price))"
         }
-        return "Remove Ads"
+        return "Unlock Pro"
     }
 
     // MARK: About / Legal
@@ -446,6 +491,60 @@ private struct DisclaimerSheet: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Theme Swatch
+
+/// A single accent-palette swatch in the Settings theme grid: a gradient circle
+/// with a selection ring, a checkmark when active, and a lock when it's a Pro
+/// palette the person doesn't own yet.
+private struct ThemeSwatch: View {
+    let theme: AppTheme
+    let isSelected: Bool
+    let isLocked: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(spacing: 6) {
+                ZStack {
+                    Circle()
+                        .fill(theme.gradient)
+                        .frame(width: 46, height: 46)
+                        .overlay(
+                            Circle().strokeBorder(
+                                isSelected ? DSColor.primaryText : Color.black.opacity(0.06),
+                                lineWidth: isSelected ? 2.5 : 1
+                            )
+                        )
+                        .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
+
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.subheadline.weight(.bold))
+                            .foregroundStyle(.white)
+                    } else if isLocked {
+                        Image(systemName: "lock.fill")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.white.opacity(0.95))
+                    }
+                }
+
+                Text(theme.displayName)
+                    .font(DSFont.caption2)
+                    .foregroundStyle(DSColor.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.plain)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(theme.displayName)
+        .accessibilityValue(isSelected ? "Selected" : (isLocked ? "Locked, BMI Pro" : "Available"))
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityHint(isLocked ? "Unlock with BMI Pro" : "Use this accent")
     }
 }
 
