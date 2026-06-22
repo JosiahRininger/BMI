@@ -27,9 +27,10 @@ _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a rea
 > - **AdMob (#2):** the `GoogleMobileAds` SPM package isn't added (the fetch is impractical over the
 >   current VPN/slow link), so ad code stays `#if canImport`-excluded and the app builds ad-free. When
 >   added, replace `AdUnit.prodBanner`/`prodInterstitial` placeholders with **real ad-unit IDs** (your AdMob account).
-> - **Stone weight UI (#6):** Core conversions are built + tested, but the UI needs a third weight mode
->   wired through `UnitSystem` → `CalculatorViewModel` (convert logic) → `InputControls` (a stone+lb field).
->   A deliberate refactor, deferred to keep the build green.
+> - ✅ **Stone weight UI (#6) — DONE.** A third `.stone` `UnitSystem` (decimal stone for weight, ft/in
+>   for height) wired through Core, `CalculatorViewModel`, `InputControls`, the calculators feature
+>   (`MetricsInputModel`/`MetricsInputControls`), and the `CalculateBMIIntent`. Builds + 31/31 tests pass.
+>   *(Future polish: a `st + lb` two-field entry instead of decimal stone.)*
 > - **Signing + capabilities** (HealthKit, In-App Purchase, App Groups `group.com.jdr.BMI`) for a device/TestFlight build.
 > - **StoreKit**: create `com.bmi.removeads` at $4.99 in App Store Connect + a `.storekit` test config.
 > - **App icon** asset catalog; **privacy manifest** + a live privacy-policy URL (replace the placeholder).

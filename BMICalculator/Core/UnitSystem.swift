@@ -14,18 +14,24 @@ import Foundation
 ///
 /// - `metric`: kilograms and centimeters/meters.
 /// - `imperial`: pounds and feet/inches.
+/// - `stone`: stone (UK/Ireland body weight, decimal) and feet/inches.
 public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
     case metric
     case imperial
+    case stone
 
     /// Stable identity for use in SwiftUI `ForEach` / `Picker`.
     public var id: String { rawValue }
+
+    /// Whether this system enters height in feet/inches (vs centimeters).
+    public var usesImperialHeight: Bool { self != .metric }
 
     /// A short, person-facing label for the unit system.
     public var displayName: String {
         switch self {
         case .metric:   return "Metric"
         case .imperial: return "Imperial"
+        case .stone:    return "Stone"
         }
     }
 
@@ -34,6 +40,7 @@ public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
         switch self {
         case .metric:   return "kg"
         case .imperial: return "lb"
+        case .stone:    return "st"
         }
     }
 
@@ -41,7 +48,7 @@ public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
     public var heightUnitLabel: String {
         switch self {
         case .metric:   return "cm"
-        case .imperial: return "ft / in"
+        case .imperial, .stone: return "ft / in"
         }
     }
 }

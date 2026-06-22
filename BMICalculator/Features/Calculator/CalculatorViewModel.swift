@@ -173,6 +173,7 @@ public final class CalculatorViewModel {
         switch unitSystem {
         case .metric:   return 2...400        // kg
         case .imperial: return 4...880        // lb
+        case .stone:    return 0.3...63       // st (≈ 4–882 lb)
         }
     }
 
@@ -214,15 +215,13 @@ public final class CalculatorViewModel {
         self.reviewPrompter = reviewPrompter
         self.logRecorder = logRecorder
 
-        // Default body: 70 kg, 170 cm (≈ 5'7", ≈ 154 lb).
-        if unitSystem == .metric {
-            self.weight = 70
-            self.heightCentimeters = 170
-            self.imperialHeight = ImperialHeight(feet: 5, inches: 7)
-        } else {
-            self.weight = BMICalculator.pounds(fromKilograms: 70).rounded()
-            self.heightCentimeters = 170
-            self.imperialHeight = ImperialHeight(feet: 5, inches: 7)
+        // Default body: 70 kg, 170 cm (≈ 5'7", ≈ 154 lb, ≈ 11 st).
+        self.heightCentimeters = 170
+        self.imperialHeight = ImperialHeight(feet: 5, inches: 7)
+        switch unitSystem {
+        case .metric:   self.weight = 70
+        case .imperial: self.weight = BMICalculator.pounds(fromKilograms: 70).rounded()
+        case .stone:    self.weight = (BMICalculator.pounds(fromKilograms: 70) / BMICalculator.poundsPerStone * 10).rounded() / 10
         }
     }
 
@@ -240,6 +239,7 @@ public final class CalculatorViewModel {
         switch unitSystem {
         case .metric:   return weight
         case .imperial: return BMICalculator.kilograms(fromPounds: weight)
+        case .stone:    return BMICalculator.kilograms(fromStone: weight)
         }
     }
 
@@ -248,7 +248,7 @@ public final class CalculatorViewModel {
         switch unitSystem {
         case .metric:
             return heightCentimeters / 100.0
-        case .imperial:
+        case .imperial, .stone:
             return BMICalculator.meters(fromFeet: imperialHeight.feet,
                                         inches: imperialHeight.inches)
         }
@@ -347,15 +347,24 @@ public final class CalculatorViewModel {
     /// Converts the stored weight/height when the person flips the unit toggle so
     /// the represented body is unchanged.
     private func convertInputs(from old: UnitSystem, to new: UnitSystem) {
-        switch (old, new) {
-        case (.metric, .imperial):
-            weight = (BMICalculator.pounds(fromKilograms: weight) * 10).rounded() / 10
+        // Convert weight through a canonical kg intermediary so any pair of
+        // systems (metric / imperial / stone) round-trips correctly.
+        let kg: Double
+        switch old {
+        case .metric:   kg = weight
+        case .imperial: kg = BMICalculator.kilograms(fromPounds: weight)
+        case .stone:    kg = BMICalculator.kilograms(fromStone: weight)
+        }
+        switch new {
+        case .metric:   weight = (kg * 10).rounded() / 10
+        case .imperial: weight = (BMICalculator.pounds(fromKilograms: kg) * 10).rounded() / 10
+        case .stone:    weight = (BMICalculator.pounds(fromKilograms: kg) / BMICalculator.poundsPerStone * 10).rounded() / 10
+        }
+        // Height: metric uses centimeters; imperial & stone use feet/inches.
+        if !old.usesImperialHeight, new.usesImperialHeight {
             imperialHeight = Self.imperial(fromCentimeters: heightCentimeters)
-        case (.imperial, .metric):
-            weight = (BMICalculator.kilograms(fromPounds: weight) * 10).rounded() / 10
+        } else if old.usesImperialHeight, !new.usesImperialHeight {
             heightCentimeters = (heightMetersFromImperial() * 100).rounded()
-        default:
-            break
         }
     }
 

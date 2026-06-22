@@ -216,7 +216,7 @@ struct AdaptiveHeightField: View {
         switch unitSystem {
         case .metric:
             MetricHeightField(centimeters: $centimeters, range: centimetersRange)
-        case .imperial:
+        case .imperial, .stone:
             ImperialHeightField(height: $imperialHeight,
                                 feetRange: feetRange,
                                 inchesRange: inchesRange)

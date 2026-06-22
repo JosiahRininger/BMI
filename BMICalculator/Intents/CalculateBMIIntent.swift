@@ -27,7 +27,8 @@ extension UnitSystem: AppEnum {
     public static var caseDisplayRepresentations: [UnitSystem: DisplayRepresentation] {
         [
             .metric: DisplayRepresentation(title: "Metric (kg, cm)"),
-            .imperial: DisplayRepresentation(title: "Imperial (lb, ft/in)")
+            .imperial: DisplayRepresentation(title: "Imperial (lb, ft/in)"),
+            .stone: DisplayRepresentation(title: "Stone (st, ft/in)")
         ]
     }
 }
@@ -99,6 +100,9 @@ struct CalculateBMIIntent: AppIntent {
         case .imperial:
             weightKilograms = BMICalculator.kilograms(fromPounds: weight)
             heightMeters = height * 0.0254  // total inches → meters
+        case .stone:
+            weightKilograms = BMICalculator.kilograms(fromStone: weight)
+            heightMeters = height * 0.0254  // stone uses imperial (ft/in) height
         }
 
         // Guard against non-physical input before dividing.

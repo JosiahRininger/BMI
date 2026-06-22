@@ -56,6 +56,7 @@ final class MetricsInputModel {
         switch unitSystem {
         case .metric:   return 2...400      // kg
         case .imperial: return 4...880      // lb
+        case .stone:    return 0.3...63     // st
         }
     }
     let heightCentimetersRange: ClosedRange<Double> = 50...250
@@ -72,10 +73,10 @@ final class MetricsInputModel {
         let resolved = unitSystem ?? Self.savedUnitSystem
         self.unitSystem = resolved
 
-        if resolved == .metric {
-            self.weight = 70
-        } else {
-            self.weight = (BMICalculator.pounds(fromKilograms: 70) * 10).rounded() / 10
+        switch resolved {
+        case .metric:   self.weight = 70
+        case .imperial: self.weight = (BMICalculator.pounds(fromKilograms: 70) * 10).rounded() / 10
+        case .stone:    self.weight = (BMICalculator.pounds(fromKilograms: 70) / BMICalculator.poundsPerStone * 10).rounded() / 10
         }
         self.heightCentimeters = 170
         self.imperialHeight = ImperialHeight(feet: 5, inches: 7)
@@ -94,6 +95,7 @@ final class MetricsInputModel {
         switch unitSystem {
         case .metric:   return weight
         case .imperial: return BMICalculator.kilograms(fromPounds: weight)
+        case .stone:    return BMICalculator.kilograms(fromStone: weight)
         }
     }
 
@@ -102,7 +104,7 @@ final class MetricsInputModel {
         switch unitSystem {
         case .metric:
             return heightCentimeters
-        case .imperial:
+        case .imperial, .stone:
             return BMICalculator.meters(fromFeet: imperialHeight.feet,
                                         inches: imperialHeight.inches) * 100.0
         }
@@ -142,6 +144,8 @@ final class MetricsInputModel {
             weight = clampToWeight((kg * 10).rounded() / 10)
         case .imperial:
             weight = clampToWeight((BMICalculator.pounds(fromKilograms: kg) * 10).rounded() / 10)
+        case .stone:
+            weight = clampToWeight((BMICalculator.pounds(fromKilograms: kg) / BMICalculator.poundsPerStone * 10).rounded() / 10)
         }
     }
 
@@ -152,7 +156,7 @@ final class MetricsInputModel {
         switch unitSystem {
         case .metric:
             heightCentimeters = clamped.rounded()
-        case .imperial:
+        case .imperial, .stone:
             imperialHeight = Self.imperial(fromCentimeters: clamped)
         }
     }
@@ -164,17 +168,25 @@ final class MetricsInputModel {
     // MARK: Unit conversion
 
     private func convert(from old: UnitSystem, to new: UnitSystem) {
-        switch (old, new) {
-        case (.metric, .imperial):
-            weight = (BMICalculator.pounds(fromKilograms: weight) * 10).rounded() / 10
+        // Weight via a canonical kg intermediary so any pair round-trips.
+        let kg: Double
+        switch old {
+        case .metric:   kg = weight
+        case .imperial: kg = BMICalculator.kilograms(fromPounds: weight)
+        case .stone:    kg = BMICalculator.kilograms(fromStone: weight)
+        }
+        switch new {
+        case .metric:   weight = (kg * 10).rounded() / 10
+        case .imperial: weight = (BMICalculator.pounds(fromKilograms: kg) * 10).rounded() / 10
+        case .stone:    weight = (BMICalculator.pounds(fromKilograms: kg) / BMICalculator.poundsPerStone * 10).rounded() / 10
+        }
+        // Height: metric uses centimetres; imperial & stone use feet/inches.
+        if !old.usesImperialHeight, new.usesImperialHeight {
             imperialHeight = Self.imperial(fromCentimeters: heightCentimeters)
-        case (.imperial, .metric):
-            weight = (BMICalculator.kilograms(fromPounds: weight) * 10).rounded() / 10
+        } else if old.usesImperialHeight, !new.usesImperialHeight {
             let meters = BMICalculator.meters(fromFeet: imperialHeight.feet,
                                               inches: imperialHeight.inches)
             heightCentimeters = (meters * 100).rounded()
-        default:
-            break
         }
     }
 

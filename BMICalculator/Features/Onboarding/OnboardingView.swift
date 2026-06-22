@@ -309,7 +309,9 @@ struct OnboardingInput {
             let meters = heightCentimeters / 100.0
             guard weightKilograms > 0, meters > 0 else { return nil }
             return (weightKilograms, meters)
-        case .imperial:
+        case .imperial, .stone:
+            // Onboarding never selects stone (its default is metric/imperial only);
+            // grouped here for exhaustiveness, using the imperial entry fields.
             let meters = BMICalculator.meters(fromFeet: heightFeet, inches: heightInches)
             let kg = BMICalculator.kilograms(fromPounds: weightPounds)
             guard kg > 0, meters > 0 else { return nil }
@@ -351,7 +353,7 @@ private struct MeasurementEntry: View {
                     step: 0.5,
                     unit: "kg"
                 )
-            case .imperial:
+            case .imperial, .stone:
                 FeetInchesStepper(feet: $input.heightFeet, inches: $input.heightInches)
                 LabeledValueStepper(
                     title: "Weight",

@@ -217,7 +217,7 @@ enum MetricsUnit {
     static func centimeters(fromDisplay value: Double, system: UnitSystem) -> Double {
         switch system {
         case .metric:   return value
-        case .imperial: return value * (BMICalculator.metersPerInch * 100.0) // in → cm
+        case .imperial, .stone: return value * (BMICalculator.metersPerInch * 100.0) // in → cm
         }
     }
 
@@ -225,7 +225,7 @@ enum MetricsUnit {
     static func displayLength(fromCentimeters cm: Double, system: UnitSystem) -> Double {
         switch system {
         case .metric:   return cm
-        case .imperial: return cm / (BMICalculator.metersPerInch * 100.0) // cm → in
+        case .imperial, .stone: return cm / (BMICalculator.metersPerInch * 100.0) // cm → in
         }
     }
 
@@ -234,6 +234,7 @@ enum MetricsUnit {
         switch system {
         case .metric:   return value
         case .imperial: return BMICalculator.kilograms(fromPounds: value)
+        case .stone:    return BMICalculator.kilograms(fromStone: value)
         }
     }
 
@@ -242,13 +243,14 @@ enum MetricsUnit {
         switch system {
         case .metric:   return kg
         case .imperial: return BMICalculator.pounds(fromKilograms: kg)
+        case .stone:    return BMICalculator.pounds(fromKilograms: kg) / BMICalculator.poundsPerStone
         }
     }
 
     /// A formatted weight string in the active unit, e.g. "70.5 kg" / "155 lb".
     static func weightString(kilograms kg: Double, system: UnitSystem) -> String {
         let value = displayWeight(fromKilograms: kg, system: system)
-        let fractionDigits = system == .metric ? 1 : 0
+        let fractionDigits = system == .imperial ? 0 : 1
         return value.formatted(.number.precision(.fractionLength(0...fractionDigits)))
             + " " + system.weightUnitLabel
     }

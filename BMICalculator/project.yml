@@ -101,3 +101,18 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"
         SKIP_INSTALL: "YES"
+
+# Explicit scheme so `xcodebuild test` always finds the test action (auto-scheme
+# generation got ambiguous once the widget became a 3rd target).
+schemes:
+  BMICalculator:
+    build:
+      targets:
+        BMICalculator: all
+        BMICalculatorTests: [test]
+    test:
+      config: Debug
+      targets:
+        - BMICalculatorTests
+    run:
+      config: Debug
