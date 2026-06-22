@@ -74,22 +74,21 @@ enum BMIBandPalette {
     /// The brand accent blue (#19BEF4) used for the underweight band/line.
     static let brandBlue = Color(red: 0x19 / 255, green: 0xBE / 255, blue: 0xF4 / 255)
 
-    /// Solid representative color for a category (used for points and the line
-    /// segment tint).
+    /// Solid representative color for a category (used for points and the
+    /// history-row dot). Routes through the design system's appearance-aware
+    /// band colors so each category reads on BOTH light and dark surfaces —
+    /// raw system colors (e.g. `.yellow` for overweight) wash out on the
+    /// near-white light-mode chart.
     static func color(for category: BMICategory) -> Color {
-        switch category {
-        case .underweight:  return brandBlue
-        case .healthy:      return Color.green
-        case .overweight:   return Color.yellow
-        case .obesityI:     return Color.orange
-        case .obesityII:    return Color(red: 0.95, green: 0.45, blue: 0.10) // deep orange
-        case .obesityIII:   return Color.red
-        }
+        category.bandColor
     }
 
-    /// Translucent fill used for the background band behind the line.
+    /// Translucent fill used for the background band behind the line. Uses the
+    /// design system's per-mode-tuned soft tint (0.16 light / 0.26 dark) rather
+    /// than a flat opacity over a raw color, so the bands stay perceptible in
+    /// light mode.
     static func bandFill(for category: BMICategory) -> Color {
-        color(for: category).opacity(0.12)
+        category.bandSoftColor
     }
 
     /// A distinct point-mark shape per category so the trend reads without
@@ -219,8 +218,8 @@ public struct TrendChart: View {
                 // open-ended top band to avoid a stray line off-chart).
                 if band.upper < yDomain.upperBound {
                     RuleMark(y: .value("Cutoff", band.upper))
-                        .lineStyle(StrokeStyle(lineWidth: 0.5, dash: [3, 3]))
-                        .foregroundStyle(.secondary.opacity(0.4))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        .foregroundStyle(.secondary.opacity(0.6))
                 }
             }
 

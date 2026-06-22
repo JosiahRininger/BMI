@@ -260,7 +260,7 @@ private struct CalcGlassRow: ViewModifier {
         } else {
             content
                 .background(.ultraThinMaterial, in: shape)
-                .overlay(shape.strokeBorder(.white.opacity(0.08), lineWidth: 1))
+                .overlay(shape.strokeBorder(Theme.separator.opacity(0.6), lineWidth: 1))
         }
     }
 }

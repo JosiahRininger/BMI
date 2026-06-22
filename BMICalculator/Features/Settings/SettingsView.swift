@@ -565,7 +565,11 @@ private struct ThemeSwatch: View {
                         .frame(width: 46, height: 46)
                         .overlay(
                             Circle().strokeBorder(
-                                isSelected ? DSColor.primaryText : Color.black.opacity(0.06),
+                                // Unselected ring must read on both surfaces: a flat
+                                // black hairline vanishes on the dark-mode row.
+                                isSelected ? DSColor.primaryText
+                                           : Color.dynamic(light: .black.opacity(0.06),
+                                                           dark: .white.opacity(0.18)),
                                 lineWidth: isSelected ? 2.5 : 1
                             )
                         )
