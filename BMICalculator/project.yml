@@ -88,6 +88,7 @@ targets:
       - path: BMIWidget
         excludes:
           - Info.plist
+          - BMIWidget.entitlements
       - path: Core/UnitSystem.swift
       - path: Core/HealthStandard.swift
       - path: Core/BMICategory.swift
@@ -102,6 +103,8 @@ targets:
         PRODUCT_NAME: BMIWidget
         INFOPLIST_FILE: BMIWidget/Info.plist
         GENERATE_INFOPLIST_FILE: "NO"
+        # App Group so the widget reads the snapshot/SwiftData the app shares.
+        CODE_SIGN_ENTITLEMENTS: BMIWidget/BMIWidget.entitlements
         MARKETING_VERSION: "1.3"
         CURRENT_PROJECT_VERSION: "1"
         TARGETED_DEVICE_FAMILY: "1,2"

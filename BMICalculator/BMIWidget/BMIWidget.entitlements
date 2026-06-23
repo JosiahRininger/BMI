@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  The widget extension must be in the SAME App Group as the app to read the
+	  shared snapshot (BMISharedStore) and SwiftData store the app writes.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.jdr.BMI</string>
+	</array>
+</dict>
+</plist>

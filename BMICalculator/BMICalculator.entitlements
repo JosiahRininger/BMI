@@ -10,5 +10,16 @@
 	-->
 	<key>com.apple.developer.healthkit</key>
 	<true/>
+
+	<!--
+	  App Group shared by the app + widget. Required for the home-screen widget to
+	  read the shared history/streak snapshot (BMISharedStore) and the SwiftData
+	  store, and for cross-process preference reads. Without it the app degrades
+	  gracefully (local store, empty widget). Automatic signing registers the group.
+	-->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.jdr.BMI</string>
+	</array>
 </dict>
 </plist>
