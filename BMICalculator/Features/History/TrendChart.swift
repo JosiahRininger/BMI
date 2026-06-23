@@ -143,7 +143,10 @@ public struct TrendChart: View {
     private var visibleRecords: [BMIRecord] {
         let start = range.startDate()
         return records
-            .filter { $0.date >= start }
+            // Drop non-finite BMI so the line, points, axis domain, and a11y
+            // summary stay consistent and yDomain can never form 0.0...NaN
+            // (which would trap the whole History tab).
+            .filter { $0.date >= start && $0.bmi.isFinite }
             .sorted { $0.date < $1.date }
     }
 
@@ -179,7 +182,10 @@ public struct TrendChart: View {
         // Keep at least the healthy/overweight region in view.
         let lower = max(0, min(minValue, 16))
         let upper = max(maxValue, 32)
-        return lower...upper
+        // Defensive: never form an out-of-order or non-finite range (would trap).
+        let safeLower = lower.isFinite ? lower : 0
+        let safeUpper = upper.isFinite ? upper : 32
+        return min(safeLower, safeUpper)...max(safeLower, safeUpper)
     }
 
     /// The X-axis domain spanning the selected range up to now.

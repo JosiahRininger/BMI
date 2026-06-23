@@ -176,7 +176,7 @@ public final class CalculatorViewModel {
         switch unitSystem {
         case .metric:   return 2...400        // kg
         case .imperial: return 4...880        // lb
-        case .stone:    return 0.3...63       // st (≈ 4–882 lb)
+        case .stone:    return 0.5...63       // st — floor aligned to the 0.5 step
         }
     }
 
@@ -378,16 +378,26 @@ public final class CalculatorViewModel {
         case .stone:    kg = BMICalculator.kilograms(fromStone: weight)
         }
         switch new {
-        case .metric:   weight = (kg * 10).rounded() / 10
-        case .imperial: weight = (BMICalculator.pounds(fromKilograms: kg) * 10).rounded() / 10
-        case .stone:    weight = (BMICalculator.pounds(fromKilograms: kg) / BMICalculator.poundsPerStone * 10).rounded() / 10
+        case .metric:   weight = clampToWeight((kg * 10).rounded() / 10)
+        case .imperial: weight = clampToWeight((BMICalculator.pounds(fromKilograms: kg) * 10).rounded() / 10)
+        case .stone:    weight = clampToWeight((BMICalculator.pounds(fromKilograms: kg) / BMICalculator.poundsPerStone * 10).rounded() / 10)
         }
         // Height: metric uses centimeters; imperial & stone use feet/inches.
         if !old.usesImperialHeight, new.usesImperialHeight {
             imperialHeight = Self.imperial(fromCentimeters: heightCentimeters)
         } else if old.usesImperialHeight, !new.usesImperialHeight {
-            heightCentimeters = (heightMetersFromImperial() * 100).rounded()
+            // Clamp into the metric wheel's range so the stored value is always a
+            // selectable option (a tall imperial height could convert above 250).
+            heightCentimeters = min(max((heightMetersFromImperial() * 100).rounded(),
+                                        heightCentimetersRange.lowerBound),
+                                   heightCentimetersRange.upperBound)
         }
+    }
+
+    /// Clamps a weight (in the active display unit) into the allowed range, so a
+    /// unit toggle can't leave the value outside the field's stepper bounds.
+    private func clampToWeight(_ value: Double) -> Double {
+        min(max(value, weightRange.lowerBound), weightRange.upperBound)
     }
 
     /// Current imperial height expressed in meters (helper for conversion).

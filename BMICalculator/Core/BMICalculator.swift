@@ -40,8 +40,12 @@ public enum BMICalculator {
     /// - Returns: BMI in kg/m². Returns `0` if `heightMeters <= 0` to avoid a
     ///   division by zero or a non-finite result.
     public static func bmi(weightKilograms: Double, heightMeters: Double) -> Double {
-        guard heightMeters > 0 else { return 0 }
-        return weightKilograms / (heightMeters * heightMeters)
+        // Guard non-physical / non-finite input, and clamp a non-finite quotient
+        // (a tiny height can underflow height² to 0, or a huge weight overflow),
+        // so a bad value never propagates as NaN/inf into category() or display.
+        guard heightMeters > 0, weightKilograms.isFinite, heightMeters.isFinite else { return 0 }
+        let value = weightKilograms / (heightMeters * heightMeters)
+        return value.isFinite ? value : 0
     }
 
     /// Classifies a BMI value under the given standard using half-open ranges.
@@ -61,6 +65,9 @@ public enum BMICalculator {
         forBMI bmi: Double,
         standard: HealthStandard = .standard
     ) -> BMICategory {
+        // A corrupted/non-finite value must never read as severe obesity (the
+        // `default:` branch). Return a neutral category instead of defaming a row.
+        guard bmi.isFinite else { return .healthy }
         switch standard {
         case .standard:
             switch bmi {
@@ -132,7 +139,12 @@ public enum BMICalculator {
     /// - Returns: Whole `stone` and the remaining `pounds` in `0..<14`.
     public static func stoneAndPounds(fromKilograms kg: Double) -> (stone: Int, pounds: Double) {
         let totalPounds = pounds(fromKilograms: kg)
-        let stone = Int((totalPounds / poundsPerStone).rounded(.down))
+        // Guard finiteness and Int range before the Double→Int cast, which TRAPS
+        // on NaN/inf or a value beyond Int's range.
+        guard totalPounds.isFinite else { return (0, 0) }
+        let stoneDouble = (totalPounds / poundsPerStone).rounded(.down)
+        guard stoneDouble >= Double(Int.min), stoneDouble <= Double(Int.max) else { return (0, 0) }
+        let stone = Int(stoneDouble)
         let remainderPounds = totalPounds - Double(stone) * poundsPerStone
         return (stone, remainderPounds)
     }

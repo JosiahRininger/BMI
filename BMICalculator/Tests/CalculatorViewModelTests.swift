@@ -89,7 +89,7 @@ struct CalculatorViewModelConversionTests {
         let stone = CalculatorViewModel(unitSystem: .stone)
         #expect(metric.weightRange == 2...400)
         #expect(imperial.weightRange == 4...880)
-        #expect(stone.weightRange == 0.3...63)
+        #expect(stone.weightRange == 0.5...63)
     }
 }
 

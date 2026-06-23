@@ -58,11 +58,18 @@ enum HistoryExporter {
                 let sorted = records.sorted(by: { $0.date < $1.date })
                 var index = 0
 
+                // Fixed column x-positions so columns line up. (String(format:)
+                // width specifiers like %-22@ are silently ignored, which made
+                // the date run straight into the BMI value — "Jan 1, 202418.5".)
+                let bmiX = margin + 220
+                let categoryX = margin + 300
+
                 func startPage() {
                     ctx.beginPage()
                     "BMI History".draw(at: CGPoint(x: margin, y: margin), withAttributes: title)
-                    String(format: "%-22@%-10@%@", "Date" as NSString, "BMI" as NSString, "Category" as NSString)
-                        .draw(at: CGPoint(x: margin, y: margin + 40), withAttributes: header)
+                    "Date".draw(at: CGPoint(x: margin, y: margin + 40), withAttributes: header)
+                    "BMI".draw(at: CGPoint(x: bmiX, y: margin + 40), withAttributes: header)
+                    "Category".draw(at: CGPoint(x: categoryX, y: margin + 40), withAttributes: header)
                     disclaimer.draw(at: CGPoint(x: margin, y: pageRect.height - margin),
                                     withAttributes: footer)
                 }
@@ -78,11 +85,12 @@ enum HistoryExporter {
                         y = margin + 64
                     }
                     let r = sorted[index]
-                    let line = String(format: "%-22@%-10.1f%@",
-                                      dateFormatter.string(from: r.date) as NSString,
-                                      r.roundedBMI,
-                                      r.category(standard: standard).title as NSString)
-                    line.draw(at: CGPoint(x: margin, y: y), withAttributes: row)
+                    dateFormatter.string(from: r.date)
+                        .draw(at: CGPoint(x: margin, y: y), withAttributes: row)
+                    String(format: "%.1f", r.roundedBMI)
+                        .draw(at: CGPoint(x: bmiX, y: y), withAttributes: row)
+                    r.category(standard: standard).title
+                        .draw(at: CGPoint(x: categoryX, y: y), withAttributes: row)
                     y += 18
                     index += 1
                 }

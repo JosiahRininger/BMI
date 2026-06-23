@@ -163,6 +163,7 @@ struct OnboardingView: View {
             )) {
                 Text("Metric (kg, cm)").tag(UnitSystem.metric)
                 Text("Imperial (lb, ft)").tag(UnitSystem.imperial)
+                Text("Stone (st)").tag(UnitSystem.stone)
             }
             .pickerStyle(.segmented)
             .accessibilityLabel("Measurement units")
@@ -263,12 +264,23 @@ struct OnboardingView: View {
     /// Persists the `hasOnboarded` flag, optionally writes the first record,
     /// and hands control back to the host.
     private func finish(persistRecord: Bool) {
-        if persistRecord,
-           let metric = input.metricValues(for: unitSystem),
-           let result {
+        // Save the first record even if the user swiped past the result page
+        // without tapping "See my result" (so `result` is still nil). The engine
+        // is non-failing, so compute it on the fly from the validated inputs —
+        // an empty day-one History defeats the whole onboarding.
+        if persistRecord, let metric = input.metricValues(for: unitSystem) {
+            let standard = HealthStandard(
+                rawValue: UserDefaults.standard.string(forKey: AppStorageKey.healthStandard)
+                    ?? HealthStandard.standard.rawValue
+            ) ?? .standard
+            let computed = result ?? BMICalculator.result(
+                weightKilograms: metric.weightKilograms,
+                heightMeters: metric.heightMeters,
+                standard: standard
+            )
             let record = BMIRecord(
                 date: .now,
-                bmi: result.value,
+                bmi: computed.value,
                 weightKilograms: metric.weightKilograms,
                 heightMeters: metric.heightMeters,
                 unitSystemRaw: unitSystem.rawValue,
@@ -657,6 +669,10 @@ private struct WeeklyReminderRow: View {
     let notifications: NotificationService
 
     @AppStorage(AppStorageKey.weeklyReminderEnabled) private var enabled: Bool = false
+    // The shared cadence key Settings + the service actually read, so the
+    // onboarding choice isn't stranded in a key nothing else consumes.
+    @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String =
+        NotificationService.ReminderCadence.weekly.rawValue
     @State private var isRequesting = false
 
     var body: some View {
@@ -700,6 +716,9 @@ private struct WeeklyReminderRow: View {
     private func setEnabled(_ newValue: Bool) {
         guard newValue else {
             enabled = false
+            // Write the shared cadence so Settings shows an accurate "Off".
+            reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
+            notifications.cadence = .off
             notifications.cancelWeeklyReminder()
             return
         }
@@ -709,8 +728,12 @@ private struct WeeklyReminderRow: View {
             if granted {
                 await notifications.scheduleWeeklyReminder()
                 enabled = true
+                reminderCadenceRaw = NotificationService.ReminderCadence.weekly.rawValue
+                notifications.cadence = .weekly
             } else {
                 enabled = false
+                reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
+                notifications.cadence = .off
             }
             isRequesting = false
         }

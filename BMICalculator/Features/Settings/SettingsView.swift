@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SafariServices
+import StoreKit
 
 // MARK: - Settings
 
@@ -34,6 +35,7 @@ struct SettingsView: View {
     @Environment(AppearanceStore.self) private var appearance
     @Environment(ProfileStore.self) private var profiles
     @Environment(\.openURL) private var openURL
+    @Environment(\.requestReview) private var requestReviewAction
 
     // MARK: Local State
 
@@ -105,6 +107,7 @@ struct SettingsView: View {
             )) {
                 Text("Metric (kg, cm)").tag(UnitSystem.metric)
                 Text("Imperial (lb, ft)").tag(UnitSystem.imperial)
+                Text("Stone (st)").tag(UnitSystem.stone)
             }
             .pickerStyle(.segmented)
         }
@@ -471,6 +474,9 @@ struct SettingsView: View {
 
     private func setCadence(_ cadence: NotificationService.ReminderCadence) {
         reminderCadenceRaw = cadence.rawValue
+        // Keep the service's in-memory cadence in sync so post-log rescheduling
+        // (which reads notifications.cadence) doesn't use a stale value.
+        notifications.cadence = cadence
         guard cadence != .off else {
             notifications.cancelAll()
             return
@@ -482,6 +488,7 @@ struct SettingsView: View {
                 await notifications.schedule(cadence: cadence)
             } else {
                 reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
+                notifications.cadence = .off
             }
             isReminderRequesting = false
         }
@@ -507,8 +514,9 @@ struct SettingsView: View {
     }
 
     private func requestReview() {
-        // Prefer the StoreKit review prompt; fall back to a write-review URL.
-        openURL(AppLinks.writeReview)
+        // Use the in-app StoreKit review prompt (Apple rate-limits it) rather
+        // than kicking the person out to the App Store in Safari.
+        requestReviewAction()
     }
 }
 

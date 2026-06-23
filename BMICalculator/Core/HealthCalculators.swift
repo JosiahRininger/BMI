@@ -236,19 +236,33 @@ public enum IdealWeightCalculator {
 public enum LeanMassCalculator {
 
     public static func boer(weightKilograms w: Double, heightCentimeters h: Double, sex: Sex) -> Double {
-        sex == .male ? 0.407 * w + 0.267 * h - 19.2
-                     : 0.252 * w + 0.473 * h - 48.3
+        guard w > 0, h > 0 else { return 0 }
+        let raw = sex == .male ? 0.407 * w + 0.267 * h - 19.2
+                               : 0.252 * w + 0.473 * h - 48.3
+        return physical(raw, weight: w)
     }
 
     public static func james(weightKilograms w: Double, heightCentimeters h: Double, sex: Sex) -> Double {
+        guard w > 0, h > 0 else { return 0 }
         let ratio = w / h
-        return sex == .male ? 1.1 * w - 128 * (ratio * ratio)
-                            : 1.07 * w - 148 * (ratio * ratio)
+        let raw = sex == .male ? 1.1 * w - 128 * (ratio * ratio)
+                               : 1.07 * w - 148 * (ratio * ratio)
+        return physical(raw, weight: w)
     }
 
     public static func hume(weightKilograms w: Double, heightCentimeters h: Double, sex: Sex) -> Double {
-        sex == .male ? 0.32810 * w + 0.33929 * h - 29.5336
-                     : 0.29569 * w + 0.41813 * h - 43.2933
+        guard w > 0, h > 0 else { return 0 }
+        let raw = sex == .male ? 0.32810 * w + 0.33929 * h - 29.5336
+                               : 0.29569 * w + 0.41813 * h - 43.2933
+        return physical(raw, weight: w)
+    }
+
+    /// Clamps a lean-mass estimate to the physical range: non-negative and never
+    /// exceeding total body weight (extreme inputs can drive the raw formulas
+    /// negative or above body weight).
+    private static func physical(_ raw: Double, weight w: Double) -> Double {
+        guard raw.isFinite else { return 0 }
+        return min(max(raw, 0), w)
     }
 }
 

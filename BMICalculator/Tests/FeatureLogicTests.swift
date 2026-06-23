@@ -92,7 +92,7 @@ struct MetricsInputModelTests {
     func weightRanges() {
         #expect(MetricsInputModel(unitSystem: .metric).weightRange == 2...400)
         #expect(MetricsInputModel(unitSystem: .imperial).weightRange == 4...880)
-        #expect(MetricsInputModel(unitSystem: .stone).weightRange == 0.3...63)
+        #expect(MetricsInputModel(unitSystem: .stone).weightRange == 0.5...63)
     }
 }
 

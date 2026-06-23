@@ -110,6 +110,13 @@ final class ProfileStore {
         // 3. Adopt legacy/orphaned records into the default profile.
         backfillOrphanedRecords(into: profiles.first)
 
+        // 4. Reconcile the free tier using the CACHED Pro flag before publishing,
+        //    so a downgraded user's secondary profile isn't surfaced to the
+        //    widget/Spotlight during the launch window (before StoreKit resolves
+        //    and AppServices.start() calls enforceFreeTier).
+        let cachedIsPro = UserDefaults(suiteName: "group.com.jdr.BMI")?.bool(forKey: "store.isPro.cache") ?? false
+        enforceFreeTier(isPro: cachedIsPro)
+
         // Rebuild the widget snapshot so it reflects the active profile from
         // launch — the pre-migration snapshot was built from ALL records.
         refreshWidget()
@@ -171,6 +178,8 @@ final class ProfileStore {
         guard canAddProfile(isPro: isPro) else { return nil }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
+        // Reject a case-insensitive duplicate so the switcher stays unambiguous.
+        guard !profiles.contains(where: { $0.name.caseInsensitiveCompare(trimmed) == .orderedSame }) else { return nil }
         let nextIndex = (profiles.map(\.sortIndex).max() ?? -1) + 1
         let profile = BMIProfile(name: trimmed, sortIndex: nextIndex)
         context.insert(profile)
@@ -184,6 +193,10 @@ final class ProfileStore {
     func rename(_ profile: BMIProfile, to name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        // Reject a case-insensitive duplicate of a DIFFERENT profile.
+        guard !profiles.contains(where: {
+            $0.id != profile.id && $0.name.caseInsensitiveCompare(trimmed) == .orderedSame
+        }) else { return }
         profile.name = trimmed
         try? context.save()
         reloadProfiles()

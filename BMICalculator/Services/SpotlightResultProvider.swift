@@ -33,11 +33,15 @@ struct SpotlightResultProvider: BMIResultProviding {
 
         guard let records = try? context.fetch(descriptor) else { return [] }
 
+        // Honor the chosen standard so Spotlight/Siri categorize like History.
+        let standard = CalculatorViewModel.savedStandard
+
         return records.map { record in
-            let category = record.category(standard: .standard)
-            // Deterministic, stable id (records carry no UUID). Second-level
-            // granularity is fine for Spotlight result resolution.
-            let id = "bmi-\(Int(record.date.timeIntervalSince1970))-\(record.roundedBMI)"
+            let category = record.category(standard: standard)
+            // Use the SAME id formula intent donations use, so a result donated
+            // via Siri and the same record resolved here reconcile (dedup + the
+            // Spotlight tap can find the entity) instead of producing two ids.
+            let id = BMIResultEntity.deterministicID(bmi: record.roundedBMI, date: record.date)
             return BMIResultEntity(
                 id: id,
                 bmi: record.roundedBMI,

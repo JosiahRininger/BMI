@@ -31,7 +31,9 @@ enum WidgetSync {
         descriptor.fetchLimit = 7
         let records = (try? context.fetch(descriptor)) ?? []
 
-        let standard = HealthStandard.standard.rawValue
+        // Honor the person's chosen BMI-cutoff standard (Standard vs Asian) so
+        // the widget categorizes the same way History/CSV do.
+        let standard = CalculatorViewModel.savedStandard.rawValue
         let entries = records.map {
             BMIWidgetEntryData(date: $0.date, bmi: $0.bmi, standardRaw: standard)
         }

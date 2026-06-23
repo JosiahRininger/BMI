@@ -167,6 +167,13 @@ struct CalculatorView: View {
         .onChange(of: standardRaw) { _, raw in
             model.standard = HealthStandard(rawValue: raw) ?? .standard
         }
+        // Editing inputs invalidates the shown result, so hide the old card
+        // rather than leave a BMI that contradicts the inputs on screen until
+        // the next Calculate. (A unit flip also touches weight, which clears it —
+        // acceptable: the person re-taps Calculate.)
+        .onChange(of: model.weight) { _, _ in model.clearResult() }
+        .onChange(of: model.heightCentimeters) { _, _ in model.clearResult() }
+        .onChange(of: model.imperialHeight) { _, _ in model.clearResult() }
     }
 
     // MARK: Inputs

@@ -151,7 +151,14 @@ struct Sparkline: Shape {
         }
         let minV = values.min() ?? 0
         let maxV = values.max() ?? 1
-        let span = max(maxV - minV, 0.0001)
+        // Degenerate (all-equal) trend: draw a centered flat line, matching the
+        // single-value branch, instead of pinning it to the bottom edge.
+        guard maxV - minV > 0.0001 else {
+            path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+            return path
+        }
+        let span = maxV - minV
         let stepX = rect.width / CGFloat(values.count - 1)
 
         for (i, v) in values.enumerated() {

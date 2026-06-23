@@ -347,6 +347,11 @@ final class AppServices {
 
         // Register the "Log now" / "Snooze" actions and refresh the auth snapshot.
         notifications.registerCategories()
+        // Restore the saved reminder cadence so the first post-launch log honors
+        // the person's choice instead of the in-memory .weekly default (which
+        // would silently downgrade a Daily user or resurrect an Off one).
+        let cadenceRaw = UserDefaults.standard.string(forKey: AppStorageKey.reminderCadence)
+        notifications.cadence = NotificationService.ReminderCadence(rawValue: cadenceRaw ?? "") ?? .weekly
         await notifications.refreshStatus()
     }
 

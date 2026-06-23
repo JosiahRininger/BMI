@@ -183,18 +183,28 @@ public final class StoreService {
     /// Recomputes `isPro` from `Transaction.currentEntitlements`.
     public func refreshEntitlements() async {
         var owned = false
+        var sawAnyEntitlement = false
         for await result in Transaction.currentEntitlements {
+            sawAnyEntitlement = true
             guard let transaction = try? checkVerified(result) else { continue }
             if transaction.productID == Self.removeAdsProductID,
                transaction.revocationDate == nil {
                 owned = true
             }
         }
-        state.isPro = owned
-        // Persist the authoritative result for the next cold launch. We only
-        // ever cache a real entitlement read here, so a refund (owned == false)
-        // correctly clears the cache — the cache never overrides a true refund.
-        cacheDefaults.set(owned, forKey: Self.proCacheKey)
+        // The documented iOS 26.x regression yields an EMPTY currentEntitlements
+        // sequence — indistinguishable from a genuine not-owned read. Never flip a
+        // paying user back to the ad tier on an empty read; keep the cached value.
+        // A real refund still clears Pro via the Transaction.updates stream
+        // (revocationDate set), so legitimate refunds are unaffected.
+        if owned {
+            state.isPro = true
+            cacheDefaults.set(true, forKey: Self.proCacheKey)
+        } else if sawAnyEntitlement {
+            state.isPro = false
+            cacheDefaults.set(false, forKey: Self.proCacheKey)
+        }
+        // else: empty result → leave the cached optimistic value intact.
     }
 
     /// Streams `Transaction.updates` for the app's lifetime, finishing and

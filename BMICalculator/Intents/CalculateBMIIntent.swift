@@ -110,9 +110,16 @@ struct CalculateBMIIntent: AppIntent {
             throw CalculateBMIError.invalidMeasurements
         }
 
+        // Categorize with the person's chosen standard (Standard vs Asian) so a
+        // Siri/Shortcut result matches the app. The key string is duplicated from
+        // AppStorageKey because this file is also compiled into the widget target,
+        // which doesn't include the App module.
+        let standardRaw = UserDefaults.standard.string(forKey: "app.healthStandard") ?? ""
+        let standard = HealthStandard(rawValue: standardRaw) ?? .standard
         let result = BMICalculator.result(
             weightKilograms: weightKilograms,
-            heightMeters: heightMeters
+            heightMeters: heightMeters,
+            standard: standard
         )
 
         let date = Date()

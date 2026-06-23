@@ -171,19 +171,26 @@ struct PaywallSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 24) {
-                header
-
-                featureList
-
-                Spacer(minLength: 0)
-
-                actions
-
-                disclaimer
+            ScrollView {
+                VStack(spacing: 24) {
+                    header
+                    featureList
+                }
+                .padding(24)
+                .frame(maxWidth: .infinity)
             }
-            .padding(24)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Pin the CTA + disclaimer so they're always reachable at the .medium
+            // detent (a sheet clips rather than scrolls, so a fixed VStack could
+            // hide the buy/restore/disclaimer below the fold).
+            .safeAreaInset(edge: .bottom) {
+                VStack(spacing: 12) {
+                    actions
+                    disclaimer
+                }
+                .padding(.horizontal, 24)
+                .padding(.vertical, 16)
+                .background(.bar)
+            }
             .background(backgroundFill.ignoresSafeArea())
             // No navigationTitle: the hero header already reads "BMI Pro", and an
             // inline title here overlapped the sparkle at the medium detent.
