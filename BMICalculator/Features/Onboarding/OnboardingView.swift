@@ -85,6 +85,11 @@ struct OnboardingView: View {
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .animation(pageAnimation, value: page)
+                // Reaching the result page by swipe (not just the button) must
+                // still compute the result, or it shows an endless spinner.
+                .onChange(of: page) { _, newPage in
+                    if newPage == .result { ensureResultComputed() }
+                }
 
                 pageControl
                     .padding(.vertical, DSSpacing.md)
@@ -250,6 +255,15 @@ struct OnboardingView: View {
 
     /// Computes the BMI from the current input and advances to the result page.
     private func computeResult() {
+        ensureResultComputed()
+        withAnimation(pageAnimation) { page = .result }
+    }
+
+    /// Computes (or recomputes) the result from the current inputs. Idempotent and
+    /// safe to call on every entry to the result page, so reaching it by SWIPE —
+    /// not just the "See my result" button — still shows a result instead of an
+    /// endless spinner.
+    private func ensureResultComputed() {
         guard let metric = input.metricValues(for: unitSystem) else { return }
         let standard = HealthStandard(
             rawValue: UserDefaults.standard.string(forKey: AppStorageKey.healthStandard) ?? HealthStandard.standard.rawValue
@@ -260,7 +274,6 @@ struct OnboardingView: View {
             heightMeters: metric.heightMeters,
             standard: standard
         )
-        withAnimation(pageAnimation) { page = .result }
     }
 
     /// Persists the `hasOnboarded` flag, optionally writes the first record,
