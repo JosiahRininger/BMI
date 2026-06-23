@@ -119,22 +119,29 @@ the new project uses SPM exclusively. For hygiene in the old tree (optional, do 
 
 ## 3. Capabilities & entitlements
 
-Select the **App target ▸ Signing & Capabilities**, then **+ Capability** for each:
+**Now codified — no manual "+ Capability" clicking needed.** The entitlements live in
+`BMICalculator.entitlements` (app) and `BMIWidget/BMIWidget.entitlements` (widget), wired via
+`CODE_SIGN_ENTITLEMENTS` in `project.yml`, and a `PrivacyInfo.xcprivacy` ships in each target. After
+`xcodegen generate`, the only thing left is signing: **automatic signing** (the dev's team is set in
+`project.yml`) registers HealthKit + App Groups on the App ID on first device build — accept the Xcode
+prompt if it appears.
 
-- [ ] **HealthKit** — adds `com.apple.developer.healthkit = true`. Do **NOT** enable "Clinical Health
-      Records". Background Delivery **not** needed. (Consumed by `Services/HealthKitService.swift`.)
-- [ ] **In-App Purchase** — required for the non-consumable "Remove Ads / Pro" (StoreKit 2, §5).
-- [ ] **App Groups** — add identifier **`group.com.jdr.BMI`**. This is the shared container id used by
-      `PersistenceController` (SwiftData store) and `BMISharedStore.appGroupID` /
-      `BMIWidgetProvider.appGroupID` in the widget.
-- [ ] **Push Notifications** — **NOT** required. The weekly reminder is a **local** notification via
-      `UNUserNotificationCenter` (`Services/NotificationService.swift`); permission is requested at runtime,
-      no capability and no entitlement. Only add Push if remote push is introduced later.
+- [x] **HealthKit** — `com.apple.developer.healthkit = true` in `BMICalculator.entitlements`. Do **NOT**
+      enable "Clinical Health Records". (Consumed by `Services/HealthKitService.swift`.)
+- [x] **App Groups** — `group.com.jdr.BMI` in BOTH `BMICalculator.entitlements` and
+      `BMIWidget/BMIWidget.entitlements`. Shared by `PersistenceController` (SwiftData store),
+      `BMISharedStore` (widget snapshot), the isPro cache, and the cross-process standard mirror.
+- [x] **Privacy manifests** — `PrivacyInfo.xcprivacy` in app + widget (local-first: no tracking, no
+      collected data, UserDefaults reason CA92.1). GoogleMobileAds ships its own when added.
+- [x] **URL scheme** — `bmicalculator://` registered via the partial `Info.plist` (deep links from the
+      widget / Control Center / Siri).
+- [ ] **In-App Purchase** — enable for the non-consumable "Remove Ads / Pro" (StoreKit 2, §5). This is an
+      App Store Connect product, not a signing entitlement — see §5.
+- [ ] **Push Notifications** — **NOT** required; the reminder is a local notification. Only add if remote
+      push is introduced later.
 
-Then on the **BMIWidget target ▸ Signing & Capabilities**:
-- [ ] **App Groups** — add the **same** identifier **`group.com.jdr.BMI`** (both targets must carry it or
-      the widget can't read the shared store). Verify `BMIWidget.entitlements` and the app `.entitlements`
-      both list it.
+> If you change the bundle id away from `com.jdr.BMI`, update the App Group id in both `.entitlements`
+> files and the constants `BMISharedStore.appGroupID` / `AppConfig.appGroupID` / `PersistenceController`.
 
 > If you later change the bundle id away from `com.jdr.BMI`, update the App Group id on both targets and
 > change the single constants `BMISharedStore.appGroupID` and `PersistenceController` group id to match.
