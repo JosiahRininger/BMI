@@ -14,7 +14,6 @@
 
 import SwiftUI
 import SafariServices
-import StoreKit
 
 // MARK: - Settings
 
@@ -35,7 +34,6 @@ struct SettingsView: View {
     @Environment(AppearanceStore.self) private var appearance
     @Environment(ProfileStore.self) private var profiles
     @Environment(\.openURL) private var openURL
-    @Environment(\.requestReview) private var requestReviewAction
 
     // MARK: Local State
 
@@ -514,9 +512,11 @@ struct SettingsView: View {
     }
 
     private func requestReview() {
-        // Use the in-app StoreKit review prompt (Apple rate-limits it) rather
-        // than kicking the person out to the App Store in Safari.
-        requestReviewAction()
+        // An explicit "Rate us" tap must always do something. StoreKit's
+        // requestReview is rate-limited and silently no-ops when throttled, so
+        // for a user-initiated tap open the write-review composer instead (that
+        // in-app prompt is reserved for app-initiated moments via ReviewPrompter).
+        openURL(AppLinks.writeReview)
     }
 }
 

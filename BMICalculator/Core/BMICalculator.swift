@@ -143,7 +143,9 @@ public enum BMICalculator {
         // on NaN/inf or a value beyond Int's range.
         guard totalPounds.isFinite else { return (0, 0) }
         let stoneDouble = (totalPounds / poundsPerStone).rounded(.down)
-        guard stoneDouble >= Double(Int.min), stoneDouble <= Double(Int.max) else { return (0, 0) }
+        // Strict `<`: Double(Int.max) rounds UP to 2^63 (= Int.max + 1), which
+        // would still trap the Int(...) cast, so reject the boundary.
+        guard stoneDouble >= Double(Int.min), stoneDouble < Double(Int.max) else { return (0, 0) }
         let stone = Int(stoneDouble)
         let remainderPounds = totalPounds - Double(stone) * poundsPerStone
         return (stone, remainderPounds)

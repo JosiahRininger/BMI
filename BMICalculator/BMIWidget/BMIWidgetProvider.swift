@@ -114,14 +114,10 @@ struct BMIWidgetProvider: AppIntentTimelineProvider {
             return .empty(configuration: configuration)
         }
 
-        // Re-stamp the latest entry with the configured standard so the
-        // displayed category honours the user's widget choice even if the app
-        // saved it under a different standard.
-        let latest = BMIWidgetEntryData(
-            date: newest.date,
-            bmi: newest.bmi,
-            standardRaw: configuration.healthStandard.rawValue
-        )
+        // Use the entry exactly as the app saved it — it carries the BMI-cutoff
+        // standard chosen in Settings (written by WidgetSync) — so the widget's
+        // category matches History / the CSV export rather than diverging.
+        let latest = newest
 
         // Seven most recent values, oldest → newest, for the sparkline.
         let trend = stored

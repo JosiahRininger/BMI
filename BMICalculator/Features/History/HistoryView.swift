@@ -81,7 +81,8 @@ public struct HistoryView: View {
     /// History needs no extra dependency. The card defaults to streak + trend
     /// shape (no absolute BMI unless the person opts in inside the share sheet).
     private var sharePayload: SharePayload {
-        let trend = Array(rangedRecords.prefix(20)).reversed().map(\.bmi) // oldest → newest
+        // oldest → newest, dropping any non-finite BMI (mirrors TrendChart).
+        let trend = Array(rangedRecords.prefix(20)).reversed().map(\.bmi).filter { $0.isFinite }
         return SharePayload(
             streakDays: consecutiveDayStreak,
             entryCount: records.count,

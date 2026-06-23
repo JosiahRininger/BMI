@@ -163,7 +163,9 @@ struct OnboardingView: View {
             )) {
                 Text("Metric (kg, cm)").tag(UnitSystem.metric)
                 Text("Imperial (lb, ft)").tag(UnitSystem.imperial)
-                Text("Stone (st)").tag(UnitSystem.stone)
+                // Stone is offered in Settings + the Calculator (which have real
+                // stone weight entry); onboarding keeps metric/imperial to avoid
+                // showing pounds fields for a stone selection.
             }
             .pickerStyle(.segmented)
             .accessibilityLabel("Measurement units")

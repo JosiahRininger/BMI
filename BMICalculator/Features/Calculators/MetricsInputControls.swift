@@ -160,8 +160,10 @@ struct ActivityLevelPicker: View {
 // MARK: - MeasurementField
 
 /// A generic length-measurement entry (neck, waist, hip, wrist), shown in cm or
-/// inches depending on the unit system. The binding stays in the *display* unit;
-/// callers convert to centimetres for the Core API via `MetricsUnit`.
+/// inches depending on the unit system. `value` is in the active DISPLAY unit;
+/// callers typically pass a `MetricsUnit.lengthBinding` projection over canonical
+/// centimetre state, so the field reads/writes display units while the source of
+/// truth stays metric (no separate conversion at the result site).
 struct MeasurementField: View {
     let title: String
     let systemImage: String

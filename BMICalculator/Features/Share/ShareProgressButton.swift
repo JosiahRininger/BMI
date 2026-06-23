@@ -17,12 +17,6 @@ public struct ShareProgressButton: View {
 
     public init(payload: SharePayload) { self.basePayload = payload }
 
-    private var payload: SharePayload {
-        var p = basePayload
-        p.includeNumber = includeNumber
-        return p
-    }
-
     public var body: some View {
         Button {
             showSheet = true

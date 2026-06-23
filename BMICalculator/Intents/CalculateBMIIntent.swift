@@ -110,10 +110,13 @@ struct CalculateBMIIntent: AppIntent {
             throw CalculateBMIError.invalidMeasurements
         }
 
-        // Categorize with the person's chosen standard (Standard vs Asian) so a
-        // Siri/Shortcut result matches the app. The key string is duplicated from
-        // AppStorageKey because this file is also compiled into the widget target,
-        // which doesn't include the App module.
+        // Categorize with the person's chosen standard (Standard vs Asian) so the
+        // result matches the app when the intent runs in the app's process. NOTE:
+        // a headless extension run has its own (empty) UserDefaults.standard and
+        // falls back to .standard; full cross-process parity needs the standard
+        // mirrored to the App Group suite, pending the App Group entitlement.
+        // The key string is duplicated from AppStorageKey because this file is
+        // also compiled into the widget target, which excludes the App module.
         let standardRaw = UserDefaults.standard.string(forKey: "app.healthStandard") ?? ""
         let standard = HealthStandard(rawValue: standardRaw) ?? .standard
         let result = BMICalculator.result(

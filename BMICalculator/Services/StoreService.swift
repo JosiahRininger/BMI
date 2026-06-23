@@ -195,8 +195,8 @@ public final class StoreService {
         // The documented iOS 26.x regression yields an EMPTY currentEntitlements
         // sequence — indistinguishable from a genuine not-owned read. Never flip a
         // paying user back to the ad tier on an empty read; keep the cached value.
-        // A real refund still clears Pro via the Transaction.updates stream
-        // (revocationDate set), so legitimate refunds are unaffected.
+        // A real refund is handled in listenForTransactions() by reading the
+        // revocationDate directly, so legitimate refunds still clear Pro there.
         if owned {
             state.isPro = true
             cacheDefaults.set(true, forKey: Self.proCacheKey)
@@ -215,7 +215,17 @@ public final class StoreService {
                 guard let self else { continue }
                 guard let transaction = try? await self.checkVerified(update) else { continue }
                 await transaction.finish()
-                await self.refreshEntitlements()
+                // A refund/revocation makes `currentEntitlements` EMPTY for our
+                // sole product — indistinguishable from the iOS 26.x empty-read
+                // regression — so refreshEntitlements() can't clear Pro on its
+                // own. Honor the revocation directly here (the only reliable
+                // refund signal), then reconcile normally for non-revocations.
+                if transaction.productID == Self.removeAdsProductID, transaction.revocationDate != nil {
+                    self.state.isPro = false
+                    self.cacheDefaults.set(false, forKey: Self.proCacheKey)
+                } else {
+                    await self.refreshEntitlements()
+                }
             }
         }
     }
