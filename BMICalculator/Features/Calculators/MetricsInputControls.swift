@@ -169,6 +169,8 @@ struct MeasurementField: View {
     let range: ClosedRange<Double>
     let unitLabel: String
 
+    @FocusState private var isEditing: Bool
+
     private var step: Double { 0.5 }
 
     var body: some View {
@@ -180,8 +182,13 @@ struct MeasurementField: View {
                     .font(.title3.monospacedDigit())
                     .frame(minWidth: 64)
                     .foregroundStyle(Theme.textPrimary)
-                    .onChange(of: value) { _, newValue in
-                        value = min(max(newValue, range.lowerBound), range.upperBound)
+                    .focused($isEditing)
+                    // Clamp only when editing ends so typing a digit below the
+                    // range floor isn't snapped mid-keystroke.
+                    .onChange(of: isEditing) { _, editing in
+                        if !editing {
+                            value = min(max(value, range.lowerBound), range.upperBound)
+                        }
                     }
 
                 Text(unitLabel)
@@ -411,8 +418,14 @@ struct MetricsScreen<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
-                content()
+            // Group the glass rows in one GlassEffectContainer so their iOS 26
+            // Liquid Glass shapes morph together instead of animating their
+            // positions independently when the Activity-level Menu opens and the
+            // page scrolls (the cause of the "text flies around" jolt).
+            GlassCardStack(spacing: 20) {
+                VStack(spacing: 20) {
+                    content()
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 12)

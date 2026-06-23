@@ -74,6 +74,8 @@ struct WeightField: View {
     let range: ClosedRange<Double>
     let unitLabel: String
 
+    @FocusState private var isEditing: Bool
+
     private var step: Double { 0.5 }
 
     var body: some View {
@@ -84,8 +86,14 @@ struct WeightField: View {
                     .multilineTextAlignment(.trailing)
                     .font(.title3.monospacedDigit())
                     .frame(minWidth: 64, minHeight: 44)
-                    .onChange(of: value) { _, newValue in
-                        value = min(max(newValue, range.lowerBound), range.upperBound)
+                    .focused($isEditing)
+                    // Clamp to the valid range only when editing FINISHES. Clamping
+                    // on every keystroke turned a leading "1" (below the imperial
+                    // 4 lb floor) into "4", so "185" became "485".
+                    .onChange(of: isEditing) { _, editing in
+                        if !editing {
+                            value = min(max(value, range.lowerBound), range.upperBound)
+                        }
                     }
 
                 Text(unitLabel)
