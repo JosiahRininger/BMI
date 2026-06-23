@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!--
+	  HealthKit capability. Without this entitlement, HKHealthStore.requestAuthorization
+	  throws and reads return nothing, so the "Use Health data" prefill silently does
+	  nothing (the Info.plist usage strings alone are necessary but not sufficient).
+	  Automatic signing adds the matching capability to the provisioning profile.
+	-->
+	<key>com.apple.developer.healthkit</key>
+	<true/>
+</dict>
+</plist>

@@ -13,6 +13,7 @@
 //
 
 import SwiftUI
+import SafariServices
 
 // MARK: - Settings
 
@@ -42,6 +43,7 @@ struct SettingsView: View {
     @State private var showFullDisclaimer = false
     @State private var showPaywall = false
     @State private var showProfiles = false
+    @State private var showPrivacy = false
 
     private enum HealthConnectState { case unknown, connected, notConnected, working }
 
@@ -370,7 +372,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section("About") {
             Button {
-                openURL(AppLinks.privacyPolicy)
+                showPrivacy = true
             } label: {
                 settingsRow(title: "Privacy Policy", systemImage: "hand.raised.fill", showsChevron: true)
             }
@@ -397,6 +399,11 @@ struct SettingsView: View {
         .listRowBackground(DSColor.secondaryBackground)
         .sheet(isPresented: $showFullDisclaimer) {
             DisclaimerSheet()
+        }
+        .sheet(isPresented: $showPrivacy) {
+            // Open the policy in an in-app browser rather than leaving the app.
+            SafariView(url: AppLinks.privacyPolicy)
+                .ignoresSafeArea()
         }
     }
 
@@ -601,6 +608,20 @@ private struct ThemeSwatch: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .accessibilityHint(isLocked ? "Unlock with BMI Pro" : "Use this accent")
     }
+}
+
+// MARK: - In-app Browser
+
+/// Presents a URL in an in-app `SFSafariViewController` so links (e.g. the
+/// privacy policy) open inside the app instead of switching to Safari.
+private struct SafariView: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
 
 // MARK: - App Links

@@ -28,10 +28,8 @@ settings:
     # intact; revisit Swift 6 mode after an Xcode update or by isolating that thunk.
     SWIFT_VERSION: "5.0"
     SWIFT_STRICT_CONCURRENCY: minimal
-    CODE_SIGNING_ALLOWED: "NO"
-    CODE_SIGNING_REQUIRED: "NO"
-    CODE_SIGN_IDENTITY: ""
-    DEVELOPMENT_TEAM: ""
+    DEVELOPMENT_TEAM: BPW45ZHW4H
+    CODE_SIGN_STYLE: Automatic
 
 targets:
   BMICalculator:
@@ -62,6 +60,9 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
         INFOPLIST_KEY_NSHealthShareUsageDescription: "BMI Calculator reads your height and weight from Health to prefill the calculator. Health data never leaves your device and is never used for ads."
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: "BMI Calculator can save your weight and BMI to Health after a calculation, if you choose."
+        # HealthKit capability — required for the Apple Health prefill to work
+        # (usage strings above are not sufficient on their own).
+        CODE_SIGN_ENTITLEMENTS: BMICalculator.entitlements
     dependencies:
       - target: BMIWidget            # embeds the widget extension into the app
 
