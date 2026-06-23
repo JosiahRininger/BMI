@@ -114,26 +114,27 @@ private struct ShareProgressSheet: View {
         }
     }
 
-    /// On-screen preview of the fixed render canvas, scaled to fit the available
-    /// width while preserving the 1080×1920 aspect ratio. The card content itself
-    /// is never restructured — only the display size adapts.
+    /// On-screen preview of the shareable card. Shows the SAME rasterized image
+    /// that will be shared (so the preview is pixel-identical), as a resizable
+    /// `Image`. A resizable image has an intrinsic size, so `.aspectRatio(.fit)`
+    /// resolves correctly inside the vertically-unbounded `ScrollView` — unlike a
+    /// `GeometryReader`, which collapsed to zero here and rendered blank.
     private var cardPreview: some View {
-        // Aspect ratio of the fixed canvas; reused to reserve vertical space.
         let aspect = ShareCardView.canvas.width / ShareCardView.canvas.height
-        return GeometryReader { proxy in
-            let targetWidth = proxy.size.width
-            let scale = targetWidth / ShareCardView.canvas.width
-            ShareCardView(payload: payload)
-                .frame(width: ShareCardView.canvas.width, height: ShareCardView.canvas.height)
-                .scaleEffect(scale, anchor: .topLeading)
-                .frame(width: targetWidth, height: ShareCardView.canvas.height * scale)
-                .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
-                .shadow(radius: 12, y: 6)
+        return Group {
+            if let image = renderedImage {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(aspect, contentMode: .fit)
+            } else {
+                RoundedRectangle(cornerRadius: 28, style: .continuous)
+                    .fill(Theme.brandGradient)
+                    .aspectRatio(aspect, contentMode: .fit)
+                    .overlay(ProgressView().tint(.white))
+            }
         }
-        // Reserve the correct height so the GeometryReader doesn't collapse and
-        // the ScrollView lays the preview out at its true scaled size. Capped so
-        // it never dominates the sheet on tall/iPad layouts.
-        .aspectRatio(aspect, contentMode: .fit)
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .shadow(radius: 12, y: 6)
         .frame(maxWidth: 340)
         .frame(maxWidth: .infinity)
         .padding(.horizontal)

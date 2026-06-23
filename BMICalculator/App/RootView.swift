@@ -185,7 +185,8 @@ struct PaywallSheet: View {
             .padding(24)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(backgroundFill.ignoresSafeArea())
-            .navigationTitle("BMI Pro")
+            // No navigationTitle: the hero header already reads "BMI Pro", and an
+            // inline title here overlapped the sparkle at the medium detent.
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
