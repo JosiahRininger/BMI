@@ -115,11 +115,12 @@ final class ProfileStore {
         //    widget/Spotlight during the launch window (before StoreKit resolves
         //    and AppServices.start() calls enforceFreeTier).
         let cachedIsPro = UserDefaults(suiteName: "group.com.jdr.BMI")?.bool(forKey: "store.isPro.cache") ?? false
-        enforceFreeTier(isPro: cachedIsPro)
-
-        // Rebuild the widget snapshot so it reflects the active profile from
-        // launch — the pre-migration snapshot was built from ALL records.
-        refreshWidget()
+        // If this collapses the active profile it already refreshed the widget;
+        // otherwise publish the current active profile's snapshot now (the
+        // pre-migration snapshot was built from ALL records).
+        if !enforceFreeTier(isPro: cachedIsPro) {
+            refreshWidget()
+        }
     }
 
     /// Adopts records with no profile, OR a dangling profile id (pointing at a
@@ -162,12 +163,14 @@ final class ProfileStore {
     /// tier is genuinely one profile regardless of which UI path was used.
     /// Existing profiles and their records are PRESERVED (only the active
     /// pointer resets) so re-purchasing restores full access immediately.
-    func enforceFreeTier(isPro: Bool) {
+    @discardableResult
+    func enforceFreeTier(isPro: Bool) -> Bool {
         guard !isPro,
               let defaultID = profiles.first?.id,
               activeProfileID != defaultID
-        else { return }
-        setActive(defaultID)
+        else { return false }
+        setActive(defaultID)   // also refreshes the widget
+        return true
     }
 
     /// Adds a new profile and makes it active. Returns the created profile, or

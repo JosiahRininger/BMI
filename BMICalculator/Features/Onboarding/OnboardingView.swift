@@ -670,12 +670,16 @@ private struct ConnectHealthRow: View {
 private struct WeeklyReminderRow: View {
     let notifications: NotificationService
 
-    @AppStorage(AppStorageKey.weeklyReminderEnabled) private var enabled: Bool = false
-    // The shared cadence key Settings + the service actually read, so the
-    // onboarding choice isn't stranded in a key nothing else consumes.
+    // Single source of truth: the shared cadence key Settings + the service read.
+    // Default .off — reminders are opt-in (no surprise notifications), and the
+    // toggle's on/off derives from this, so the two surfaces can never diverge.
     @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String =
-        NotificationService.ReminderCadence.weekly.rawValue
+        NotificationService.ReminderCadence.off.rawValue
     @State private var isRequesting = false
+
+    private var isOn: Bool {
+        (NotificationService.ReminderCadence(rawValue: reminderCadenceRaw) ?? .off) != .off
+    }
 
     var body: some View {
         DSCard {
@@ -703,7 +707,7 @@ private struct WeeklyReminderRow: View {
                         ProgressView()
                             .accessibilityLabel("Setting up weekly reminder")
                     } else {
-                        Toggle("Weekly check-in reminder", isOn: Binding(get: { enabled }, set: setEnabled))
+                        Toggle("Weekly check-in reminder", isOn: Binding(get: { isOn }, set: setEnabled))
                             .labelsHidden()
                             .tint(DSColor.brand)
                             .accessibilityHint("Sends a gentle reminder to check in once a week")
@@ -717,8 +721,6 @@ private struct WeeklyReminderRow: View {
 
     private func setEnabled(_ newValue: Bool) {
         guard newValue else {
-            enabled = false
-            // Write the shared cadence so Settings shows an accurate "Off".
             reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
             notifications.cadence = .off
             notifications.cancelWeeklyReminder()
@@ -729,11 +731,9 @@ private struct WeeklyReminderRow: View {
             let granted = await notifications.requestAuthorization()
             if granted {
                 await notifications.scheduleWeeklyReminder()
-                enabled = true
                 reminderCadenceRaw = NotificationService.ReminderCadence.weekly.rawValue
                 notifications.cadence = .weekly
             } else {
-                enabled = false
                 reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
                 notifications.cadence = .off
             }

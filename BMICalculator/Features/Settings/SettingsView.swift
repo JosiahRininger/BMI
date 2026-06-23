@@ -23,7 +23,7 @@ struct SettingsView: View {
 
     @AppStorage(AppStorageKey.unitSystem) private var unitSystemRaw: String = UnitSystem.metric.rawValue
     @AppStorage(AppStorageKey.healthStandard) private var healthStandardRaw: String = HealthStandard.standard.rawValue
-    @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String = NotificationService.ReminderCadence.weekly.rawValue
+    @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String = NotificationService.ReminderCadence.off.rawValue
 
     // MARK: Services
 
@@ -467,7 +467,7 @@ struct SettingsView: View {
     }
 
     private var reminderCadence: NotificationService.ReminderCadence {
-        NotificationService.ReminderCadence(rawValue: reminderCadenceRaw) ?? .weekly
+        NotificationService.ReminderCadence(rawValue: reminderCadenceRaw) ?? .off
     }
 
     private func setCadence(_ cadence: NotificationService.ReminderCadence) {

@@ -67,10 +67,8 @@ enum AppStorageKey {
     /// `String` — the chosen ``HealthStandard`` raw value (standard/asian).
     static let healthStandard = "app.healthStandard"
 
-    /// `Bool` — whether the weekly weigh-in reminder is enabled (onboarding's simple opt-in).
-    static let weeklyReminderEnabled = "app.weeklyReminderEnabled"
-
-    /// `String` — the chosen ``NotificationService/ReminderCadence`` raw value (Settings).
+    /// `String` — the chosen ``NotificationService/ReminderCadence`` raw value, the
+    /// single source of truth for reminders (Settings + onboarding + the service).
     static let reminderCadence = "app.reminderCadence"
 
     /// `String` — the chosen ``AppTheme`` raw value (BMI Pro accent palette).
@@ -351,7 +349,7 @@ final class AppServices {
         // the person's choice instead of the in-memory .weekly default (which
         // would silently downgrade a Daily user or resurrect an Off one).
         let cadenceRaw = UserDefaults.standard.string(forKey: AppStorageKey.reminderCadence)
-        notifications.cadence = NotificationService.ReminderCadence(rawValue: cadenceRaw ?? "") ?? .weekly
+        notifications.cadence = NotificationService.ReminderCadence(rawValue: cadenceRaw ?? "") ?? .off
         await notifications.refreshStatus()
     }
 
