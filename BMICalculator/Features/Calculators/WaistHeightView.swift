@@ -15,8 +15,10 @@ struct WaistHeightView: View {
 
     @State private var input = MetricsInputModel()
 
-    /// Waist circumference in the person's display unit (cm or in).
-    @State private var waist: Double = 86
+    /// Waist circumference stored canonically in centimetres; displayed/edited
+    /// in the active unit via MetricsUnit.lengthBinding, so it always renders at
+    /// a sensible magnitude regardless of the saved unit preference.
+    @State private var waistCm: Double = MetricsDefaults.waistCentimeters
 
     private var waistRange: ClosedRange<Double> {
         input.unitSystem == .metric ? 30...200 : 12...80
@@ -30,7 +32,7 @@ struct WaistHeightView: View {
             MeasurementField(
                 title: "Waist",
                 systemImage: "figure.walk",
-                value: $waist,
+                value: MetricsUnit.lengthBinding(centimeters: $waistCm, system: input.unitSystem),
                 range: waistRange,
                 unitLabel: MetricsUnit.lengthLabel(input.unitSystem)
             )
@@ -41,18 +43,12 @@ struct WaistHeightView: View {
 
             MetricsDisclaimerFooter()
         }
-        .onChange(of: input.unitSystem) { old, new in
-            guard old != new else { return }
-            let cm = MetricsUnit.centimeters(fromDisplay: waist, system: old)
-            waist = (MetricsUnit.displayLength(fromCentimeters: cm, system: new) * 10).rounded() / 10
-        }
     }
 
     // MARK: Result
 
     private var resultCard: some View {
         let heightCm = input.heightCentimetersMetric
-        let waistCm = MetricsUnit.centimeters(fromDisplay: waist, system: input.unitSystem)
         let ratio = RatioCalculator.waistToHeightRatio(
             waistCentimeters: waistCm,
             heightCentimeters: heightCm

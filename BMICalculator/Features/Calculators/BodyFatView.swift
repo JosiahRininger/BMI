@@ -21,10 +21,13 @@ struct BodyFatView: View {
     @State private var input = MetricsInputModel()
     @State private var sex: Sex = .male
 
-    // Circumferences in the person's *display* unit (cm or in).
-    @State private var neck: Double = 38
-    @State private var waist: Double = 86
-    @State private var hip: Double = 96
+    // Circumferences stored canonically in centimetres; displayed/edited in the
+    // active unit via MetricsUnit.lengthBinding, so they always render at a
+    // sensible magnitude regardless of the saved unit preference (no separate
+    // display state to seed or reconcile on appear).
+    @State private var neckCm: Double = MetricsDefaults.neckCentimeters
+    @State private var waistCm: Double = MetricsDefaults.waistCentimeters
+    @State private var hipCm: Double = MetricsDefaults.hipCentimeters
 
     /// Sensible bounds for circumferences, in the active display unit.
     private var circumferenceRange: ClosedRange<Double> {
@@ -41,7 +44,7 @@ struct BodyFatView: View {
             MeasurementField(
                 title: "Neck",
                 systemImage: "figure.stand",
-                value: $neck,
+                value: MetricsUnit.lengthBinding(centimeters: $neckCm, system: input.unitSystem),
                 range: circumferenceRange,
                 unitLabel: lengthLabel
             )
@@ -49,7 +52,7 @@ struct BodyFatView: View {
             MeasurementField(
                 title: "Waist",
                 systemImage: "figure.walk",
-                value: $waist,
+                value: MetricsUnit.lengthBinding(centimeters: $waistCm, system: input.unitSystem),
                 range: circumferenceRange,
                 unitLabel: lengthLabel
             )
@@ -58,7 +61,7 @@ struct BodyFatView: View {
                 MeasurementField(
                     title: "Hip",
                     systemImage: "figure.arms.open",
-                    value: $hip,
+                    value: MetricsUnit.lengthBinding(centimeters: $hipCm, system: input.unitSystem),
                     range: circumferenceRange,
                     unitLabel: lengthLabel
                 )
@@ -69,12 +72,6 @@ struct BodyFatView: View {
             resultSection
 
             MetricsDisclaimerFooter()
-        }
-        // When switching unit systems, convert the circumference values so the
-        // represented body is unchanged (the body section already converts
-        // height/weight; circumferences live here).
-        .onChange(of: input.unitSystem) { old, new in
-            convertCircumferences(from: old, to: new)
         }
     }
 
@@ -102,18 +99,13 @@ struct BodyFatView: View {
     @ViewBuilder
     private var resultSection: some View {
         let heightCm = input.heightCentimetersMetric
-        let neckCm = MetricsUnit.centimeters(fromDisplay: neck, system: input.unitSystem)
-        let waistCm = MetricsUnit.centimeters(fromDisplay: waist, system: input.unitSystem)
-        let hipCm = sex == .female
-            ? MetricsUnit.centimeters(fromDisplay: hip, system: input.unitSystem)
-            : nil
 
         let percent = BodyFatCalculator.usNavyBodyFatPercent(
             sex: sex,
             heightCentimeters: heightCm,
             neckCentimeters: neckCm,
             waistCentimeters: waistCm,
-            hipCentimeters: hipCm
+            hipCentimeters: sex == .female ? hipCm : nil
         )
 
         if let percent, percent.isFinite, percent > 0, percent < 100 {
@@ -143,19 +135,6 @@ struct BodyFatView: View {
         }
     }
 
-    // MARK: Unit conversion for circumferences
-
-    private func convertCircumferences(from old: UnitSystem, to new: UnitSystem) {
-        guard old != new else { return }
-        func convert(_ v: Double) -> Double {
-            let cm = MetricsUnit.centimeters(fromDisplay: v, system: old)
-            let display = MetricsUnit.displayLength(fromCentimeters: cm, system: new)
-            return (display * 10).rounded() / 10
-        }
-        neck = convert(neck)
-        waist = convert(waist)
-        hip = convert(hip)
-    }
 }
 
 // MARK: - Preview

@@ -261,6 +261,32 @@ enum MetricsUnit {
         return value.formatted(.number.precision(.fractionLength(0...fractionDigits)))
             + " " + system.weightUnitLabel
     }
+
+    /// A display-unit `Binding` over a value stored canonically in centimetres.
+    /// The field always shows a magnitude consistent with the active unit, so a
+    /// canonical default (e.g. 86 cm) never renders as a raw inch literal
+    /// ("86 in") regardless of the saved unit preference — there is no separate
+    /// display state to seed or reconcile. Reads round to 1 decimal for display;
+    /// writes convert the typed display value back to centimetres.
+    static func lengthBinding(centimeters cm: Binding<Double>, system: UnitSystem) -> Binding<Double> {
+        Binding(
+            get: { (displayLength(fromCentimeters: cm.wrappedValue, system: system) * 10).rounded() / 10 },
+            set: { cm.wrappedValue = centimeters(fromDisplay: $0, system: system) }
+        )
+    }
+}
+
+// MARK: - MetricsDefaults
+
+/// Canonical default circumferences in CENTIMETRES for the metrics screens.
+/// Stored in cm (the Core unit) so they render to a sensible magnitude in BOTH
+/// unit systems via ``MetricsUnit/lengthBinding(centimeters:system:)`` — a raw
+/// cm literal shown as inches reads absurdly large (e.g. 86 → "86 in").
+enum MetricsDefaults {
+    static let neckCentimeters: Double = 38     // ≈ 15 in
+    static let waistCentimeters: Double = 86    // ≈ 34 in
+    static let hipCentimeters: Double = 96      // ≈ 38 in
+    static let wristCentimeters: Double = 17    // ≈ 6.7 in
 }
 
 // MARK: - MetricResultCard

@@ -17,8 +17,10 @@ struct FrameSizeView: View {
     @State private var input = MetricsInputModel()
     @State private var sex: Sex = .male
 
-    /// Wrist circumference in the person's display unit (cm or in).
-    @State private var wrist: Double = 17
+    /// Wrist circumference stored canonically in centimetres; displayed/edited
+    /// in the active unit via MetricsUnit.lengthBinding, so it always renders at
+    /// a sensible magnitude regardless of the saved unit preference.
+    @State private var wristCm: Double = MetricsDefaults.wristCentimeters
 
     private var wristRange: ClosedRange<Double> {
         input.unitSystem == .metric ? 10...25 : 4...10
@@ -34,7 +36,7 @@ struct FrameSizeView: View {
             MeasurementField(
                 title: "Wrist",
                 systemImage: "hand.raised",
-                value: $wrist,
+                value: MetricsUnit.lengthBinding(centimeters: $wristCm, system: input.unitSystem),
                 range: wristRange,
                 unitLabel: MetricsUnit.lengthLabel(input.unitSystem)
             )
@@ -44,11 +46,6 @@ struct FrameSizeView: View {
             resultCard
 
             MetricsDisclaimerFooter()
-        }
-        .onChange(of: input.unitSystem) { old, new in
-            guard old != new else { return }
-            let cm = MetricsUnit.centimeters(fromDisplay: wrist, system: old)
-            wrist = (MetricsUnit.displayLength(fromCentimeters: cm, system: new) * 10).rounded() / 10
         }
     }
 
@@ -72,7 +69,6 @@ struct FrameSizeView: View {
     // MARK: Result
 
     private var resultCard: some View {
-        let wristCm = MetricsUnit.centimeters(fromDisplay: wrist, system: input.unitSystem)
         let frame = FrameSizeCalculator.frame(
             heightCentimeters: input.heightCentimetersMetric,
             wristCentimeters: wristCm,

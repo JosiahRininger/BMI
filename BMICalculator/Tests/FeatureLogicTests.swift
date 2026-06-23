@@ -9,7 +9,59 @@
 
 import Testing
 import Foundation
+import SwiftUI
 @testable import BMICalculator
+
+// MARK: - Metrics circumference defaults
+
+@Suite("Metrics circumference defaults")
+@MainActor
+struct MetricsDefaultsTests {
+
+    @Test("Default circumferences render to sensible INCH magnitudes in imperial")
+    func sensibleInImperial() {
+        // Regression: a raw cm literal (86) shown as inches read absurdly ("86 in").
+        let waist = MetricsUnit.displayLength(fromCentimeters: MetricsDefaults.waistCentimeters, system: .imperial)
+        #expect(waist > 30 && waist < 40)      // ~33.9 in, NOT 86
+        let neck = MetricsUnit.displayLength(fromCentimeters: MetricsDefaults.neckCentimeters, system: .imperial)
+        #expect(neck > 12 && neck < 18)        // ~15 in
+        let hip = MetricsUnit.displayLength(fromCentimeters: MetricsDefaults.hipCentimeters, system: .imperial)
+        #expect(hip > 30 && hip < 42)          // ~37.8 in
+        let wrist = MetricsUnit.displayLength(fromCentimeters: MetricsDefaults.wristCentimeters, system: .imperial)
+        #expect(wrist > 5 && wrist < 9)        // ~6.7 in
+    }
+
+    @Test("Defaults are unchanged in metric (already centimetres)")
+    func unchangedInMetric() {
+        #expect(MetricsUnit.displayLength(fromCentimeters: MetricsDefaults.waistCentimeters, system: .metric) == 86)
+        #expect(MetricsUnit.displayLength(fromCentimeters: MetricsDefaults.wristCentimeters, system: .metric) == 17)
+    }
+
+    @Test("lengthBinding shows a sensible imperial value and writes back to centimetres")
+    func lengthBindingRoundTrip() {
+        var cm = MetricsDefaults.waistCentimeters
+        let binding = MetricsUnit.lengthBinding(
+            centimeters: Binding(get: { cm }, set: { cm = $0 }),
+            system: .imperial
+        )
+        #expect(binding.wrappedValue > 30 && binding.wrappedValue < 40)   // ~33.9 in
+        binding.wrappedValue = 34                                         // user types 34 in
+        #expect(abs(cm - 86.36) < 0.01)                                   // stored as 34 * 2.54 cm
+        #expect(abs(binding.wrappedValue - 34.0) < 0.05)                  // reads back ~34
+    }
+
+    @Test("Seeded body-fat defaults give a plausible figure, not the ~53% the bug produced")
+    func seededBodyFatPlausible() {
+        // Canonical defaults (neck 38, waist 86 cm) at the model's default 170 cm.
+        let percent = BodyFatCalculator.usNavyBodyFatPercent(
+            sex: .male, heightCentimeters: 170,
+            neckCentimeters: MetricsDefaults.neckCentimeters,
+            waistCentimeters: MetricsDefaults.waistCentimeters
+        )
+        #expect(percent != nil)
+        #expect((10.0...30.0).contains(percent ?? 0))   // ~18.7%, not ~53%
+    }
+}
 
 // MARK: - MetricsInputModel
 
