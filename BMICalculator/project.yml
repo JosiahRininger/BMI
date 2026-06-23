@@ -43,6 +43,7 @@ targets:
       - path: Services
       - path: Intents
       - path: BMIWidget/BMISharedStore.swift   # shared App-Group store (also in widget)
+      - path: PrivacyInfo.xcprivacy            # App Store privacy manifest (resource)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI
