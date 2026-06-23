@@ -78,6 +78,11 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
             .task { await refreshHealthState() }
+            .onChange(of: healthStandardRaw) { _, raw in
+                // Mirror the chosen standard into the App Group so other processes
+                // (the Siri/Shortcut intent) categorize the same way the app does.
+                UserDefaults(suiteName: AppConfig.appGroupID)?.set(raw, forKey: AppStorageKey.healthStandard)
+            }
             .sheet(isPresented: $showPaywall) {
                 PaywallSheet()
             }

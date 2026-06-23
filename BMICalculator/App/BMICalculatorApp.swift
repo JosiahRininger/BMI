@@ -25,6 +25,7 @@ import SwiftUI
 import SwiftData
 import UserNotifications
 import StoreKit
+import CoreSpotlight
 
 // MARK: - App Configuration
 
@@ -350,6 +351,14 @@ final class AppServices {
         // would silently downgrade a Daily user or resurrect an Off one).
         let cadenceRaw = UserDefaults.standard.string(forKey: AppStorageKey.reminderCadence)
         notifications.cadence = NotificationService.ReminderCadence(rawValue: cadenceRaw ?? "") ?? .off
+
+        // Mirror the chosen BMI-cutoff standard into the App Group so the
+        // Siri/Shortcut intent (which may run headless in the extension process)
+        // can read it cross-process.
+        if let group = UserDefaults(suiteName: AppConfig.appGroupID) {
+            let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard) ?? HealthStandard.standard.rawValue
+            group.set(raw, forKey: AppStorageKey.healthStandard)
+        }
         await notifications.refreshStatus()
     }
 
@@ -437,6 +446,15 @@ struct BMICalculatorApp: App {
                 // single `onOpenURL` handler covers every launch source.
                 .onOpenURL { url in
                     router.handle(url: url)
+                }
+                // Tapping a donated BMI result in Spotlight launches the app with
+                // a CoreSpotlight activity; open History, where the saved result
+                // lives. (The activity identifier is the deterministic id from
+                // BMIResultEntity.deterministicID.)
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    if activity.userInfo?[CSSearchableItemActivityIdentifier] != nil {
+                        router.handle(.history)
+                    }
                 }
         }
         .modelContainer(modelContainer)

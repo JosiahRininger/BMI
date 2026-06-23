@@ -111,13 +111,14 @@ struct CalculateBMIIntent: AppIntent {
         }
 
         // Categorize with the person's chosen standard (Standard vs Asian) so the
-        // result matches the app when the intent runs in the app's process. NOTE:
-        // a headless extension run has its own (empty) UserDefaults.standard and
-        // falls back to .standard; full cross-process parity needs the standard
-        // mirrored to the App Group suite, pending the App Group entitlement.
-        // The key string is duplicated from AppStorageKey because this file is
-        // also compiled into the widget target, which excludes the App module.
-        let standardRaw = UserDefaults.standard.string(forKey: "app.healthStandard") ?? ""
+        // result matches the app even when this runs headless in the extension
+        // process. The app mirrors the standard into the App Group suite, so read
+        // that first (cross-process), then the app's own defaults (in-process).
+        // Key strings are duplicated from AppStorageKey/AppConfig because this
+        // file is also compiled into the widget target, which excludes App.
+        let standardRaw = UserDefaults(suiteName: "group.com.jdr.BMI")?.string(forKey: "app.healthStandard")
+            ?? UserDefaults.standard.string(forKey: "app.healthStandard")
+            ?? ""
         let standard = HealthStandard(rawValue: standardRaw) ?? .standard
         let result = BMICalculator.result(
             weightKilograms: weightKilograms,
