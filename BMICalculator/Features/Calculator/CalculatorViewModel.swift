@@ -115,6 +115,9 @@ public final class CalculatorViewModel {
         didSet {
             guard oldValue != unitSystem else { return }
             convertInputs(from: oldValue, to: unitSystem)
+            // Remember the choice so the calculator opens in the last-used units
+            // next time (and stays in sync with Settings).
+            UserDefaults.standard.set(unitSystem.rawValue, forKey: AppStorageKey.unitSystem)
         }
     }
 
@@ -200,9 +203,25 @@ public final class CalculatorViewModel {
     ///   - store: Pro/purchase state (for the upsell and ad gating).
     ///   - ads: interstitial coordinator.
     ///   - reviewPrompter: review-prompt coordinator.
+    /// The person's saved unit preference (chosen in onboarding, then updated on
+    /// every change), so the calculator opens in the units they last used.
+    /// `nonisolated` so it can seed the init's default argument; reads only the
+    /// thread-safe `UserDefaults`.
+    public nonisolated static var savedUnitSystem: UnitSystem {
+        let raw = UserDefaults.standard.string(forKey: AppStorageKey.unitSystem)
+        return UnitSystem(rawValue: raw ?? "") ?? .metric
+    }
+
+    /// The saved BMI-cutoff standard (chosen in Settings), so the calculator
+    /// categorizes with the person's preference without a per-screen toggle.
+    public nonisolated static var savedStandard: HealthStandard {
+        let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard)
+        return HealthStandard(rawValue: raw ?? "") ?? .standard
+    }
+
     public init(
-        unitSystem: UnitSystem = .metric,
-        standard: HealthStandard = .standard,
+        unitSystem: UnitSystem = CalculatorViewModel.savedUnitSystem,
+        standard: HealthStandard = CalculatorViewModel.savedStandard,
         store: (any ProState)? = nil,
         ads: (any InterstitialPresenting)? = nil,
         reviewPrompter: (any ReviewRequesting)? = nil,

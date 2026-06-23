@@ -50,7 +50,7 @@ struct CalculatorViewModelConversionTests {
 
     @Test("Defaults: metric 70 kg / 170 cm")
     func defaults() {
-        let vm = CalculatorViewModel()
+        let vm = CalculatorViewModel(unitSystem: .metric)
         #expect(vm.weight == 70)
         #expect(abs(vm.weightKilograms - 70) < 0.0001)
         #expect(abs(vm.heightMeters - 1.70) < 0.0001)
@@ -58,7 +58,7 @@ struct CalculatorViewModelConversionTests {
 
     @Test("Switching metric → imperial preserves the represented body (kg/m within rounding)")
     func metricToImperial() {
-        let vm = CalculatorViewModel()
+        let vm = CalculatorViewModel(unitSystem: .metric)
         vm.unitSystem = .imperial
         #expect(abs(vm.weightKilograms - 70) < 0.5)   // weight rounds to whole lb
         #expect(abs(vm.heightMeters - 1.70) < 0.02)
@@ -66,7 +66,7 @@ struct CalculatorViewModelConversionTests {
 
     @Test("Switching metric → stone preserves the represented body")
     func metricToStone() {
-        let vm = CalculatorViewModel()
+        let vm = CalculatorViewModel(unitSystem: .metric)
         vm.unitSystem = .stone
         #expect(abs(vm.weightKilograms - 70) < 0.6)   // weight rounds to 0.1 st
         #expect(abs(vm.heightMeters - 1.70) < 0.02)
@@ -74,7 +74,7 @@ struct CalculatorViewModelConversionTests {
 
     @Test("A full unit round-trip returns to the original kilograms")
     func roundTrip() {
-        let vm = CalculatorViewModel()
+        let vm = CalculatorViewModel(unitSystem: .metric)
         let kg0 = vm.weightKilograms
         vm.unitSystem = .imperial
         vm.unitSystem = .stone

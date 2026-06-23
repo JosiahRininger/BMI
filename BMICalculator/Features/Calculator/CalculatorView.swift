@@ -98,6 +98,11 @@ struct CalculatorView: View {
 
     @State private var model: CalculatorViewModel
 
+    /// The BMI-cutoff standard chosen in Settings. Observed so the calculator
+    /// re-categorizes live when the person flips it there (the per-screen toggle
+    /// was removed).
+    @AppStorage(AppStorageKey.healthStandard) private var standardRaw = HealthStandard.standard.rawValue
+
     /// When Reduce Motion is on, result insertion crossfades rather than springs.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -156,6 +161,11 @@ struct CalculatorView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task {
             bindCollaborators()
+            model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
+        }
+        // Keep the calculator's categorization in sync with the Settings choice.
+        .onChange(of: standardRaw) { _, raw in
+            model.standard = HealthStandard(rawValue: raw) ?? .standard
         }
     }
 
@@ -179,8 +189,8 @@ struct CalculatorView: View {
                 feetRange: model.feetRange,
                 inchesRange: model.inchesRange
             )
-
-            HealthStandardToggle(standard: $model.standard)
+            // The Standard/Asian cutoff choice now lives only in onboarding +
+            // Settings (it's a one-time preference, not a per-calculation toggle).
         }
     }
 
