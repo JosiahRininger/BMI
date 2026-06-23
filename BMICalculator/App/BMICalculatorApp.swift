@@ -447,10 +447,13 @@ struct BMICalculatorApp: App {
                 .onOpenURL { url in
                     router.handle(url: url)
                 }
-                // Tapping a donated BMI result in Spotlight launches the app with
-                // a CoreSpotlight activity; open History, where the saved result
-                // lives. (The activity identifier is the deterministic id from
-                // BMIResultEntity.deterministicID.)
+                // Tapping a donated BMI result in Spotlight launches the app with a
+                // CoreSpotlight activity; land on History as a best-effort
+                // destination. In-app calculations live there; a headless
+                // Siri/Shortcut result is indexed but not yet persisted, so its
+                // exact entry won't be present until intent-result persistence
+                // lands (a known deferred item). The identifier is the
+                // deterministic id from BMIResultEntity.deterministicID.
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
                     if activity.userInfo?[CSSearchableItemActivityIdentifier] != nil {
                         router.handle(.history)
