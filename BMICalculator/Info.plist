@@ -21,5 +21,13 @@
 			</array>
 		</dict>
 	</array>
+
+	<!--
+	  Export compliance: the app uses only standard OS-provided encryption (HTTPS),
+	  no custom/proprietary crypto, so it is exempt. Declaring NO lets every upload
+	  skip the manual "missing compliance" prompt in App Store Connect / TestFlight.
+	-->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>

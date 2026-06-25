@@ -64,9 +64,10 @@ struct BannerSlot: View {
         if isPro {
             EmptyView()
         } else {
-            // The Ads module installs the concrete `BannerAdView` here via the
-            // App layer. Until then this reserves the standard banner height so
-            // layout does not jump when the real banner loads.
+            #if canImport(GoogleMobileAds)
+            // Reserve the standard banner height so layout doesn't jump when the
+            // real (NPA) banner loads. Only present when the ad SDK is linked —
+            // an ad-free build (no SDK) shows nothing rather than a fake label.
             Color.clear
                 .frame(height: 50)
                 .frame(maxWidth: .infinity)
@@ -76,6 +77,9 @@ struct BannerSlot: View {
                         .foregroundStyle(.tertiary)
                 )
                 .accessibilityHidden(true)
+            #else
+            EmptyView()
+            #endif
         }
     }
 }

@@ -241,7 +241,9 @@ struct PaywallSheet: View {
 
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 14) {
+            #if canImport(GoogleMobileAds)
             featureRow("rectangle.slash", "Remove all ads")
+            #endif
             featureRow("square.and.arrow.up", "Export your history (CSV & PDF)")
             featureRow("paintpalette", "Custom accent themes")
             featureRow("person.2.fill", "Track multiple people")

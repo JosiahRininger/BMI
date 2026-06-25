@@ -335,7 +335,7 @@ struct SettingsView: View {
                     Text("Unlock BMI Pro")
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
-                    Text("One purchase removes all ads, unlocks history export and custom themes, and lets you track multiple people. No subscription, ever.")
+                    Text(proSubtitle)
                         .font(DSFont.caption)
                         .foregroundStyle(DSColor.secondaryText)
 
@@ -371,6 +371,16 @@ struct SettingsView: View {
             return "Unlock Pro (\(price))"
         }
         return "Unlock Pro"
+    }
+
+    /// Pro pitch copy. Only promises ad removal when the ad SDK is actually
+    /// linked, so an ad-free build doesn't claim a benefit it can't deliver.
+    private var proSubtitle: String {
+        #if canImport(GoogleMobileAds)
+        return "One purchase removes all ads, unlocks history export and custom themes, and lets you track multiple people. No subscription, ever."
+        #else
+        return "One purchase unlocks history export and custom themes, and lets you track multiple people. No subscription, ever."
+        #endif
     }
 
     // MARK: About / Legal
