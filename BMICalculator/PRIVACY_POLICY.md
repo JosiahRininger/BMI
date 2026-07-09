@@ -13,21 +13,23 @@
 
 ## The short version
 
-BMI Calculator is **private by design**. Your height, weight, BMI, and all other
-measurements are stored **only on your device**. We do **not** collect, transmit,
-sell, or share your personal data. There are **no accounts, no sign-ups, no
-analytics, no tracking, and no advertising** in this app.
+BMI Calculator is **private by design**. Your height, weight, and BMI are stored
+**only on your device**. We do **not** collect, transmit, sell, or share your
+personal data. There are **no accounts, no sign-ups, no analytics, and no
+tracking** in this app. The free version shows a single **non-personalized** ad
+banner that **never** uses your health data; a one-time in-app purchase removes it.
 
 ## What data the app handles, and where it stays
 
-- **Your measurements and history** (height, weight, BMI, body-fat and related
-  estimates, dates, and any profiles you create) are saved locally on your device
-  using Apple's on-device storage (SwiftData). This data never leaves your device
-  except where **you** explicitly choose to send it (for example, using the Share
-  or Export feature to share a card, CSV, or PDF via the iOS share sheet, or
-  saving to Apple Health — both fully under your control).
+- **Your measurements and history** (height, weight, BMI, and dates) are saved
+  locally on your device using Apple's on-device storage (SwiftData). This data
+  never leaves your device except where **you** explicitly choose to send it (for
+  example, saving to Apple Health — fully under your control).
+- The app shares your latest reading with its Home Screen / Lock Screen widget
+  through an **on-device App Group**. This stays on your device and is not
+  transmitted anywhere.
 - We do **not** operate any servers that receive your data, and the app does not
-  transmit your data to us or to any third party.
+  transmit your health data to us or to any third party.
 
 ## Apple Health (HealthKit)
 
@@ -42,25 +44,23 @@ Apple's protection, and is **never** used for advertising or shared with third
 parties. You can grant or revoke this access at any time in the iOS Health app or
 Settings. The app works fully without Apple Health.
 
-## Notifications
-
-If you turn on the optional check-in reminder, the app schedules a **local**
-notification on your device. No notification data is sent to any server.
-
 ## Purchases
 
-BMI Calculator offers an optional one-time in-app purchase ("BMI Pro"). Payments
-are processed by **Apple** through the App Store; we do not receive or store your
-payment information. Apple's handling of your purchase is governed by Apple's
-privacy policy.
+BMI Calculator offers an optional one-time in-app purchase (**"Remove Ads"**) that
+removes the ad banner. Payments are processed by **Apple** through the App Store; we
+do not receive or store your payment information. Apple's handling of your purchase
+is governed by Apple's privacy policy.
 
 ## Advertising
 
-This version of the app contains **no advertising and no advertising or analytics
-SDKs**, and does not use the device's advertising identifier (IDFA). _(If a future
-version introduces ads, this policy and the App Store privacy disclosures will be
-updated before that version ships, and any ads would be configured as
-non-personalized and kept entirely separate from your health data.)_
+The free version of the app shows a single banner ad provided by **Google AdMob**.
+These ads are configured as **non-personalized** (`npa=1`): they are not targeted
+using a personal profile of you, and they **never** use your health data, which
+stays firewalled on your device and is never shared with the ad service. The app
+does **not** track you across other companies' apps and websites. Ad requests are
+handled by Google, and Google's handling of ad delivery is governed by Google's
+privacy policy. You can remove ads entirely with the one-time **"Remove Ads"**
+purchase.
 
 ## Children
 
@@ -71,8 +71,8 @@ including children.
 ## Your control over your data
 
 Because everything is stored locally, **you** control your data: delete individual
-entries or profiles in the app, or delete the app to remove all of its data from
-your device. You can revoke Apple Health access at any time.
+entries in the app, or delete the app to remove all of its data from your device.
+You can revoke Apple Health access at any time.
 
 ## Medical disclaimer
 

@@ -2,10 +2,20 @@
 
 _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a real Xcode build._
 
-> ## ✅ IT COMPILES, LAUNCHES, AND PASSES TESTS (2026-06-19)
+> ## Scope: slimmed to a focused BMI-only app
+> The app is now **BMI-only** — three tabs (**Calculator, History, Settings**). The adjacent
+> calculators (body fat, TDEE/BMR, ideal weight, waist-to-height, frame size, lean mass), multiple
+> profiles, custom accent themes, CSV/PDF export, the share progress card, consecutive-day streaks,
+> and check-in reminder notifications were **removed** in the slim-down. Monetization is a single
+> **non-personalized AdMob banner** (`npa=1`) on the free tier plus one non-consumable **Remove Ads**
+> IAP (`com.bmi.removeads`) — no subscription, and no interstitial/rewarded/video ads in the shipping
+> build (interstitial code exists but is dormant/off). Health data stays on device and is firewalled
+> from ads.
+
+> ## ✅ IT COMPILES, LAUNCHES, AND PASSES TESTS
 > The full app was generated with `xcodegen` (`project.yml`) and **built for the iOS 26.3 simulator
 > with Xcode 26.2** — `** BUILD SUCCEEDED **`. It **launches on iPhone 17** and the bundled
-> **Swift Testing suite passes 31/31** (`✔ Test run with 31 tests in 6 suites passed`).
+> **Swift Testing suite passes 115/115** (`✔ Test run with 115 tests passed`).
 > Two notable workarounds: (1) the project is in **Swift 5 language mode** — Swift 6 mode hit a
 > `swift-frontend` IRGen **compiler crash** (an Apple bug) on an async/actor thunk in `SettingsView`;
 > the code keeps `@MainActor`/`@Observable` so runtime safety is intact. (2) `makeModelContainer`
@@ -13,24 +23,22 @@ _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a rea
 > else falls back to a local store) so the app doesn't trap on an unsigned/dev build.
 > To reproduce: `xcodegen generate && xcodebuild -scheme BMICalculator -destination 'platform=iOS Simulator,name=iPhone 17' CODE_SIGNING_ALLOWED=NO test`.
 
-> ## ✅ FEATURES BUILT OUT (2026-06-21) — all compiling, tests still 31/31
+> ## ✅ FEATURES BUILT OUT — all compiling, tests 115/115
 > - **Widget + Control Center extension** — now a real `app-extension` target embedded in the app
 >   (`project.yml`), compiling Core + the SwiftData-free intents via multi-target membership.
 > - **Widget data writer** — `WidgetSync` snapshots the 7 most recent records to the App Group after
 >   each calc (`LogRecorderAdapter`) and reloads timelines; shared store/DTO extracted to `BMISharedStore.swift`.
 > - **Spotlight/Siri** — `SpotlightResultProvider` installed via `BMIResultStore.configure` at launch,
 >   so "recent BMI" resolves in Spotlight/Shortcuts.
-> - **Milestone celebration** — `RootView` observes `StreakService.earnedMilestones` and presents `MilestoneCelebrationView`.
-> - **Reminder cadence picker** in Settings (off / weekly / 3× / daily).
 >
 > **Still open — needs you, or a scoped follow-up:**
-> - **AdMob (#2):** the `GoogleMobileAds` SPM package isn't added (the fetch is impractical over the
->   current VPN/slow link), so ad code stays `#if canImport`-excluded and the app builds ad-free. When
->   added, replace `AdUnit.prodBanner`/`prodInterstitial` placeholders with **real ad-unit IDs** (your AdMob account).
+> - ✅ **AdMob — DONE (banner).** The `GoogleMobileAds` SPM package is linked (**12.14.0**). A single
+>   **non-personalized** banner (`npa=1`) ships on the free tier — real unit
+>   `ca-app-pub-6687613409331343/5598406572`, app ID `ca-app-pub-6687613409331343~7486203316`.
+>   Interstitial code exists but is **dormant/off** in the shipping build; no rewarded/video ads.
 > - ✅ **Stone weight UI (#6) — DONE.** A third `.stone` `UnitSystem` (decimal stone for weight, ft/in
->   for height) wired through Core, `CalculatorViewModel`, `InputControls`, the calculators feature
->   (`MetricsInputModel`/`MetricsInputControls`), and the `CalculateBMIIntent`. Builds + 31/31 tests pass.
->   *(Future polish: a `st + lb` two-field entry instead of decimal stone.)*
+>   for height) wired through Core, `CalculatorViewModel`, `InputControls`, and the `CalculateBMIIntent`.
+>   Builds + 115/115 tests pass. *(Future polish: a `st + lb` two-field entry instead of decimal stone.)*
 > - **Signing + capabilities** (HealthKit, In-App Purchase, App Groups `group.com.jdr.BMI`) for a device/TestFlight build.
 > - **StoreKit**: create `com.bmi.removeads` at $4.99 in App Store Connect + a `.storekit` test config.
 > - **App icon** asset catalog; **privacy manifest** + a live privacy-policy URL (replace the placeholder).
@@ -46,11 +54,6 @@ _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a rea
   - WHO-Asian: 23.0→overweight, 27.5→obesity I.
   - Sample: 215 lb / 5'9" → **BMI 31.7 = Obesity (class 1)**.
   - The original boundary bug (24.95→"Obese", 18.5→"Underweight") is gone.
-- **6 adjacent calculators are compiled + verified** (`Core/HealthCalculators.swift`): BMR/TDEE
-  (Mifflin-St Jeor + Harris-Benedict), waist-to-height (NICE NG246 bands), US Navy body-fat %,
-  ideal body weight (Devine/Robinson/Hamwi/Miller), lean body mass (Boer/James/Hume), body frame
-  size. All formulas asserted against known values — Mifflin 1780, Harris 1853.632, Navy 17.5%,
-  Devine 70.46 kg, Boer 61.42 kg — **0 failures**.
 
 ## ✅ Fixed by two coherence passes (do NOT redo)
 
@@ -67,48 +70,31 @@ Parallel generation produced a few cross-module naming divergences. These are re
 
 `INTEGRATION.md` §8 marks these ✅ RESOLVED inline.
 
-## ✅ Added this session (deep-research fold-in)
+## Removed in the slim-down (was: deep-research fold-in)
 
-From the two growth/feature research reports:
+The earlier growth/feature fold-in — the 6 adjacent calculators (`Core/HealthCalculators.swift`,
+`Features/Calculators/`), the shareable progress card (`Features/Share/`), streaks
+(`Features/Streak/`), the `GROWTH.md` playbook, and the multi-feature Pro bundle — was **removed**
+when the app was slimmed to BMI-only. What remains:
 
-- **`Core/HealthCalculators.swift`** — the 6 verified calculators above.
-- **`Features/Calculators/`** (8 files) — SwiftUI screens: `MoreMetricsView` hub +
-  `TDEEView`/`BodyFatView`/`WaistHeightView`/`IdealWeightView`/`LeanMassView`/`FrameSizeView`,
-  with HealthKit prefill, unit handling, and per-screen disclaimers. (Not compile-verified — SwiftUI.)
-- **`Features/Share/`** (4 files) — the #1 organic-growth mechanic: an opt-in, progress-framed
-  shareable card (`ShareCardView` → `ShareCardRenderer` via `ImageRenderer` → 1080×1920 PNG →
-  `ShareProgressButton`/`ShareLink`). Default card shows streak + trend shape, **never** an absolute
-  BMI unless the user toggles it on.
-- **`Features/Streak/`** (2 files) — a shame-free `StreakService` (`@Observable`, App-Group persisted)
-  + `StreakBadge`/`MilestoneCelebrationView`.
-- **`GROWTH.md`** — the $0-budget organic-growth playbook (ranked mechanics, do-not-build list,
-  share-card spec, stigma/compliance guardrails, 90-day rollout, + §8 external acquisition channels
-  & the January featuring window).
-- **`MONETIZATION.md`** — pricing ($4.99), ranked upsell placements, Pro bundle, StoreKit 2 checklist,
-  revenue model. **`StoreService.swift` upgraded** with a local `isPro` cache (soft fallback for the
-  iOS 26.x entitlement regression; refund still clears it).
-- **Open product decision (flagged, not decided):** keep the 6 extra calculators FREE (growth lever —
-  recommended) vs gate them behind Pro (revenue lever). See `MONETIZATION.md` §3.
+- **`StoreService.swift`** — the single **Remove Ads** unlock (local `isPro` cache; a refund still
+  clears it, and it soft-falls-back through the iOS 26.x entitlement regression).
 
 ---
 
 ## 🔬 Bug & performance audit (2026-06-18)
 
 A read-only adversarial audit (5 finders + per-finding skeptic verify) surfaced **28 candidates → 11
-confirmed**. **Fixed (9):**
-- **Stale streak on the share card** — `consecutiveDayStreak` reported a lapsed streak; now anchored to today/yesterday (returns 0 otherwise).
-- **Share card perf** — `ShareProgressSheet` re-rasterized the 1080×1920 image on *every* body pass; now cached in `@State`, regenerated only via `.task(id: payload)`.
+confirmed**. **Fixed** (BMI-relevant items shown; other confirmed fixes were in features — the share
+card, streaks — that have since been removed):
 - **Result-card perf** — `.id(result)` tore down + re-animated the whole `ResultCard`/gauge on a standard toggle; now keyed on a `resultGeneration` counter bumped only per real calc.
-- **Swift-6 concurrency ×2** — `NotificationDelegate` now uses `MainActor.assumeIsolated` (no non-Sendable `self` capture); `AdsManager`'s `FullScreenContentDelegate` methods are `nonisolated` + `assumeIsolated`.
-- **Review/interstitial modal collision** — `maybePrompt()` now returns `Bool`; the interstitial fires only when no review was shown.
-- **Refund left ads off (revenue)** — `AdsManager.setPro(false)` now boots the SDK if the app launched Pro then reverted.
-- **Streak milestones** — keyed on **distinct logged days** (`loggedDayCount`), so same-day calc spam can't fast-track "One week"/"One month". **Verified: 4/4 unit tests pass via `swift test`.**
+- **Swift-6 concurrency** — `AdsManager`'s `FullScreenContentDelegate` methods are `nonisolated` + `assumeIsolated` (no non-Sendable `self` capture).
+- **Refund left ads off (revenue)** — `AdsManager.setPro(false)` now boots the SDK if the app launched ad-free (Remove Ads) then reverted.
 - **Chart range off-by-one** — `ChartRange.startDate` anchored to start-of-day so "7D" = exactly 7 calendar days.
 
-**Documented, still open (2 confirmed + low-sev):**
-- [ ] **Milestone celebration not surfaced** — `MilestoneCelebrationView` exists but nothing presents it; wire it in `RootView` (observe `StreakService.earnedMilestones`, present on change; inject `StreakService` into the RootView preview).
+**Documented, still open:**
 - [ ] **Spotlight provider race** — `BMIResultStore.configure(with:)` installs the provider asynchronously; an early `EntityQuery` can see an empty store. Make `configure` deterministic (await provider install) before relying on Shortcuts "recent results". (Spotlight is already an unwired TODO below.)
-- [ ] Low-sev: Siri `CalculateBMIIntent` ignores the chosen `HealthStandard`; `BMIResultEntity.deterministicID` can collide within one second at the same rounded BMI; `LeanMassView` can show a misleading implied-body-fat for impossible inputs.
+- [ ] Low-sev: Siri `CalculateBMIIntent` ignores the chosen `HealthStandard`; `BMIResultEntity.deterministicID` can collide within one second at the same rounded BMI.
 
 ## 🔧 Remaining work (yours, in Xcode) — none verifiable without a build
 
@@ -125,16 +111,10 @@ confirmed**. **Fixed (9):**
 
 ### B. Real code TODOs the generators left as integration points (small, but functional gaps)
 
-> **✅ Wired this session** (symbol-verified, not yet Xcode-compiled): the **review-prompt counter**
+> **✅ Wired this session** (symbol-verified): the **review-prompt counter**
 > (`recordSuccessfulCalc()` now called on every calc via the `ReviewRequesting` protocol + adapter — the
-> ratings strategy is no longer dark); the **streak + weigh-in-reminder reschedule** (new `LogRecording`
-> protocol → `LogRecorderAdapter` over `StreakService` + `NotificationService`, called in
-> `CalculatorViewModel.calculate()`); the **Metrics tab** (4th `RootTab` hosting `MoreMetricsView`); the
-> **share card** (`ShareProgressButton` in `HistoryView`, payload built from records); and **notifications**
-> (`registerCategories()` at launch + a `NotificationDelegate` routing taps/"Log now" → `bmicalculator://new-entry`).
-> Still open below: widget writer, Spotlight activation, ad-unit ids, the **Settings cadence picker** (the
-> `NotificationService` cadence API exists; Settings still calls the weekly convenience), the interstitial-vs-review
-> collision gate, and the dedupe/preview checks.
+> ratings strategy is no longer dark). Still open below: the **widget writer**, **Spotlight activation**,
+> and the **dedupe/preview checks**.
 
 - [ ] **Widget data writer** — the app must, after each calc, map recent `BMIRecord`s →
       `[BMIWidgetEntryData]`, JSON-encode to `UserDefaults(suiteName:"group.com.jdr.BMI")` key
@@ -143,33 +123,13 @@ confirmed**. **Fixed (9):**
       `BMIResultStore.configure(with:)` at launch, else Shortcuts/Spotlight "recent results" return empty.
 - [ ] **Review-prompt counter** — `ReviewPrompter.recordSuccessfulCalc()` is never called, so the
       ratings gate never advances. Call it on each successful calc (this is the ASO ratings strategy — important).
-- [ ] **Interstitial vs. review collision** — gate so a single successful calc fires at most one
-      (prefer review when eligible, else interstitial).
-- [ ] **Replace placeholder ad unit ids** `…/0000000000` and `…/1111111111` with real units.
+- [x] ✅ **Real banner ad-unit id wired** — `ca-app-pub-6687613409331343/5598406572`
+      (app ID `ca-app-pub-6687613409331343~7486203316`). The interstitial placeholder remains in code but is dormant/off.
 - [ ] Dedupe check: confirm a single `PersistenceController`/`ModelContainer`, single `AppStorageKey`,
       single `ChartRange` (flagged as possible duplicates).
-- [ ] `SettingsView` `#Preview` needs all four env objects injected or it crashes at preview time (not a build error).
-- [ ] **Surface the new calculators** — `MoreMetricsView` isn't reachable yet. Add a 4th `RootTab`
-      (`.metrics`) wrapped in a `NavigationStack`, or push it from a `SettingsView`/`CalculatorView` row.
-- [ ] **Wire the streak** — create one `StreakService` at the app root (inject via environment); call
-      `streak.recordEntry()` in the successful-calc flow alongside `ReviewPrompter.recordSuccessfulCalc()`;
-      show `StreakBadge` on Calculator/History and present `MilestoneCelebrationView` when
-      `milestoneJustEarned()` returns non-nil. (Shares the `group.com.jdr.BMI` App Group with the widget.)
-- [ ] **Wire the share card** — drop `ShareProgressButton(payload:)` into History; build the `SharePayload`
-      from recent `BMIRecord`s (streakDays from `StreakService`, `recentTrend` = last N BMIs). Tag the card
-      footer's App Store link with an App Store Connect campaign token (see `GROWTH.md` §6–7).
-- [ ] **Verify `Features/Calculators` assumptions** — those screens reference `HealthKitService.latestPrefill()`
-      and a few `Features/Calculator` internal views (`LabeledInputRow`, `UnitSystemToggle`, `WeightField`,
-      `AdaptiveHeightField`, `ImperialHeight`). Confirm those symbols exist as named on first build.
-- [ ] **Wire notifications** (`NotificationService` rewritten with research-backed cadence + number-free copy):
-      call `registerCategories()` at launch; set a `UNUserNotificationCenterDelegate` to route the tap /
-      "Log now" action to `bmicalculator://new-entry` (and `rescheduleAfterLog()` on snooze); call
-      `rescheduleAfterLog()` after each saved entry; add the **cadence picker** (off / weekly / 3×-week /
-      daily — weekly default) to Settings; gate the auth request behind the onboarding **soft-ask**, never cold.
+- [ ] `SettingsView` `#Preview` needs its environment objects injected or it crashes at preview time (not a build error).
 
 ### C. Strategy/content (from `ASO.md`)
-- [x] ✅ Body-fat / TDEE / ideal-weight calculators are now built + tested, so the `ASO.md` "body fat /
-      calorie" copy is backed by real features (no metadata-rejection risk).
 - [ ] **Localization** (see `LOCALIZATION.md`): roadmap is EN-GB → German → Spanish (ES-MX doubles as a
       US-reach keyword hack). EN-GB needs the **stone** UI (below); the rest are metadata-only (MVL).
 - [ ] **Stone weight UI (UK)** — Core conversions are done + tested (`BMICalculator.kilograms(fromStone:pounds:)`,

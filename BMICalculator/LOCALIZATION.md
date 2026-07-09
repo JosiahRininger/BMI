@@ -28,17 +28,17 @@ offers only metric (kg) and imperial (lb). Adding a stone mode differentiates it
 - ⏳ **UI wiring (your Xcode task)**: add a 3rd weight option ("st") to the weight picker/`UnitSystem`
   path, formatting as `12 st 5 lb`, using the Core helpers. Height stays ft-in or cm. See `BUILD_STATUS.md`.
 - **EN-GB keyword field** (no overlap with title/subtitle, singular, comma-no-space):
-  `bmi,body mass index,weight,stone,healthy,nhs,obesity,waist,chart,kid,metric,imperial,calorie,fat,age`
+  `bmi,body mass index,weight,stone,healthy,nhs,obesity,chart,kid,metric,imperial,calorie,fat,age`
 - Screenshots: show the **stone** result so UK users see themselves in it.
 
 ## Per-locale keyword fields (verified local terms)
 
 - **EN-GB** — see above (`stone`, `nhs` are the UK-distinct wins).
-- **German (DE)** — `bmi rechner,bmi berechnen,body mass index,körpergewicht,gewicht,idealgewicht,bauchumfang,abnehmen,körperfett,größe,kalorie,kind,fett,alter` (watch ~35% text expansion on screenshots/subtitle).
-- **Spanish (ES-ES, LatAm)** — `calculadora imc,calcular imc,indice de masa corporal,peso ideal,peso,grasa corporal,cintura,obesidad,salud,altura,caloria,niño,edad`
-- **Spanish (ES-MX, US storefront)** — fill with *extra English* terms (pure US-reach hack, indexed alongside English-US): `tracker,index,loss,navy,frame,lean,waist,trend,widget,spotlight,siri,family,metric,imperial`
-- (FR) `calcul imc,indice de masse corporelle,poids ideal,graisse corporelle,tour de taille,obesite,sante`
-- (JP) `bmi 計算,体格指数,標準体重,体脂肪,肥満,ダイエット` — needs native review before shipping.
+- **German (DE)** — `bmi rechner,bmi berechnen,body mass index,körpergewicht,gewicht,abnehmen,größe,kalorie,kind,fett,alter` (watch ~35% text expansion on screenshots/subtitle).
+- **Spanish (ES-ES, LatAm)** — `calculadora imc,calcular imc,indice de masa corporal,peso,obesidad,salud,altura,caloria,niño,edad`
+- **Spanish (ES-MX, US storefront)** — fill with *extra English* terms (pure US-reach hack, indexed alongside English-US): `tracker,index,loss,trend,widget,spotlight,siri,metric,imperial`
+- (FR) `calcul imc,indice de masse corporelle,obesite,sante`
+- (JP) `bmi 計算,体格指数,肥満,ダイエット` — needs native review before shipping.
 
 ## Mechanics & expected lift
 - Each localization = its own indexed **Title (30) + Subtitle (30) + Keywords (100)** ≈ +160 indexable chars. Keywords combine **only within** a locale — never duplicate across locales; add *new* terms each.

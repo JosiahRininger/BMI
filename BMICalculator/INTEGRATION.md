@@ -38,13 +38,9 @@ copy items — they're already in place). App-target membership:
 - [ ] `Core/` — `UnitSystem.swift`, `HealthStandard.swift`, `BMICategory.swift`, `BMIResult.swift`,
       `BMICalculator.swift`, **`BMIRecord.swift`** (the `@Model` — App target only, it imports SwiftData)
 - [ ] `DesignSystem/` — `Theme.swift`, `GlassComponents.swift`, `BMIGauge.swift`
-- [ ] `Features/Calculator/`, `Features/History/`, `Features/Onboarding/`, `Features/Settings/`,
-      `Features/Calculators/` (the 6 extra calculators), `Features/Share/` (shareable progress card),
-      `Features/Streak/` (shame-free streak) — all `.swift`
-- [ ] `Core/HealthCalculators.swift` — the 6 adjacent calculators (Foundation-only; same shared-target
-      treatment as the other Core files — also widget-safe if you want streak/metrics in the widget)
-- [ ] `Services/` — `HealthKitService.swift`, `NotificationService.swift`, `ReviewPrompter.swift`,
-      `StoreService.swift`, `AdsManager.swift`, `PersistenceController.swift`
+- [ ] `Features/Calculator/`, `Features/History/`, `Features/Onboarding/`, `Features/Settings/` — all `.swift`
+- [ ] `Services/` — `HealthKitService.swift`, `ReviewPrompter.swift`, `StoreService.swift`,
+      `AdsManager.swift`, `PersistenceController.swift`
 - [ ] `Intents/` — `CalculateBMIIntent.swift`, `BMIShortcuts.swift`, `BMIResultEntity.swift`
 
 > **Shared-target membership (Core + Intents).** The five Foundation-only Core files
@@ -135,9 +131,9 @@ prompt if it appears.
       collected data, UserDefaults reason CA92.1). GoogleMobileAds ships its own when added.
 - [x] **URL scheme** — `bmicalculator://` registered via the partial `Info.plist` (deep links from the
       widget / Control Center / Siri).
-- [ ] **In-App Purchase** — enable for the non-consumable "Remove Ads / Pro" (StoreKit 2, §5). This is an
+- [ ] **In-App Purchase** — enable for the non-consumable "Remove Ads" (StoreKit 2, §5). This is an
       App Store Connect product, not a signing entitlement — see §5.
-- [ ] **Push Notifications** — **NOT** required; the reminder is a local notification. Only add if remote
+- [ ] **Push Notifications** — **NOT** required; the app sends no notifications. Only add if remote
       push is introduced later.
 
 > If you change the bundle id away from `com.jdr.BMI`, update the App Group id in both `.entitlements`
@@ -169,8 +165,6 @@ Add to the **App target** Info (Target ▸ Info, or the `Info.plist`). All Healt
 **Deliberately OMITTED — do not add:**
 - [ ] **`NSUserTrackingUsageDescription`** — **NOT added**. We serve only non-personalized (NPA) ads, never
       request App Tracking Transparency, and never touch the IDFA. Adding it would falsely imply tracking.
-- [ ] **`NSUserNotificationsUsageDescription`** — **not a real key**; do not add. Local-notification
-      permission is requested at runtime via `UNUserNotificationCenter`.
 - [ ] **`GADIsAdManagerApp`** — only for Ad Manager; AdMob does not need it. Skip.
 
 ---
@@ -179,14 +173,14 @@ Add to the **App target** Info (Target ▸ Info, or the `Info.plist`). All Healt
 
 - [ ] In **App Store Connect**, create a **Non-Consumable** IAP with product id **`com.bmi.removeads`**
       (must equal `StoreService.removeAdsProductID`), priced at **$4.99** (see [`MONETIZATION.md`](./MONETIZATION.md)
-      for the pricing/upsell/Pro-bundle rationale and the StoreKit 2 checklist). **No subscription** anywhere.
+      for the pricing rationale and the StoreKit 2 checklist). **No subscription** anywhere.
 - [ ] For local testing: **File ▸ New ▸ File ▸ StoreKit Configuration File** (e.g. `Products.storekit`).
       Add a Non-Consumable with the **same** id `com.bmi.removeads`, a display name ("Remove Ads") and a
       price tier.
 - [ ] **Edit Scheme ▸ Run ▸ Options ▸ StoreKit Configuration** → select `Products.storekit` so purchases
       work in the simulator without a sandbox account.
 - [ ] Purchasing flips `StoreState.isPro`; the app calls `AdsManager.setPro(true)` which suppresses the
-      banner and interstitial. Verify both disappear after a test purchase.
+      banner. Verify the banner disappears after a test purchase.
 
 ---
 
@@ -229,15 +223,15 @@ Add to the **App target** Info (Target ▸ Info, or the `Info.plist`). All Healt
   - Enter 215 lb @ 5'9" → BMI **31.7**, category **Obesity (class I)** band; the screening-tool
     disclaimer is visible near the result.
   - A completed calc inserts a `BMIRecord`; History tab shows the point on the Swift Charts trend.
-  - With the `.storekit` config selected, buy "Remove Ads" → banner + interstitial stop appearing.
+  - With the `.storekit` config selected, buy "Remove Ads" → the banner stops appearing.
 - [ ] **Widget:** add the BMI widget to the Home Screen; after a calc it should show the latest BMI /
       sparkline (the app writes `widget.recentEntries.v1` to `UserDefaults(suiteName:"group.com.jdr.BMI")`
       and calls `WidgetCenter.shared.reloadAllTimelines()`). The Control Center control deep-links via
       `bmicalculator://new-entry`.
 - [ ] **Run unit tests:** **Product ▸ Test (⌘U)**, or
       `xcodebuild test -scheme BMICalculator -destination 'platform=iOS Simulator,name=iPhone 16'`.
-      The Swift Testing suite covers the classifier/conversion boundary cases (all 13 pass in the
-      standalone check). To exercise SwiftData without disk, use `PersistenceController.inMemory()`.
+      The Swift Testing suite covers the classifier/conversion boundary cases; all 115 tests pass. To
+      exercise SwiftData without disk, use `PersistenceController.inMemory()`.
 
 ---
 
@@ -256,7 +250,7 @@ on first full build.
       redo this; just review the bridged styling in Xcode Previews.
 - [ ] **`AppStorageKey` is defined in `App/BMICalculatorApp.swift`** (owning app-config layer) and consumed
       by Onboarding/Settings. Ensure no second definition exists; keys must be exactly
-      `hasOnboarded` / `unitSystem` / `healthStandard` / `weeklyReminderEnabled`
+      `hasOnboarded` / `unitSystem` / `healthStandard`
       (enum values stored as `.rawValue`).
 - [x] ✅ **RESOLVED (coherence pass 2026-06-18):** `SettingsView` was reconciled to the canonical
       `StoreService`/`StoreState` API (`isProcessing` / `displayPrice` / `purchase()` / `restore()` /
@@ -321,15 +315,16 @@ on first full build.
       `BMICalculator.meters(fromFeet:inches:)`. AppEnum titles are hardcoded English — localize if needed.
 
 ### Services / monetization gating
-- [ ] **Replace placeholder ad unit ids** before release: `AdUnit.prodBanner`
-      (`ca-app-pub-6687613409331343/0000000000`) and `AdUnit.prodInterstitial`
-      (`ca-app-pub-6687613409331343/1111111111`) with real units created under app id
-      `ca-app-pub-6687613409331343~7486203316`. DEBUG already uses Google test units.
-- [ ] **Do not fire an interstitial AND a review prompt on the same successful calc** — gate so they don't
-      collide (prefer review when eligible, else interstitial). On each successful calc the UI should:
-      (1) `ReviewPrompter.recordSuccessfulCalc()`, (2) optionally `HealthKitService.write(weightKilograms:bmi:)`,
-      (3) `AdsManager.maybeShowInterstitial()`, (4) `ReviewPrompter.maybePrompt(using:)` with
-      `@Environment(\.requestReview)` — gated per the previous line.
+- [ ] **Confirm the production banner ad unit** `AdUnit.prodBanner` =
+      `ca-app-pub-6687613409331343/5598406572`, created under app id
+      `ca-app-pub-6687613409331343~7486203316`. `AdUnit.prodInterstitial` is `nil`, so the interstitial
+      stays dormant and no interstitial ships. DEBUG already uses Google test units.
+- [ ] **Review-prompt vs. interstitial gating** — the code already gates the two so they never collide on
+      the same successful calc (prefer review when eligible, else interstitial). On each successful calc the
+      UI should: (1) `ReviewPrompter.recordSuccessfulCalc()`, (2) optionally
+      `HealthKitService.write(weightKilograms:bmi:)`, (3) `AdsManager.maybeShowInterstitial()` — a **no-op**
+      while `AdUnit.prodInterstitial` is `nil`, so the shipping build shows no interstitial —
+      (4) `ReviewPrompter.maybePrompt(using:)` with `@Environment(\.requestReview)`, gated per the same rule.
 - [ ] Create `AdsManager` + `StoreService` once at the app root; on every `StoreState.isPro` change call
       `AdsManager.setPro(storeState.isPro)`. Call `StoreService.start()` and `AdsManager.start()` in `.task`
       on the root view (`AdsManager.start()` no-ops when Pro). `BannerSlot` (50pt placeholder in Calculator)

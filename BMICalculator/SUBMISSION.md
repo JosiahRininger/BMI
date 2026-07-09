@@ -9,27 +9,22 @@ Updates the existing live listing (currently v1.2).
 
 ---
 
-## ⚠️ 0. One decision to make first: ship v1 ad-free?
+## 0. Monetization: a banner ad + a one-time "Remove Ads" unlock
 
-The current build **excludes the Google AdMob SDK** (it's blocked by the VPN and
-needs your AdMob account + real ad-unit IDs). So this submission is **ad-free**,
-monetized only by the one-time **BMI Pro** in-app purchase (export + themes +
-profiles).
+This build ships **ad-supported** and links the **Google Mobile Ads SDK**
+(`GoogleMobileAds` SPM package, 12.14.0). The free tier shows **one banner ad**,
+served **non-personalized** (`npa=1`). There is **no interstitial, rewarded, or
+video ad** in the shipping build. A single one-time in-app purchase removes the
+banner.
 
-I've already made the build honest for that: the banner placeholder and the
-"Remove all ads" claim now appear **only** when the ad SDK is linked (all behind
-`#if canImport(GoogleMobileAds)`), so nothing promises ads that aren't there.
-When you later wire AdMob, those return automatically.
+- **AdMob app ID:** `ca-app-pub-6687613409331343~7486203316`
+- **Banner ad unit:** `ca-app-pub-6687613409331343/5598406572`
+- **Remove-Ads IAP:** `com.bmi.removeads` (non-consumable — see §3)
 
-- **Recommended: submit ad-free now.** Cleanest App Review (no ad SDK = no IDFA,
-  simplest privacy answers), and the Pro IAP still monetizes. Add AdMob + the
-  "Remove Ads" benefit in a fast-follow update.
-- **Alternative: hold for AdMob.** Requires getting off the VPN to fetch the SPM
-  package, your AdMob account, and real ad-unit IDs, then re-doing the privacy
-  answers (IDFA = Yes, "Data Used to Track You", etc.). Slower.
-
-**The rest of this doc assumes the ad-free path.** Where the ad path differs, it's
-called out.
+Because the banner is non-personalized, the app does **not** use the IDFA to track
+users and shows no ATT prompt. Health/measurement data is **firewalled** from ads
+and is never used for advertising (see §4). Buying Remove Ads hides the banner
+app-wide, with no subscription.
 
 ---
 
@@ -55,21 +50,20 @@ BMI Calculator: Weight Index
 
 **Subtitle** — ≤30 chars:
 ```
-Body Fat Tracker & Calorie Log
+BMI Tracker & Trend Charts
 ```
-> Both "Body Fat" and "Calorie" map to real features (US Navy body-fat + BMR/TDEE),
-> so this won't trip the "marketing features that don't exist" rejection. If you
-> want to be extra-strict about the word "Log" (the metrics screens compute rather
-> than persist), use `Body Fat & Calorie Calculator` instead.
+> Both "Tracker" and "Trend Charts" map to real features (saved history + the
+> trend chart), so this won't trip the "marketing features that don't exist"
+> rejection.
 
 **Keywords** — ≤100 chars, no spaces, singular:
 ```
-loss,health,fitness,ideal,chart,kid,child,metric,imperial,height,obesity,widget,navy,muscle,scale,age
+loss,health,fitness,chart,trend,metric,imperial,height,obesity,widget,muscle,scale,range,asian
 ```
 
 **Promotional Text** — ≤170 chars (editable any time without review):
 ```
-Now rebuilt for iOS 26: a faster, private BMI tracker with trends, widgets, body-fat & calorie tools, Apple Health sync, and optional BMI Pro. No account, ever.
+Rebuilt for iOS 26: a fast, private BMI tracker with trends, a healthy-weight range, widgets, and Apple Health sync. Remove the ad with one purchase. No account, ever.
 ```
 
 **Description** (compliance-checked — no diagnostic claims, screening-tool
@@ -81,35 +75,30 @@ Enter your height and weight and get your BMI instantly, with a clear, color-cod
 
 WHAT YOU CAN DO
 • Calculate BMI in seconds with a clean, accessible interface
-• See body fat and ideal-weight estimates alongside your BMI
+• See the healthy weight range for your height, shown in your units
 • Track every result in your history and watch the trend chart over weeks and months
 • Add Home Screen and Lock Screen widgets to see your latest number at a glance
 • Use Spotlight and Siri Shortcuts to calculate without even opening the app
 • Sync weight and height with Apple Health so your data stays consistent across apps
-• Designed for adults, with support for child and teen BMI-for-age context
+• Designed for adults — clear, non-judgmental, and person-first throughout
 
-BMI PRO (optional, one-time purchase)
-• Export your history to CSV or PDF
-• Custom accent themes
-• Track multiple people (family or clients)
-A single purchase — no subscription, ever.
+REMOVE ADS (optional, one-time purchase)
+The free version shows a single, non-personalized banner ad. Prefer none? One tap removes it for good — no subscription, ever.
 
 PRIVATE BY DESIGN
-Your measurements stay on your device. No account, no sign-up, and no selling of your data.
+Your measurements stay on your device. No account, no sign-up, and no selling of your data. Your health data is never used for ads.
 
 A NOTE ON HOW TO USE THIS APP
 BMI is a screening tool, not a diagnosis. It is a general indicator that does not measure body composition directly and does not account for muscle mass, bone density, or other individual factors. This app is for general informational and educational purposes only and is not a substitute for professional medical advice. Please talk with a qualified healthcare provider about your health and before making changes to diet or exercise.
 
 Download BMI Calculator and start tracking your numbers today.
 ```
-> _(Ad path only: add "• Remove ads" under BMI PRO.)_
-
 **What's New (release notes)**:
 ```
 A complete rewrite for iOS 26 — faster, cleaner, and more private.
 • New: history with a trend chart, Home/Lock Screen widgets, and Spotlight & Siri shortcuts
-• New: body-fat %, ideal weight, calorie needs (BMR/TDEE), waist-to-height, and frame-size tools
-• New: Apple Health sync, and an optional BMI Pro upgrade (export, themes, multiple profiles)
+• New: the healthy weight range for your height, plus WHO/CDC and WHO Asian BMI cutoffs
+• New: Apple Health sync, and an optional one-time Remove Ads purchase
 • Redesigned, accessible interface with full light & dark mode support
 • Lots of fixes and reliability improvements
 ```
@@ -137,14 +126,12 @@ removeAdsProductID = "com.bmi.removeads"
 ```
 - Create one **Non-Consumable** with **Product ID exactly `com.bmi.removeads`**
   (it MUST match the code, or purchases fail). The id is internal/invisible to
-  users — its legacy "removeads" name is fine.
-  - _Optional cleanup:_ if you'd rather the id read "pro", change the constant to
-    e.g. `com.jdr.BMI.pro`, rebuild, and create that id instead. Not required.
-- **Reference Name:** `BMI Pro`
-- **Display Name (localization):** `BMI Pro`
-- **Description:** `Unlock history export (CSV & PDF), custom accent themes, and tracking for multiple people. One-time purchase, no subscription.`
-- **Price:** $4.99 (Tier 5) — matches the monetization plan.
-- **Review screenshot:** a screenshot of the in-app paywall (the "BMI Pro" sheet).
+  users, and it already matches what it does — "Remove Ads."
+- **Reference Name:** `Remove Ads`
+- **Display Name (localization):** `Remove Ads`
+- **Description:** `Remove the banner ad from BMI Calculator. One-time purchase, no subscription.`
+- **Price:** $4.99 (Tier 5). _(Confirm the price you want for a Remove-Ads unlock.)_
+- **Review screenshot:** a screenshot of the in-app Remove Ads purchase sheet.
 - **Submit the IAP WITH the app version** (first-time IAPs are reviewed alongside
   the binary; attach it to the version under "In-App Purchases").
 
@@ -152,24 +139,27 @@ removeAdsProductID = "com.bmi.removeads"
 
 ## 4. App Privacy ("nutrition label") — App Store Connect → App Privacy
 
-This build collects nothing. Answer:
+Your app's own code collects nothing, and health data never leaves the device.
+The one nuance is the **Google AdMob banner**, whose SDK collects some data to
+serve the ad — so answer for the SDK, not just your code:
 
-- **"Do you or your third-party partners collect data from this app?"** → **No**
-  → the label becomes **"Data Not Collected."**
-  - Rationale: height/weight/BMI/history live only on device; HealthKit data
-    stays on device and is never sent to you; the IAP is processed by Apple, not
-    you; there are **no analytics, no ads, no tracking, no servers**.
-- **Data Used to Track You:** none.
-- **Data Linked to You:** none.
-- **Data Not Linked to You:** none.
+- **"Do you or your third-party partners collect data from this app?"** → **Yes**,
+  because the Google Mobile Ads SDK collects data to serve the banner.
+- **Data Used to Track You:** **none.** The banner is **non-personalized**
+  (`npa=1`), so there is no cross-app/website advertising tracking and no IDFA use.
+- **Data Not Linked to You:** declare the categories the AdMob SDK collects to
+  serve **non-personalized** ads (typically device identifiers, plus usage and
+  diagnostic data). Confirm the exact list against Google's current
+  "AdMob and Apple's App Privacy questions" guidance before you submit.
+- **Data Linked to You:** **none.**
+- Your **health/measurement data** (height, weight, BMI, history) is **not
+  collected**: it lives only on device, HealthKit data stays on device and is
+  never sent to you, and it is firewalled from the ad SDK. The IAP is processed by
+  Apple, not you.
 
-> **Ad path only:** if AdMob is added, this changes substantially — you'd declare
-> "Identifiers (Device ID)" and likely "Usage Data" under **Data Used to Track
-> You** + "Data Linked/Not Linked," set IDFA = Yes, and update the privacy policy.
-> Don't ship ads without redoing this section.
-
-The `PrivacyInfo.xcprivacy` manifests already in the build (no tracking, no
-collected types, UserDefaults reasons CA92.1 + 1C8F.1) back up these answers.
+The `PrivacyInfo.xcprivacy` manifest in the build (UserDefaults reasons CA92.1 +
+1C8F.1), plus the Google Mobile Ads SDK's own bundled privacy manifest, back up
+these answers.
 
 ---
 
@@ -181,8 +171,8 @@ tiers are 4+, 9+, 13+, 16+, 18+.
 
 Recommended answers:
 
-- **Medical or Wellness Topics:** the app presents BMI categories and body-fat /
-  calorie **estimates** (general health/wellness information) — but **no
+- **Medical or Wellness Topics:** the app presents BMI categories and a
+  healthy-weight range (general health/wellness information) — but **no
   diagnosis and no treatment advice**, with disclaimers throughout. Select the
   **lowest applicable level** for "references to general health/wellness or
   medical information" (the "**Infrequent/Mild**"-style option, not
@@ -211,29 +201,35 @@ exactly what keeps a BMI app in the safe zone for Guideline 1.4.1 (physical harm
 **Export compliance:** already auto-answered — `ITSAppUsesNonExemptEncryption =
 NO` is in the build's Info.plist (standard HTTPS only), so no manual prompt.
 
-**Content rights:** "Does your app contain, display, or access third-party
-content?" → **No.** (All content is original; the only external link is your own
-privacy policy.)
+**Content rights:** the app's own content is original. It does display
+**third-party banner ads served by Google AdMob** (under your AdMob agreement),
+and the only external link is your own privacy policy. Answer the App Store
+Connect "third-party content" prompt accordingly for an app that shows ad-network
+banners.
 
-**Advertising identifier (IDFA):** **No** (ad-free build; the AdMob SDK isn't
-linked).
+**Advertising identifier (IDFA):** the banner is served **non-personalized**
+(`npa=1`), so the app does **not** use the IDFA to track users and shows no ATT
+prompt. Answer the App Store Connect IDFA prompt for a non-personalized-ads build
+(no tracking); confirm against Google's AdMob guidance.
 
 **Sign-in required / demo account:** **No account needed** — leave demo
 credentials blank; everything works without sign-in.
 
 **Notes for the reviewer (paste into "Notes"):**
 ```
-BMI Calculator is a private, on-device health-screening tool. Key points for review:
+BMI Calculator is a private, on-device BMI screening tool. Key points for review:
 
-• Not a diagnosis. The app presents BMI categories and body-fat/calorie estimates as general informational/educational screening figures, with a "screening tool, not a diagnosis — talk to a healthcare provider" disclaimer on the result screen, in History, in Settings, and on every metrics screen. No diagnostic, disease-detection, or treatment claims are made.
+• Not a diagnosis. The app presents BMI categories and a healthy-weight range as general informational/educational screening figures, with a "screening tool, not a diagnosis — talk to a healthcare provider" disclaimer on the result screen, in History, and in Settings. No diagnostic, disease-detection, or treatment claims are made.
 
-• Health data is firewalled (Guideline 5.1.3). HealthKit is used only to (a) optionally read recent height/weight to prefill the calculator and (b) optionally write a weight/BMI sample back to Health. Health data never leaves the device and is never used for advertising or analytics. This build contains no advertising or analytics SDKs at all.
+• Advertising. The free tier shows a single Google AdMob banner, served non-personalized (npa=1). There are no interstitial, rewarded, or video ads, and the ads do not track users (no IDFA-based tracking, no ATT prompt).
 
-• Privacy. All data (measurements, history, profiles) is stored on-device only. No account, no servers, no tracking. Privacy policy: https://josiahrininger.com/bmi/privacy
+• Health data is firewalled (Guideline 5.1.3). HealthKit is used only to (a) optionally read recent height/weight to prefill the calculator and (b) optionally write a weight/BMI sample back to Health. Health data never leaves the device and is never used for advertising or analytics.
 
-• In-app purchase. One non-consumable, "BMI Pro" (com.bmi.removeads), unlocks history export (CSV/PDF), custom themes, and multiple profiles. No subscription. The free tier is fully functional; the 6 calculators are all free.
+• Privacy. All measurements and history are stored on-device only. No account, no servers, no tracking. Privacy policy: https://josiahrininger.com/bmi/privacy
 
-• Child/teen support is BMI-for-age informational context only; the app is a general-audience tool, not directed at children.
+• In-app purchase. One non-consumable, "Remove Ads" (com.bmi.removeads), removes the banner. No subscription. The free tier is fully functional.
+
+• General-audience adult BMI tool. Not directed at children; no data collected from anyone.
 
 No special steps are needed to exercise any feature; everything is reachable from the main tabs.
 ```
@@ -255,7 +251,7 @@ No special steps are needed to exercise any feature; everything is reachable fro
 **The 6 frames (from `ASO.md §3`, value → usage → trust):**
 1. Hero result card (big BMI + color band) — caption "Know your number in 2 seconds"
 2. History trend chart trending down — "See your progress, not just today"
-3. Body-fat / ideal-weight + unit toggle — "Body fat, ideal weight, your units"
+3. Healthy weight range + unit toggle — "Your healthy range, in your units"
 4. Widgets + Spotlight result — "Check it without opening the app"
 5. Apple Health sync screen — "Syncs with Apple Health automatically"
 6. Privacy/trust frame — "Private, free, and trusted"
@@ -279,7 +275,7 @@ CoreSimulator runner is unwedged — just say the word.
    number in `project.yml`; run `xcodegen generate`.
 3. [ ] **Fix the host first:** the test/run launcher is wedged
    (CoreSimulator/PTY). **Reboot the Mac**, then confirm `xcodebuild … test` runs
-   green (219 tests) and the app launches on your iPhone.
+   green (115 tests) and the app launches on your iPhone.
 
 **B. Signing & capabilities (first device build):**
 4. [ ] Open the project in Xcode; with **automatic signing** + your team, let it
@@ -290,7 +286,7 @@ CoreSimulator runner is unwedged — just say the word.
 **C. App Store Connect setup (web):**
 6. [ ] Host the **privacy policy** (`PRIVACY_POLICY.md`) at
    `josiahrininger.com/bmi/privacy`; set the **Support URL** too.
-7. [ ] Create the **BMI Pro** non-consumable IAP (`com.bmi.removeads`, $4.99) —
+7. [ ] Create the **Remove Ads** non-consumable IAP (`com.bmi.removeads`) —
    §3 — and attach it to the new version.
 8. [ ] Create a **new version** on the existing app (1467544257). Paste the
    **metadata** (§2): name, subtitle, keywords, promo text, description, what's
@@ -322,7 +318,7 @@ about diagnostic claims — the reviewer notes (§6) pre-empt it.
 | Item | Status | Owner |
 | --- | --- | --- |
 | Host CoreSimulator/PTY wedge (can't run/launch) | **Blocks build-to-device** | Reboot the Mac (you) |
-| AdMob SDK + ad-unit IDs | Excluded → ad-free v1 (recommended) | You (account + non-VPN network), later |
+| AdMob SDK + ad-unit IDs | **Done** — GoogleMobileAds SPM 12.14.0 linked; real app ID + banner unit wired (§0) | — |
 | App Store Connect IAP product | Not created yet | You (§3) |
 | Privacy policy + support pages hosted | Not live yet | You (§2, §6) |
 | App icon (incl. alternate icons) | Needs final art | You / design |
