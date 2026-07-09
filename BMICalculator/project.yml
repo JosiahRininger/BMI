@@ -134,3 +134,7 @@ schemes:
         - BMICalculatorTests
     run:
       config: Debug
+      # Local StoreKit testing: the scheme loads this config so the "Remove Ads"
+      # non-consumable (com.bmi.removeads @ $1.99) resolves and can be bought in
+      # the simulator without App Store Connect / a sandbox account.
+      storeKitConfiguration: Products.storekit

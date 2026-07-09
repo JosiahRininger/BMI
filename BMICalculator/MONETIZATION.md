@@ -74,7 +74,7 @@ Paywall + Settings copy list exactly this — ad removal only, nothing more to g
 - [x] `AppStore.sync()` **only** behind the "Restore Purchases" button (it prompts for Apple ID) — **done**.
 - [x] **Local `isPro` cache** as a soft fallback for the iOS 26.x `currentEntitlements`-empty regression (StoreKit stays source of truth; refund still clears it) — **added this session**.
 - [ ] **App Store Connect:** create the non-consumable `com.bmi.removeads` at **$1.99**, submit it **with the build** + a review screenshot.
-- [ ] **`.storekit` config** in the scheme for simulator testing; test buy → delete → reinstall → **Restore** → unlock before submitting.
+- [x] **`.storekit` config** (`Products.storekit`) wired into the scheme for simulator testing — **done**. Still to do manually: test buy → delete → reinstall → **Restore** → unlock before submitting.
 - [ ] Surface **Restore Purchases** on the paywall too (not just Settings).
 
 ## 5. Revenue model (one-time unlock; ranges, not forecasts)

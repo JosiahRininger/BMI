@@ -174,11 +174,11 @@ Add to the **App target** Info (Target ▸ Info, or the `Info.plist`). All Healt
 - [ ] In **App Store Connect**, create a **Non-Consumable** IAP with product id **`com.bmi.removeads`**
       (must equal `StoreService.removeAdsProductID`), priced at **$1.99** (see [`MONETIZATION.md`](./MONETIZATION.md)
       for the pricing rationale and the StoreKit 2 checklist). **No subscription** anywhere.
-- [ ] For local testing: **File ▸ New ▸ File ▸ StoreKit Configuration File** (e.g. `Products.storekit`).
-      Add a Non-Consumable with the **same** id `com.bmi.removeads`, a display name ("Remove Ads") and a
-      price tier.
-- [ ] **Edit Scheme ▸ Run ▸ Options ▸ StoreKit Configuration** → select `Products.storekit` so purchases
-      work in the simulator without a sandbox account.
+- [x] For local testing: **`Products.storekit`** exists (checked in at the project root) with the
+      Non-Consumable `com.bmi.removeads` ("Remove Ads", $1.99), matching `StoreService.removeAdsProductID`.
+- [x] The **scheme's Run action loads `Products.storekit`** (wired via `project.yml` →
+      `schemes.BMICalculator.run.storeKitConfiguration`), so purchases work in the simulator without a
+      sandbox account. *(To confirm in Xcode: Edit Scheme ▸ Run ▸ Options ▸ StoreKit Configuration.)*
 - [ ] Purchasing flips `StoreState.isPro`; the app calls `AdsManager.setPro(true)` which suppresses the
       banner. Verify the banner disappears after a test purchase.
 

@@ -40,7 +40,7 @@ _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a rea
 >   for height) wired through Core, `CalculatorViewModel`, `InputControls`, and the `CalculateBMIIntent`.
 >   Builds + 115/115 tests pass. *(Future polish: a `st + lb` two-field entry instead of decimal stone.)*
 > - **Signing + capabilities** (HealthKit, In-App Purchase, App Groups `group.com.jdr.BMI`) for a device/TestFlight build.
-> - **StoreKit**: create `com.bmi.removeads` at $1.99 in App Store Connect + a `.storekit` test config.
+> - **StoreKit**: create `com.bmi.removeads` at $1.99 in App Store Connect. *(Local `.storekit` test config is done + wired into the scheme.)*
 > - **App icon** asset catalog; **privacy manifest** + a live privacy-policy URL (replace the placeholder).
 
 ---
@@ -103,9 +103,11 @@ card, streaks — that have since been removed):
   target-membership cheat sheet (Core + widget-safe Intents need **multi-target membership** or a local
   `Core` Swift package).
 - Capabilities: **HealthKit, In-App Purchase, App Groups (`group.com.jdr.BMI`)** on app **and** widget.
-- Info.plist keys (HealthKit usage strings, `GADApplicationIdentifier`, `SKAdNetworkItems`,
-  `bmicalculator` URL scheme). **Do not** add `NSUserTrackingUsageDescription` (NPA ads only).
-- StoreKit: non-consumable `com.bmi.removeads` + a `.storekit` test config.
+- Info.plist keys — **done**: HealthKit usage strings, `GADApplicationIdentifier`, `bmicalculator` URL
+  scheme. **Optional / not added**: `SKAdNetworkItems` (only helps ad *attribution*; add Google's
+  current list if you run paid UA). **Do not** add `NSUserTrackingUsageDescription` (NPA ads only).
+- StoreKit: non-consumable `com.bmi.removeads` — **`.storekit` test config done + wired**; still create
+  the product in App Store Connect.
 - `PrivacyInfo.xcprivacy` (AdMob only, health never listed) + a **live privacy-policy URL** (replace the
   `josiahrininger.com/bmi/privacy` placeholder).
 
