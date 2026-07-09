@@ -93,7 +93,7 @@ Conversion research: on the search results card and the top of the product page,
 | --- | --- | --- | --- |
 | 1 | **Value** | Hero result card: large BMI number + color category band + "where you are" pointer on the gauge | **Know your number in 2 seconds** |
 | 2 | **Value** | Trend chart screen (History/TrendChart) showing a line trending down over weeks, healthy band highlighted | **See your progress, not just today** |
-| 3 | **Value** | Result card's **healthy weight range for your height**, with the metric / imperial / stone toggle and the Standard vs Asian cutoff choice visible | **Your healthy range, your units** |
+| 3 | **Value** | Result card's **healthy weight range for your height**, with the metric / imperial / stone toggle visible (the Standard vs Asian cutoff choice lives in Settings/onboarding, not this screen) | **Your healthy range, your units** |
 | 4 | **Usage** | Home Screen + Lock Screen widgets and a Spotlight "Calculate BMI" result | **Check it without opening the app** |
 | 5 | **Usage** | Apple Health sync screen — weight/height flowing in, results flowing out | **Syncs with Apple Health automatically** |
 | 6 | **Trust** | Ratings/review motif + "Private. On-device. No account." + screening-tool disclaimer line | **Private, free, and trusted** |

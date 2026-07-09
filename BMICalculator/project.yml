@@ -6,11 +6,12 @@
 #               -destination 'generic/platform=iOS Simulator' \
 #               CODE_SIGNING_ALLOWED=NO build
 #
-# The GoogleMobileAds SPM package is linked into the app target so the banner +
-# capped interstitial (AdsManager, `#if canImport(GoogleMobileAds)`) are live. The
-# health/ad firewall (Guideline 5.1.3) is enforced in code: NPA requests only, no
-# health signal ever reaches the ad layer. Requires GADApplicationIdentifier in
-# Info.plist (present) and the real ad unit IDs in AdsManager (see its TODO).
+# The GoogleMobileAds SPM package is linked into the app target. The app ships
+# BANNER-ONLY (AdsManager, `#if canImport(GoogleMobileAds)`): the capped interstitial
+# is implemented but dormant until a production unit ID is set (AdUnit.prodInterstitial
+# is nil). The health/ad firewall (Guideline 5.1.3) is enforced in code: NPA requests
+# only, no health signal ever reaches the ad layer. Requires GADApplicationIdentifier
+# in Info.plist (present); the real banner unit is wired, interstitial unit is TODO.
 # Signing disabled (simulator). App Group / HealthKit usage strings are provided so
 # runtime degrades gracefully; the code already falls back when the App Group is absent.
 

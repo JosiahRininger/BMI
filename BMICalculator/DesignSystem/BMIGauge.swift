@@ -364,10 +364,14 @@ struct BMIGauge: View {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 animatedFraction = fraction
             }
-            // Pop the knob out and let it settle back, timed to arrive with the
-            // needle: an overshoot-then-settle that reads as "landing".
-            knobScale = 1.18
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.15)) {
+            // Pop the knob out, then let it settle back — timed to arrive with the
+            // needle for an overshoot-then-settle that reads as "landing". The
+            // scale-up is itself animated so SwiftUI presents the 1.18 peak instead
+            // of coalescing it away with the delayed settle in the same update.
+            withAnimation(.spring(response: 0.2, dampingFraction: 0.5)) {
+                knobScale = 1.18
+            }
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.55).delay(0.18)) {
                 knobScale = 1
             }
         }

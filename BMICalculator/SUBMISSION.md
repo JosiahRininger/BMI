@@ -130,7 +130,7 @@ removeAdsProductID = "com.bmi.removeads"
 - **Reference Name:** `Remove Ads`
 - **Display Name (localization):** `Remove Ads`
 - **Description:** `Remove the banner ad from BMI Calculator. One-time purchase, no subscription.`
-- **Price:** $4.99 (Tier 5). _(Confirm the price you want for a Remove-Ads unlock.)_
+- **Price:** $1.99 — impulse-priced for an ad-removal-only unlock (see [`MONETIZATION.md`](./MONETIZATION.md); $2.99 is the revenue-leaning alternative).
 - **Review screenshot:** a screenshot of the in-app Remove Ads purchase sheet.
 - **Submit the IAP WITH the app version** (first-time IAPs are reviewed alongside
   the binary; attach it to the version under "In-App Purchases").
@@ -291,7 +291,9 @@ CoreSimulator runner is unwedged — just say the word.
 8. [ ] Create a **new version** on the existing app (1467544257). Paste the
    **metadata** (§2): name, subtitle, keywords, promo text, description, what's
    new, URLs, category.
-9. [ ] Complete **App Privacy** = Data Not Collected (§4).
+9. [ ] Complete **App Privacy** (§4): **Data Collected = Yes** — the AdMob SDK
+   only (device identifiers + usage/diagnostics, **Data Not Linked**, **no
+   Tracking** since `npa=1`); your health/measurement data is **not** collected.
 10. [ ] Complete the **Age Rating** questionnaire (§5).
 11. [ ] Fill **App Review Information**: content rights = No, IDFA = No, no demo
     account, paste the **reviewer notes** (§6).

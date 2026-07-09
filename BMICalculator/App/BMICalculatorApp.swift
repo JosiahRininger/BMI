@@ -52,9 +52,8 @@ enum AppConfig {
 ///
 /// Onboarding, Settings, and the Calculator all persist a handful of durable
 /// preferences (chosen units, the BMI-cutoff standard, whether onboarding is
-/// done, the weekly-reminder toggle). Centralizing the raw key strings here
-/// prevents drift — a typo in one module would otherwise silently desync the
-/// preference from the rest of the app.
+/// done). Centralizing the raw key strings here prevents drift — a typo in one
+/// module would otherwise silently desync the preference from the rest of the app.
 enum AppStorageKey {
 
     /// `Bool` — set once the person finishes (or skips) the onboarding flow.

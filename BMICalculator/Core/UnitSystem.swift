@@ -79,19 +79,24 @@ public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
     /// Endpoints are rounded **inward** (lower up, upper down) to
     /// ``weightDisplayStep`` so both shown values stay inside the source range —
     /// important when the range is a health band with an *exclusive* upper bound.
-    public func weightRangeString(fromKilograms kilogramRange: Range<Double>) -> String {
+    ///
+    /// Returns `nil` when inward rounding inverts the range, i.e. the band is
+    /// narrower than one display step. That only happens at non-physical heights
+    /// (a person under ~1 ft), where no whole-unit weight lands strictly inside
+    /// the band; showing nothing is correct rather than a nonsensical range.
+    public func weightRangeString(fromKilograms kilogramRange: Range<Double>) -> String? {
         let step = weightDisplayStep
         let rawLower = displayWeight(fromKilograms: kilogramRange.lowerBound)
         let rawUpper = displayWeight(fromKilograms: kilogramRange.upperBound)
 
-        var lower = (rawLower / step).rounded(.up) * step
+        let lower = (rawLower / step).rounded(.up) * step
         var upper = (rawUpper / step).rounded(.down) * step
         // The band's upper bound is exclusive; if flooring landed exactly on it,
         // step back one increment so the shown value is genuinely inside.
         if upper >= rawUpper { upper -= step }
-        // Degenerate guard for an implausibly narrow range: show the raw bounds
-        // rather than an inverted one.
-        if lower > upper { lower = rawLower; upper = rawUpper }
+        // Inward rounding inverted the range → the band is sub-step-wide; there is
+        // no representable in-band value at this resolution, so show nothing.
+        guard lower <= upper else { return nil }
 
         switch self {
         case .metric, .imperial:

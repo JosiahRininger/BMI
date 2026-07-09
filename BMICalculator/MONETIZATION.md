@@ -14,22 +14,27 @@ all on-device health data (weight/height/BMI is never used for ad targeting).
 > (`GROWTH.md` / `ASO.md`), not squeezing the funnel. Monetize gently; over-monetizing a free
 > utility trades a few dollars for 1-star reviews that cap everything.
 
-## 1. Price — launch at **$4.99**
+## 1. Price — launch at **$1.99**
+
+Ad-removal-only of a *single* banner is a low-perceived-value unlock, so price it in the impulse band,
+not the premium-feature band. This is a deliberate change from the old **$4.99**, which was set when
+"Pro" bundled export + custom themes + multiple profiles. With those features cut, $4.99 has nothing
+extra to justify it and would convert poorly — most people would just tolerate the banner.
 
 | Price | Use it when |
 |---|---|
-| **$4.99 (recommended)** | Default. Charm-priced (left-digit effect), still impulse-band; intent-driven buyers barely change conversion vs $2.99, so $4.99 usually wins on **total revenue**. |
-| $3.99 | If you value buyer **volume / reviews / word-of-mouth** over revenue-per-sale. |
-| $2.99 | Floor / temporary launch promo to seed reviews, then raise. |
-| $1.99 / $0.99 | Too low — signals "hobby"; you only sell the unlock once, so you can't recover the gap. |
-| $6.99+ | Too high for an ad-removal-only unlock — nothing else is gated, so there's no extra value to justify the jump. |
+| **$1.99 (recommended)** | Default for ad-removal-only. Impulse-priced — the annoyed-by-ads buyer taps without deliberating; maximizes buyers and gives the rating **relief valve** for a low-value unlock. |
+| $2.99 | If you'd rather lean on **revenue-per-sale** than volume. Still impulse-band; a reasonable A/B against $1.99 once you have data. |
+| $0.99 | Floor. Only if $1.99 shows real price resistance in reviews. |
+| $3.99+ | Too high now that nothing but the banner is gated — it would suppress the (already small) buyer pool. |
 
-Net per buyer at $4.99 = $4.99 × 0.85 ≈ **$4.24** (Apple Small Business 15%). Never hardcode the
-price — the app uses `product.displayPrice` (already wired).
+Net per buyer at $1.99 = $1.99 × 0.85 ≈ **$1.69** (Apple Small Business 15%). Never hardcode the price
+— the app uses `product.displayPrice` (already wired), so changing it later is a **one-field edit in
+App Store Connect with no new build**.
 
-**Threshold to change:** if analytics show unlock conversion < ~1% of *engaged* users **and** reviews
-cite price → test $3.99/$2.99. If conversion > ~3% with few price complaints → there may be room to
-nudge the price up, but an ad-removal-only unlock has limited pricing headroom.
+**Threshold to change:** the IAP is secondary to banner revenue, so don't over-tune it. If unlock
+conversion is healthy (> ~2% of *engaged* users) with no price complaints → A/B **$2.99**. If reviews
+cite price or conversion is near zero → drop to **$0.99**.
 
 ## 2. Upsell placement — ranked (deploy top-to-bottom)
 
@@ -46,7 +51,7 @@ interstitial code exists but is **dormant/off**. AdMob itself warns pure utiliti
 fits, which is one reason it stays off; if it's ever enabled, tie it strictly to "calculation complete"
 and cap it at ≤ 1 per session. Watch retention/ratings as you tune.
 
-## 3. The unlock — what the $4.99 buys
+## 3. The unlock — what the $1.99 buys
 
 The single non-consumable does one thing: **it removes ads.**
 
@@ -68,21 +73,22 @@ Paywall + Settings copy list exactly this — ad removal only, nothing more to g
 - [x] Only `.verified` transactions unlock; `transaction.finish()` after delivery — **done**.
 - [x] `AppStore.sync()` **only** behind the "Restore Purchases" button (it prompts for Apple ID) — **done**.
 - [x] **Local `isPro` cache** as a soft fallback for the iOS 26.x `currentEntitlements`-empty regression (StoreKit stays source of truth; refund still clears it) — **added this session**.
-- [ ] **App Store Connect:** create the non-consumable `com.bmi.removeads` at **$4.99**, submit it **with the build** + a review screenshot.
+- [ ] **App Store Connect:** create the non-consumable `com.bmi.removeads` at **$1.99**, submit it **with the build** + a review screenshot.
 - [ ] **`.storekit` config** in the scheme for simulator testing; test buy → delete → reinstall → **Restore** → unlock before submitting.
 - [ ] Surface **Restore Purchases** on the paywall too (not just Settings).
 
 ## 5. Revenue model (one-time unlock; ranges, not forecasts)
 
 Conversion of **active free users → one-time buyer**: **Low ~1% · Median ~2.5% · High ~5%** (a
-low-frequency utility likely lands in the lower half). Per-buyer net ≈ **$4.24**.
+low-frequency utility likely lands in the lower half). Per-buyer net ≈ **$1.69** (at the $1.99 price,
+after Apple's 15% Small Business cut). Note the IAP is **secondary** to banner revenue here.
 
 | Active free users | Low (1%) | Median (2.5%) | High (5%) |
 |---|---|---|---|
-| 1,000 | ~$42 | ~$106 | ~$212 |
-| 10,000 | ~$424 | ~$1,060 | ~$2,120 |
-| 50,000 | ~$2,120 | ~$5,300 | ~$10,600 |
-| 100,000 | ~$4,240 | ~$10,600 | ~$21,200 |
+| 1,000 | ~$17 | ~$42 | ~$85 |
+| 10,000 | ~$170 | ~$423 | ~$845 |
+| 50,000 | ~$845 | ~$2,113 | ~$4,225 |
+| 100,000 | ~$1,690 | ~$4,225 | ~$8,450 |
 
 This is **one-time** per cohort, **plus** ongoing (modest) ad revenue from non-payers — the shipping
 build serves a single banner only, so banner eCPM sets the ad ceiling. Replace these planning ranges

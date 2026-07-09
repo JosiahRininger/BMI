@@ -279,12 +279,12 @@ struct HealthyWeightRangeTests {
     }
 
     @Test("Both shown metric endpoints stay inside the healthy band")
-    func formattedEndpointsAreHealthy() {
+    func formattedEndpointsAreHealthy() throws {
         // Parse "lo–hi kg" back out and confirm each classifies as healthy.
         for cm in stride(from: 150.0, through: 200.0, by: 1.0) {
             let h = cm / 100
-            let range = BMICalculator.healthyWeightRangeKilograms(heightMeters: h)!
-            let text = UnitSystem.metric.weightRangeString(fromKilograms: range)
+            let range = try #require(BMICalculator.healthyWeightRangeKilograms(heightMeters: h))
+            let text = try #require(UnitSystem.metric.weightRangeString(fromKilograms: range))
             let nums = text.replacingOccurrences(of: " kg", with: "")
                 .split(separator: "–").compactMap { Double($0) }
             #expect(nums.count == 2)
@@ -296,13 +296,23 @@ struct HealthyWeightRangeTests {
     }
 
     @Test("Imperial formats as whole pounds; stone as one decimal")
-    func imperialAndStoneFormatting() {
-        let range = BMICalculator.healthyWeightRangeKilograms(heightMeters: 1.75)!
-        let lb = UnitSystem.imperial.weightRangeString(fromKilograms: range)
+    func imperialAndStoneFormatting() throws {
+        let range = try #require(BMICalculator.healthyWeightRangeKilograms(heightMeters: 1.75))
+        let lb = try #require(UnitSystem.imperial.weightRangeString(fromKilograms: range))
         #expect(lb.hasSuffix(" lb"))
         #expect(!lb.contains("."))                       // whole pounds
-        let st = UnitSystem.stone.weightRangeString(fromKilograms: range)
+        let st = try #require(UnitSystem.stone.weightRangeString(fromKilograms: range))
         #expect(st.hasSuffix(" st"))
         #expect(st.contains("."))                        // one-decimal stone
+    }
+
+    @Test("A sub-step-wide band (non-physical height) yields no range string")
+    func degenerateNarrowBandReturnsNil() throws {
+        // At ~1 ft in stone/Asian the healthy band is narrower than 0.1 st, so no
+        // whole-step weight lands inside it — the readout must hide, not print an
+        // out-of-band range. (Guards the CalculatorViewModel/ResultCard row too.)
+        let range = try #require(BMICalculator.healthyWeightRangeKilograms(
+            heightMeters: BMICalculator.meters(fromFeet: 1, inches: 1), standard: .asian))
+        #expect(UnitSystem.stone.weightRangeString(fromKilograms: range) == nil)
     }
 }

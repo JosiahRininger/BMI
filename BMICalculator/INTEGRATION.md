@@ -172,7 +172,7 @@ Add to the **App target** Info (Target ▸ Info, or the `Info.plist`). All Healt
 ## 5. StoreKit configuration
 
 - [ ] In **App Store Connect**, create a **Non-Consumable** IAP with product id **`com.bmi.removeads`**
-      (must equal `StoreService.removeAdsProductID`), priced at **$4.99** (see [`MONETIZATION.md`](./MONETIZATION.md)
+      (must equal `StoreService.removeAdsProductID`), priced at **$1.99** (see [`MONETIZATION.md`](./MONETIZATION.md)
       for the pricing rationale and the StoreKit 2 checklist). **No subscription** anywhere.
 - [ ] For local testing: **File ▸ New ▸ File ▸ StoreKit Configuration File** (e.g. `Products.storekit`).
       Add a Non-Consumable with the **same** id `com.bmi.removeads`, a display name ("Remove Ads") and a

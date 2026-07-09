@@ -40,7 +40,7 @@ _Generated 2026-06-18 in an Opus 4.8 ultracode session, then taken through a rea
 >   for height) wired through Core, `CalculatorViewModel`, `InputControls`, and the `CalculateBMIIntent`.
 >   Builds + 115/115 tests pass. *(Future polish: a `st + lb` two-field entry instead of decimal stone.)*
 > - **Signing + capabilities** (HealthKit, In-App Purchase, App Groups `group.com.jdr.BMI`) for a device/TestFlight build.
-> - **StoreKit**: create `com.bmi.removeads` at $4.99 in App Store Connect + a `.storekit` test config.
+> - **StoreKit**: create `com.bmi.removeads` at $1.99 in App Store Connect + a `.storekit` test config.
 > - **App icon** asset catalog; **privacy manifest** + a live privacy-policy URL (replace the placeholder).
 
 ---
@@ -74,7 +74,7 @@ Parallel generation produced a few cross-module naming divergences. These are re
 
 The earlier growth/feature fold-in — the 6 adjacent calculators (`Core/HealthCalculators.swift`,
 `Features/Calculators/`), the shareable progress card (`Features/Share/`), streaks
-(`Features/Streak/`), the `GROWTH.md` playbook, and the multi-feature Pro bundle — was **removed**
+(`Features/Streak/`), and the multi-feature Pro bundle — was **removed**
 when the app was slimmed to BMI-only. What remains:
 
 - **`StoreService.swift`** — the single **Remove Ads** unlock (local `isPro` cache; a refund still

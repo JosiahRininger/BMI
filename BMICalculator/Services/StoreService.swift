@@ -27,7 +27,7 @@ public final class StoreState {
     /// The loaded product, once `StoreService` fetches it from the App Store.
     public internal(set) var removeAdsProduct: Product?
 
-    /// Localized price string for UI (e.g. "$4.99"); `nil` until product loads.
+    /// Localized price string for UI (e.g. "$1.99"); `nil` until product loads.
     public var displayPrice: String? { removeAdsProduct?.displayPrice }
 
     /// Whether a purchase / restore is currently in flight (drive a spinner).

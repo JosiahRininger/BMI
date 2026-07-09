@@ -223,7 +223,7 @@ struct OnboardingView: View {
                     finish(persistRecord: true)
                 }
 
-                Text("These are reminders to check in, not medical advice.")
+                Text("BMI is a screening tool, not medical advice.")
                     .font(DSFont.caption)
                     .foregroundStyle(DSColor.secondaryText)
                     .multilineTextAlignment(.center)
