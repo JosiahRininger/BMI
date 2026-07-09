@@ -159,20 +159,18 @@ struct CalculatorViewModelCalculateTests {
         #expect(ads2.shownCount == 1)
     }
 
-    @Test("Persists a BMIRecord tagged with the active profile id")
-    func persistsWithProfile() throws {
+    @Test("Persists a BMIRecord to the model context")
+    func persistsRecord() throws {
         let container = PersistenceController.inMemory()
         let context = container.mainContext
-        let profileID = UUID()
 
         let vm = CalculatorViewModel(unitSystem: .metric)
         vm.weight = 80
         vm.heightCentimeters = 180
-        vm.calculate(persistingInto: context, profileID: profileID)
+        vm.calculate(persistingInto: context)
 
         let records = try context.fetch(FetchDescriptor<BMIRecord>())
         #expect(records.count == 1)
-        #expect(records.first?.profileID == profileID)
         // 80 kg / 1.8² ≈ 24.69
         #expect(abs((records.first?.bmi ?? 0) - 24.69) < 0.05)
     }
@@ -180,7 +178,7 @@ struct CalculatorViewModelCalculateTests {
     @Test("A nil context skips persistence without affecting the in-memory result")
     func nilContextSkipsPersistence() {
         let vm = CalculatorViewModel()
-        vm.calculate(persistingInto: nil, profileID: UUID())
+        vm.calculate(persistingInto: nil)
         #expect(vm.result != nil)   // result still computed, just not saved
     }
 }

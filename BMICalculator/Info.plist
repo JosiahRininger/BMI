@@ -29,5 +29,14 @@
 	-->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+
+	<!--
+	  Google Mobile Ads (AdMob) application ID. REQUIRED: the SDK throws at
+	  MobileAds.start() if this is missing. This is the app-level AdMob ID, NOT an
+	  ad unit ID (those live in AdsManager.AdUnit). The ad layer is firewalled from
+	  all health data and requests non-personalized ads only (Guideline 5.1.3).
+	-->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-6687613409331343~7486203316</string>
 </dict>
 </plist>

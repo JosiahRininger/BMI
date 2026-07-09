@@ -78,6 +78,11 @@ extension HealthStandard {
 struct ResultCard: View {
     let result: BMIResult
 
+    /// The healthy weight range for the person's height, already formatted in
+    /// their unit (e.g. "59–79 kg"). `nil` hides the readout. Supplied by the
+    /// view model, which owns the height + unit context the engine value lacks.
+    var healthyWeightRange: String? = nil
+
     /// Whether to show the inline Pro upsell (non-Pro people only).
     let showsUpsell: Bool
 
@@ -100,6 +105,9 @@ struct ResultCard: View {
             .frame(maxWidth: .infinity)
             .frame(height: 160)
             categoryBlock
+            if let healthyWeightRange {
+                healthyRangeRow(healthyWeightRange)
+            }
             disclaimer
             if showsUpsell {
                 upsell
@@ -118,12 +126,18 @@ struct ResultCard: View {
     }
 
     /// Concise spoken summary of the whole result, e.g.
-    /// "BMI 24.1, Healthy weight, range 18.5 – < 25".
+    /// "BMI 24.1, Healthy weight, range 18.5 – < 25. Healthy weight for your
+    /// height, 59 to 79 kg".
     private var resultSummary: String {
-        String(format: "BMI %.1f, %@, range %@",
-               result.rounded,
-               result.category.title,
-               result.category.displayRange)
+        var summary = String(format: "BMI %.1f, %@, range %@",
+                             result.rounded,
+                             result.category.title,
+                             result.category.displayRange)
+        if let healthyWeightRange {
+            summary += ". Healthy weight for your height, "
+                + healthyWeightRange.replacingOccurrences(of: "–", with: " to ")
+        }
+        return summary
     }
 
     // MARK: Header — big number
@@ -177,6 +191,43 @@ struct ResultCard: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Healthy weight range for this height
+
+    /// A supportive readout of the weight range that lands in the healthy BMI
+    /// band for the person's height — the actionable, personalized companion to
+    /// the abstract BMI number.
+    private func healthyRangeRow(_ range: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "scalemass")
+                .font(.subheadline)
+                .foregroundStyle(BMICategory.healthy.bandColor)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Healthy weight for your height")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Text(range)
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(BMICategory.healthy.bandColor.opacity(0.12))
+        )
+        .accessibilityElement(children: .combine)
+        // Speak an en-dash range as "to" so VoiceOver reads it naturally.
+        .accessibilityLabel(
+            "Healthy weight for your height, \(range.replacingOccurrences(of: "–", with: " to "))"
+        )
     }
 
     // MARK: Disclaimer
@@ -265,6 +316,7 @@ extension View {
 #Preview("Healthy") {
     ResultCard(
         result: BMIResult(value: 22.4, category: .healthy, standard: .standard, rounded: 22.4),
+        healthyWeightRange: "59–79 kg",
         showsUpsell: true
     )
     .padding()
@@ -273,6 +325,7 @@ extension View {
 #Preview("Obesity II — Asian standard") {
     ResultCard(
         result: BMIResult(value: 28.1, category: .obesityI, standard: .asian, rounded: 28.1),
+        healthyWeightRange: "129–159 lb",
         showsUpsell: false
     )
     .padding()

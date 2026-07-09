@@ -73,29 +73,20 @@ extension Color {
 /// palette can evolve in one place.
 enum Theme {
 
-    // MARK: Brand (themeable accent)
+    // MARK: Brand
 
-    /// The active accent palette. Defaults to the classic brand blue and is
-    /// updated by `AppearanceStore` when the person picks a Pro theme. It's a
-    /// process global (written only on the main actor) so the `brand*` tokens
-    /// below stay zero-argument call sites — the ~40 places across the app that
-    /// reference `Theme.brand` automatically follow the chosen theme without
-    /// any of them taking a parameter or reading the environment.
-    nonisolated(unsafe) static var currentAccent: AppTheme = .classic
-
-    /// Primary brand accent. Defaults to `#19BEF4`; follows the chosen theme.
-    static var brand: Color { currentAccent.accent }
+    /// Primary brand accent, `#19BEF4` — the app's single, consistent identity
+    /// color. Identical in light and dark so brand recognition stays constant.
+    static let brand = Color(hex: "#19BEF4")
 
     /// A slightly deeper brand tint for pressed/active states and gradients.
-    static var brandDeep: Color { currentAccent.accentDeep }
+    static let brandDeep = Color(hex: "#0E9BCB")
 
     /// A soft brand tint suitable for fills behind brand-colored content.
-    static var brandSoft: Color {
-        Color.dynamic(
-            light: currentAccent.accent.opacity(0.12),
-            dark: currentAccent.accent.opacity(0.22)
-        )
-    }
+    static let brandSoft = Color.dynamic(
+        light: Color(hex: "#19BEF4").opacity(0.12),
+        dark: Color(hex: "#19BEF4").opacity(0.22)
+    )
 
     /// A two-stop brand gradient for hero elements and primary buttons.
     static var brandGradient: LinearGradient {

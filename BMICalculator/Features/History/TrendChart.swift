@@ -174,6 +174,22 @@ public struct TrendChart: View {
         }
     }
 
+    /// The healthy BMI band for the current standard, clamped to the visible Y
+    /// domain so its frame/label never draw off-chart. Single source of truth is
+    /// ``HealthStandard/healthyBMIRange``.
+    private var healthyBand: (lower: Double, upper: Double) {
+        let band = standard.healthyBMIRange
+        return (max(band.lowerBound, yDomain.lowerBound),
+                min(band.upperBound, yDomain.upperBound))
+    }
+
+    /// Whether the most recent visible reading sits inside the healthy band —
+    /// surfaced in the VoiceOver summary for an at-a-glance, non-visual read.
+    private var latestInHealthyRange: Bool {
+        guard let last = visibleRecords.last else { return false }
+        return standard.healthyBMIRange.contains(last.bmi)
+    }
+
     /// A Y-axis domain padded around the data so bands and points are visible.
     private var yDomain: ClosedRange<Double> {
         let values = visibleRecords.map(\.bmi)
@@ -209,7 +225,8 @@ public struct TrendChart: View {
 
     private var chart: some View {
         Chart {
-            // Background category bands.
+            // Background category bands. Non-healthy bands are muted so the
+            // healthy zone reads as the clear visual anchor ("am I in the green?").
             ForEach(bands.indices, id: \.self) { index in
                 let band = bands[index]
                 RectangleMark(
@@ -218,7 +235,10 @@ public struct TrendChart: View {
                     yStart: .value("Lower", max(band.lower, yDomain.lowerBound)),
                     yEnd: .value("Upper", min(band.upper, yDomain.upperBound))
                 )
-                .foregroundStyle(BMIBandPalette.bandFill(for: band.category))
+                .foregroundStyle(
+                    BMIBandPalette.bandFill(for: band.category)
+                        .opacity(band.category == .healthy ? 1 : 0.5)
+                )
 
                 // Cutoff boundary line at the top of each band (skip the
                 // open-ended top band to avoid a stray line off-chart).
@@ -228,6 +248,28 @@ public struct TrendChart: View {
                         .foregroundStyle(.secondary.opacity(0.6))
                 }
             }
+
+            // Frame the healthy band with solid green edges + a "Healthy" label
+            // so the target zone is unmistakable at a glance.
+            ForEach([healthyBand.lower, healthyBand.upper], id: \.self) { edge in
+                RuleMark(y: .value("Healthy edge", edge))
+                    .lineStyle(StrokeStyle(lineWidth: 1.5))
+                    .foregroundStyle(BMICategory.healthy.bandColor.opacity(0.75))
+            }
+            RuleMark(y: .value("Healthy label", healthyBand.upper))
+                .foregroundStyle(.clear)
+                .annotation(position: .bottom, alignment: .trailing, spacing: 2) {
+                    Text("Healthy")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(BMICategory.healthy.bandColor)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(BMICategory.healthy.bandColor.opacity(0.15))
+                        )
+                        .padding(.trailing, 4)
+                        .accessibilityHidden(true)
+                }
 
             // The BMI trend line.
             ForEach(visibleRecords) { record in
@@ -311,7 +353,10 @@ public struct TrendChart: View {
         else if lastBMI < firstBMI { direction = "decreasing" }
         else { direction = "steady" }
         let latestCategory = last.category(standard: standard).title
-        return "BMI \(direction) from \(firstBMI) to \(lastBMI) over \(visibleRecords.count) measurements. Latest reading \(lastBMI), \(latestCategory)."
+        let zoneNote = latestInHealthyRange
+            ? " Latest reading is within the healthy range."
+            : " Latest reading is outside the healthy range."
+        return "BMI \(direction) from \(firstBMI) to \(lastBMI) over \(visibleRecords.count) measurements. Latest reading \(lastBMI), \(latestCategory).\(zoneNote)"
     }
 }
 

@@ -165,6 +165,11 @@ struct BMIGauge: View {
     /// state so the needle springs smoothly when `bmi` changes.
     @State private var animatedFraction: Double = 0
 
+    /// Brief scale "pop" applied to the knob as it lands on a new value, for a
+    /// tactile, premium feel. Held at 1 except during the settle. Suppressed
+    /// under Reduce Motion.
+    @State private var knobScale: CGFloat = 1
+
     /// When the person has Reduce Motion enabled, the indicator snaps instead of
     /// springing so the sweep doesn't trigger motion discomfort.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -274,7 +279,11 @@ struct BMIGauge: View {
                 Circle()
                     .strokeBorder(category.bandColor, lineWidth: 4)
             )
+            // A soft category-colored glow lifts the knob off the track for a
+            // premium feel, layered over a subtle depth shadow.
+            .shadow(color: category.bandColor.opacity(0.45), radius: 6, x: 0, y: 0)
             .shadow(color: .black.opacity(0.18), radius: 4, x: 0, y: 2)
+            .scaleEffect(knobScale)
             .position(x: knob.x, y: knob.y)
     }
 
@@ -344,14 +353,22 @@ struct BMIGauge: View {
         "BMI \(formattedBMI), \(category.title), range \(category.displayRange)"
     }
 
-    /// Springs the indicator to a new normalized fraction. Snaps without
-    /// animation when Reduce Motion is enabled.
+    /// Springs the indicator to a new normalized fraction, with a brief scale
+    /// pop as it lands. Snaps without animation (and without the pop) when
+    /// Reduce Motion is enabled.
     private func animateIndicator(to fraction: Double) {
         if reduceMotion {
             animatedFraction = fraction
+            knobScale = 1
         } else {
             withAnimation(.spring(response: 0.6, dampingFraction: 0.8)) {
                 animatedFraction = fraction
+            }
+            // Pop the knob out and let it settle back, timed to arrive with the
+            // needle: an overshoot-then-settle that reads as "landing".
+            knobScale = 1.18
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.5).delay(0.15)) {
+                knobScale = 1
             }
         }
     }

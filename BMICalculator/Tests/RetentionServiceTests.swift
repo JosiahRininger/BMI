@@ -2,108 +2,13 @@
 //  RetentionServiceTests.swift
 //  BMICalculatorTests
 //
-//  Coverage for the retention logic: StreakService (shame-free consecutive-day
-//  streak + milestones, driven by injected dates) and ReviewPrompter (the pure
-//  eligibility gates, driven by injected `now` + an isolated UserDefaults suite).
+//  Coverage for the retention logic: ReviewPrompter (the pure eligibility gates,
+//  driven by injected `now` + an isolated UserDefaults suite).
 //
 
 import Testing
 import Foundation
 @testable import BMICalculator
-
-private let base = Date(timeIntervalSince1970: 1_700_000_000)
-private func day(_ n: Int) -> Date { Calendar.current.date(byAdding: .day, value: n, to: base)! }
-
-// MARK: - StreakService
-
-@Suite("Streak service")
-@MainActor
-struct StreakServiceTests {
-
-    private func fresh(_ suite: String) -> StreakService {
-        UserDefaults().removePersistentDomain(forName: suite)
-        return StreakService(appGroupID: suite)
-    }
-
-    @Test("First entry starts a streak of one")
-    func firstEntry() {
-        let s = fresh("test.streak.first")
-        s.recordEntry(date: day(0))
-        #expect(s.currentStreak == 1)
-        #expect(s.entryCount == 1)
-        #expect(s.loggedDayCount == 1)
-        #expect(s.longestStreak == 1)
-    }
-
-    @Test("Consecutive days extend the streak")
-    func consecutiveDays() {
-        let s = fresh("test.streak.consecutive")
-        s.recordEntry(date: day(0))
-        s.recordEntry(date: day(1))
-        s.recordEntry(date: day(2))
-        #expect(s.currentStreak == 3)
-        #expect(s.loggedDayCount == 3)
-        #expect(s.longestStreak == 3)
-    }
-
-    @Test("A second entry the same day counts the entry but not the day or streak")
-    func sameDayTwice() {
-        let s = fresh("test.streak.sameday")
-        s.recordEntry(date: day(0))
-        s.recordEntry(date: day(0))
-        #expect(s.entryCount == 2)
-        #expect(s.loggedDayCount == 1)
-        #expect(s.currentStreak == 1)
-    }
-
-    @Test("A gap silently resets the current streak to one but preserves the longest")
-    func gapResets() {
-        let s = fresh("test.streak.gap")
-        s.recordEntry(date: day(0))
-        s.recordEntry(date: day(1))   // streak 2
-        s.recordEntry(date: day(5))   // gap → reset to 1
-        #expect(s.currentStreak == 1)
-        #expect(s.longestStreak == 2)
-        #expect(s.loggedDayCount == 3)
-    }
-
-    @Test("An out-of-order older entry doesn't advance the day count")
-    func outOfOrder() {
-        let s = fresh("test.streak.order")
-        s.recordEntry(date: day(5))
-        s.recordEntry(date: day(3))   // older than last → not a new day
-        #expect(s.entryCount == 2)
-        #expect(s.loggedDayCount == 1)
-    }
-
-    @Test("Seven distinct logging days earn the One Week milestone, consumed once")
-    func milestone() {
-        let s = fresh("test.streak.milestone")
-        for n in 0..<7 { s.recordEntry(date: day(n)) }
-        #expect(s.loggedDayCount == 7)
-        #expect(s.earnedMilestones.contains { $0.threshold == 7 })
-        #expect(s.milestoneJustEarned()?.threshold == 7)
-        #expect(s.milestoneJustEarned() == nil)   // one-shot signal
-    }
-
-    @Test("Same-day repeats can't fast-track a milestone (keyed on distinct days)")
-    func milestoneNeedsDistinctDays() {
-        let s = fresh("test.streak.nofasttrack")
-        for _ in 0..<10 { s.recordEntry(date: day(0)) }   // 10 entries, one day
-        #expect(s.entryCount == 10)
-        #expect(s.loggedDayCount == 1)
-        #expect(s.earnedMilestones.isEmpty)
-    }
-
-    @Test("nextMilestone and entriesToNextMilestone track remaining distinct days")
-    func nextMilestone() {
-        let s = fresh("test.streak.next")
-        #expect(s.nextMilestone?.threshold == 7)
-        #expect(s.entriesToNextMilestone == 7)
-        for n in 0..<3 { s.recordEntry(date: day(n)) }
-        #expect(s.entriesToNextMilestone == 4)
-    }
-}
 
 // MARK: - ReviewPrompter
 

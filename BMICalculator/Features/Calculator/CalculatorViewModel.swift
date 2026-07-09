@@ -70,9 +70,9 @@ public protocol ReviewRequesting: AnyObject {
     func maybePrompt() -> Bool
 }
 
-/// Records that the person logged a calculation, for retention surfaces (streak,
-/// weigh-in-reminder rescheduling). Implemented by an app-level adapter over
-/// `StreakService` + `NotificationService`.
+/// Records that the person logged a calculation, so app-level surfaces can react
+/// (currently: refreshing the home-screen widget). Implemented by an app-level
+/// adapter.
 ///
 /// CONTRACT: receives NO health data — only the fact that a calc happened.
 @MainActor
@@ -281,6 +281,19 @@ public final class CalculatorViewModel {
                           heightMeters: heightMeters)
     }
 
+    /// The healthy weight range for the current height, formatted in the active
+    /// unit (e.g. "59–79 kg"), or `nil` before a result exists or for a
+    /// non-physical height. Uses the *result's* standard so it stays consistent
+    /// with the shown category when the standard is toggled live.
+    public var healthyWeightRangeText: String? {
+        guard let result else { return nil }
+        guard let range = BMICalculator.healthyWeightRangeKilograms(
+            heightMeters: heightMeters,
+            standard: result.standard
+        ) else { return nil }
+        return unitSystem.weightRangeString(fromKilograms: range)
+    }
+
     // MARK: Actions
 
     /// Computes the BMI, stores the result, persists a `BMIRecord` into the
@@ -290,11 +303,9 @@ public final class CalculatorViewModel {
     /// from `@Environment(\.modelContext)` and this type stays free of any
     /// environment plumbing.
     ///
-    /// - Parameters:
-    ///   - context: the SwiftData context to persist the record into. Pass `nil`
-    ///     (e.g. in previews/tests) to skip persistence.
-    ///   - profileID: the active profile to tag the saved record with, or `nil`.
-    public func calculate(persistingInto context: ModelContext?, profileID: UUID? = nil) {
+    /// - Parameter context: the SwiftData context to persist the record into.
+    ///   Pass `nil` (e.g. in previews/tests) to skip persistence.
+    public func calculate(persistingInto context: ModelContext?) {
         let computed = BMICalculator.result(
             weightKilograms: weightKilograms,
             heightMeters: heightMeters,
@@ -306,11 +317,11 @@ public final class CalculatorViewModel {
         hasCalculated = true
         resultGeneration += 1
 
-        persistRecord(for: computed, into: context, profileID: profileID)
+        persistRecord(for: computed, into: context)
 
-        // Retention engine — firewall-safe, none of these receive a health value:
-        // count the calc, record a streak/log entry (reschedules the weigh-in
-        // reminder), then maybe prompt for a review and maybe show an interstitial.
+        // Retention hooks — firewall-safe, none of these receive a health value:
+        // count the calc, refresh the home-screen widget, then maybe prompt for a
+        // review and maybe show an interstitial.
         reviewPrompter?.recordSuccessfulCalc()
         logRecorder?.recordEntry()
         // Don't stack two modals on one calc: prefer the rare, rate-limited review
@@ -348,15 +359,14 @@ public final class CalculatorViewModel {
     /// Inserts a `BMIRecord` describing this calculation. Stores canonical metric
     /// values plus the unit the person was using, so history can render in their
     /// preferred unit later.
-    private func persistRecord(for result: BMIResult, into context: ModelContext?, profileID: UUID?) {
+    private func persistRecord(for result: BMIResult, into context: ModelContext?) {
         guard let context else { return }
         let record = BMIRecord(
             date: Date(),
             bmi: result.value,
             weightKilograms: weightKilograms,
             heightMeters: heightMeters,
-            unitSystemRaw: unitSystem.rawValue,
-            profileID: profileID
+            unitSystemRaw: unitSystem.rawValue
         )
         context.insert(record)
         // Best-effort save; SwiftData autosaves on most contexts, but an

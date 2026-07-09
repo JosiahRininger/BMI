@@ -223,207 +223,86 @@ struct CodableTests {
     }
 }
 
-// MARK: - Accent theme (BMI Pro)
+// MARK: - Healthy weight range for height
 
-@Suite("Accent theme")
-struct AccentThemeTests {
+@Suite("Healthy weight range")
+struct HealthyWeightRangeTests {
 
-    @Test("Only Classic Blue is free; every other palette is Pro")
-    func entitlementFlags() {
-        #expect(AppTheme.free == .classic)
-        #expect(AppTheme.classic.isPro == false)
-        for theme in AppTheme.allCases where theme != .classic {
-            #expect(theme.isPro, "\(theme.displayName) should require Pro")
+    private func approx(_ a: Double, _ b: Double, _ tol: Double = 0.001) -> Bool { abs(a - b) < tol }
+
+    @Test("Healthy BMI band matches the classifier cutoffs")
+    func bandMatchesCutoffs() {
+        #expect(HealthStandard.standard.healthyBMIRange == 18.5..<25)
+        #expect(HealthStandard.asian.healthyBMIRange == 18.5..<23)
+        // The band's endpoints classify exactly as the engine says they do.
+        #expect(BMICalculator.category(forBMI: 18.5, standard: .standard) == .healthy)
+        #expect(BMICalculator.category(forBMI: 24.99, standard: .standard) == .healthy)
+        #expect(BMICalculator.category(forBMI: 25, standard: .standard) == .overweight)
+        #expect(BMICalculator.category(forBMI: 23, standard: .asian) == .overweight)
+    }
+
+    @Test("Range is weight at the band bounds for the height")
+    func rangeIsBandTimesHeightSquared() throws {
+        let h = 1.8
+        let range = try #require(BMICalculator.healthyWeightRangeKilograms(heightMeters: h, standard: .standard))
+        #expect(approx(range.lowerBound, 18.5 * h * h))   // 59.94
+        #expect(approx(range.upperBound, 25 * h * h))     // 81.0
+        // The Asian band tops out lower for the same height.
+        let asian = try #require(BMICalculator.healthyWeightRangeKilograms(heightMeters: h, standard: .asian))
+        #expect(asian.upperBound < range.upperBound)
+    }
+
+    @Test("Endpoints of the kg range land in the healthy band")
+    func endpointsClassifyHealthy() throws {
+        for h in [1.5, 1.6, 1.7, 1.8, 1.9, 2.0] {
+            let range = try #require(BMICalculator.healthyWeightRangeKilograms(heightMeters: h))
+            #expect(BMICalculator.category(forBMI: BMICalculator.bmi(weightKilograms: range.lowerBound, heightMeters: h)) == .healthy)
+            // Just inside the exclusive upper bound is still healthy.
+            #expect(BMICalculator.category(forBMI: BMICalculator.bmi(weightKilograms: range.upperBound - 0.01, heightMeters: h)) == .healthy)
         }
     }
 
-    @Test("Raw values round-trip so the persisted choice survives relaunch")
-    func rawValueRoundTrip() {
-        for theme in AppTheme.allCases {
-            #expect(AppTheme(rawValue: theme.rawValue) == theme)
+    @Test("Non-physical or non-finite height yields nil")
+    func guardsBadHeight() {
+        #expect(BMICalculator.healthyWeightRangeKilograms(heightMeters: 0) == nil)
+        #expect(BMICalculator.healthyWeightRangeKilograms(heightMeters: -1.7) == nil)
+        #expect(BMICalculator.healthyWeightRangeKilograms(heightMeters: .nan) == nil)
+        #expect(BMICalculator.healthyWeightRangeKilograms(heightMeters: .infinity) == nil)
+    }
+
+    @Test("Metric range formats as whole kilograms, rounded inward")
+    func metricFormatting() {
+        // h = 1.8: 59.94 … 81.0 kg → lower ceils to 60, upper is an exact
+        // boundary so it steps back to 80 (81 would be overweight).
+        let range = BMICalculator.healthyWeightRangeKilograms(heightMeters: 1.8)!
+        #expect(UnitSystem.metric.weightRangeString(fromKilograms: range) == "60–80 kg")
+    }
+
+    @Test("Both shown metric endpoints stay inside the healthy band")
+    func formattedEndpointsAreHealthy() {
+        // Parse "lo–hi kg" back out and confirm each classifies as healthy.
+        for cm in stride(from: 150.0, through: 200.0, by: 1.0) {
+            let h = cm / 100
+            let range = BMICalculator.healthyWeightRangeKilograms(heightMeters: h)!
+            let text = UnitSystem.metric.weightRangeString(fromKilograms: range)
+            let nums = text.replacingOccurrences(of: " kg", with: "")
+                .split(separator: "–").compactMap { Double($0) }
+            #expect(nums.count == 2)
+            for kg in nums {
+                #expect(BMICalculator.category(forBMI: BMICalculator.bmi(weightKilograms: kg, heightMeters: h)) == .healthy,
+                        "\(kg) kg at \(cm) cm should be healthy")
+            }
         }
     }
 
-    @Test("Every palette exposes a distinct display name")
-    func distinctNames() {
-        let names = Set(AppTheme.allCases.map(\.displayName))
-        #expect(names.count == AppTheme.allCases.count)
-    }
-}
-
-@Suite("Appearance store")
-@MainActor
-struct AppearanceStoreTests {
-
-    /// Builds a store against a clean persisted value so the default is deterministic.
-    private func makeCleanStore() -> AppearanceStore {
-        UserDefaults.standard.removeObject(forKey: AppStorageKey.appTheme)
-        return AppearanceStore()
-    }
-
-    @Test("Defaults to the free Classic Blue and mirrors it into Theme.brand")
-    func defaultsToClassic() {
-        let store = makeCleanStore()
-        #expect(store.theme == .classic)
-        #expect(Theme.currentAccent == .classic)
-    }
-
-    @Test("Selecting a theme updates the global accent the app reads")
-    func selectionUpdatesGlobal() {
-        let store = makeCleanStore()
-        store.theme = .violet
-        #expect(Theme.currentAccent == .violet)
-    }
-
-    @Test("Losing Pro reverts a Pro palette but keeps Classic Blue")
-    func enforceEntitlement() {
-        let store = makeCleanStore()
-
-        store.theme = .ocean
-        store.enforceEntitlement(isPro: true)      // owns Pro → keep it
-        #expect(store.theme == .ocean)
-
-        store.enforceEntitlement(isPro: false)     // lost Pro → revert
-        #expect(store.theme == .classic)
-        #expect(Theme.currentAccent == .classic)
-
-        store.enforceEntitlement(isPro: false)     // already free → no-op
-        #expect(store.theme == .classic)
-    }
-}
-
-// MARK: - Profiles (BMI Pro multi-person tracking)
-
-@Suite("Profile store")
-@MainActor
-struct ProfileStoreTests {
-
-    /// A clean in-memory container with a reset active-profile preference, so
-    /// each test bootstraps deterministically.
-    private func freshContainer() -> ModelContainer {
-        ProfilePreferences.setActiveID(nil)
-        return PersistenceController.inMemory()
-    }
-
-    @Test("Bootstrap creates a default profile and makes it active")
-    func bootstrapCreatesDefault() {
-        let store = ProfileStore(container: freshContainer())
-        #expect(store.profiles.count == 1)
-        #expect(store.profiles.first?.name == "Me")
-        #expect(store.activeProfileID == store.profiles.first?.id)
-    }
-
-    @Test("Legacy records with no profile are adopted into the default profile")
-    func backfillsLegacyRecords() {
-        let container = freshContainer()
-        let seed = ModelContext(container)
-        seed.insert(BMIRecord(date: .now, bmi: 22, weightKilograms: 70,
-                              heightMeters: 1.78, unitSystemRaw: "metric"))
-        try? seed.save()
-
-        let store = ProfileStore(container: container)
-        let defaultID = store.profiles.first?.id
-
-        let fetched = (try? ModelContext(container).fetch(FetchDescriptor<BMIRecord>())) ?? []
-        #expect(fetched.count == 1)
-        #expect(fetched.first?.profileID == defaultID)
-    }
-
-    @Test("Free tier is capped at one profile; Pro is unlimited")
-    func entitlementCap() {
-        let store = ProfileStore(container: freshContainer())
-        #expect(store.canAddProfile(isPro: false) == false)   // already has the 1 free
-        #expect(store.canAddProfile(isPro: true) == true)
-    }
-
-    @Test("Adding a profile trims the name, creates it, and makes it active")
-    func addProfile() {
-        let store = ProfileStore(container: freshContainer())
-        let added = store.addProfile(name: "  Alex  ", isPro: true)
-        #expect(added != nil)
-        #expect(store.profiles.count == 2)
-        #expect(store.profiles.contains { $0.name == "Alex" })
-        #expect(store.activeProfileID == added?.id)
-    }
-
-    @Test("Empty names are rejected")
-    func rejectsEmptyName() {
-        let store = ProfileStore(container: freshContainer())
-        #expect(store.addProfile(name: "   ", isPro: true) == nil)
-        #expect(store.profiles.count == 1)
-    }
-
-    @Test("The store itself blocks a second profile for free users (no UI bypass)")
-    func storeSideAddGuard() {
-        let store = ProfileStore(container: freshContainer())
-        #expect(store.addProfile(name: "Alex", isPro: false) == nil)
-        #expect(store.profiles.count == 1)
-        #expect(store.addProfile(name: "Alex", isPro: true) != nil)
-        #expect(store.profiles.count == 2)
-    }
-
-    @Test("Losing Pro collapses the active profile to the default but keeps the data")
-    func enforceFreeTierCollapses() {
-        let store = ProfileStore(container: freshContainer())
-        let me = store.profiles[0]
-        let alex = store.addProfile(name: "Alex", isPro: true)!
-        #expect(store.activeProfileID == alex.id)
-
-        store.enforceFreeTier(isPro: true)     // still Pro → unchanged
-        #expect(store.activeProfileID == alex.id)
-
-        store.enforceFreeTier(isPro: false)    // lost Pro → back to default
-        #expect(store.activeProfileID == me.id)
-        #expect(store.profiles.count == 2)     // profiles preserved, not deleted
-    }
-
-    @Test("Records pointing at an unknown profile are re-homed to the default")
-    func rehomesDanglingRecords() {
-        let container = freshContainer()
-        let seed = ModelContext(container)
-        seed.insert(BMIRecord(date: .now, bmi: 24, weightKilograms: 75,
-                              heightMeters: 1.8, unitSystemRaw: "metric", profileID: UUID()))
-        try? seed.save()
-
-        let store = ProfileStore(container: container)
-        let defaultID = store.profiles.first?.id
-
-        let fetched = (try? ModelContext(container).fetch(FetchDescriptor<BMIRecord>())) ?? []
-        #expect(fetched.first?.profileID == defaultID)
-    }
-
-    @Test("Renaming updates the stored name")
-    func rename() {
-        let store = ProfileStore(container: freshContainer())
-        store.rename(store.profiles[0], to: "Jordan")
-        #expect(store.profiles.first?.name == "Jordan")
-    }
-
-    @Test("Deleting a profile reassigns its records and moves the active pointer")
-    func deleteReassignsRecords() {
-        let container = freshContainer()
-        let store = ProfileStore(container: container)
-        let me = store.profiles[0]
-        let alex = store.addProfile(name: "Alex", isPro: true)!   // active becomes Alex
-
-        let seed = ModelContext(container)
-        seed.insert(BMIRecord(date: .now, bmi: 25, weightKilograms: 80,
-                              heightMeters: 1.78, unitSystemRaw: "metric", profileID: alex.id))
-        try? seed.save()
-
-        store.delete(alex)
-        #expect(store.profiles.count == 1)
-        #expect(store.activeProfileID == me.id)        // moved off the deleted profile
-
-        let fetched = (try? ModelContext(container).fetch(FetchDescriptor<BMIRecord>())) ?? []
-        #expect(fetched.count == 1)
-        #expect(fetched.allSatisfy { $0.profileID == me.id })   // record preserved, reassigned
-    }
-
-    @Test("The last remaining profile cannot be deleted")
-    func cannotDeleteLast() {
-        let store = ProfileStore(container: freshContainer())
-        store.delete(store.profiles[0])
-        #expect(store.profiles.count == 1)
+    @Test("Imperial formats as whole pounds; stone as one decimal")
+    func imperialAndStoneFormatting() {
+        let range = BMICalculator.healthyWeightRangeKilograms(heightMeters: 1.75)!
+        let lb = UnitSystem.imperial.weightRangeString(fromKilograms: range)
+        #expect(lb.hasSuffix(" lb"))
+        #expect(!lb.contains("."))                       // whole pounds
+        let st = UnitSystem.stone.weightRangeString(fromKilograms: range)
+        #expect(st.hasSuffix(" st"))
+        #expect(st.contains("."))                        // one-decimal stone
     }
 }

@@ -42,8 +42,6 @@ struct OnboardingView: View {
     /// Optional Services injected from the app root. Marked optional so this
     /// view still compiles and previews even before the Services module lands.
     @Environment(HealthKitService.self) private var healthKit
-    @Environment(NotificationService.self) private var notifications
-    @Environment(ProfileStore.self) private var profiles
 
     // MARK: Local State
 
@@ -219,8 +217,6 @@ struct OnboardingView: View {
 
                 ConnectHealthRow(healthKit: healthKit, input: input, unitSystem: unitSystem)
 
-                WeeklyReminderRow(notifications: notifications)
-
                 Spacer(minLength: DSSpacing.xl)
 
                 PrimaryGlassButton(title: "Get started", systemImage: "checkmark") {
@@ -298,8 +294,7 @@ struct OnboardingView: View {
                 bmi: computed.value,
                 weightKilograms: metric.weightKilograms,
                 heightMeters: metric.heightMeters,
-                unitSystemRaw: unitSystem.rawValue,
-                profileID: profiles.activeProfileID
+                unitSystemRaw: unitSystem.rawValue
             )
             modelContext.insert(record)
             try? modelContext.save()
@@ -678,83 +673,6 @@ private struct ConnectHealthRow: View {
     }
 }
 
-/// Weekly reminder toggle. Requests notification permission when turned on and
-/// schedules a single recurring weekly check-in via NotificationService.
-private struct WeeklyReminderRow: View {
-    let notifications: NotificationService
-
-    // Single source of truth: the shared cadence key Settings + the service read.
-    // Default .off — reminders are opt-in (no surprise notifications), and the
-    // toggle's on/off derives from this, so the two surfaces can never diverge.
-    @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String =
-        NotificationService.ReminderCadence.off.rawValue
-    @State private var isRequesting = false
-
-    private var isOn: Bool {
-        (NotificationService.ReminderCadence(rawValue: reminderCadenceRaw) ?? .off) != .off
-    }
-
-    var body: some View {
-        DSCard {
-            HStack(spacing: DSSpacing.md) {
-                Image(systemName: "bell.badge.fill")
-                    .font(.title2)
-                    .foregroundStyle(DSColor.brand)
-                    .frame(width: 32)
-                    .accessibilityHidden(true)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Weekly check-in reminder")
-                        .font(DSFont.subheadline)
-                        .foregroundStyle(DSColor.primaryText)
-                    Text("A gentle nudge once a week. No pressure.")
-                        .font(DSFont.caption)
-                        .foregroundStyle(DSColor.secondaryText)
-                }
-                .accessibilityElement(children: .combine)
-                Spacer()
-
-                // Fixed-size slot so the spinner ↔ toggle swap doesn't shift the row.
-                Group {
-                    if isRequesting {
-                        ProgressView()
-                            .accessibilityLabel("Setting up weekly reminder")
-                    } else {
-                        Toggle("Weekly check-in reminder", isOn: Binding(get: { isOn }, set: setEnabled))
-                            .labelsHidden()
-                            .tint(DSColor.brand)
-                            .accessibilityHint("Sends a gentle reminder to check in once a week")
-                    }
-                }
-                .frame(width: 56, height: 32, alignment: .trailing)
-            }
-        }
-        .animation(.smooth(duration: 0.25), value: isRequesting)
-    }
-
-    private func setEnabled(_ newValue: Bool) {
-        guard newValue else {
-            reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
-            notifications.cadence = .off
-            notifications.cancelWeeklyReminder()
-            return
-        }
-        isRequesting = true
-        Task {
-            let granted = await notifications.requestAuthorization()
-            if granted {
-                await notifications.scheduleWeeklyReminder()
-                reminderCadenceRaw = NotificationService.ReminderCadence.weekly.rawValue
-                notifications.cadence = .weekly
-            } else {
-                reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
-                notifications.cadence = .off
-            }
-            isRequesting = false
-        }
-    }
-}
-
 // MARK: - Shared Small Components
 
 /// Page headline + supporting copy block.
@@ -796,10 +714,7 @@ private struct DisclaimerNote: View {
 // MARK: - Preview
 
 #Preview("Onboarding") {
-    let container = PersistenceController.inMemory()
-    return OnboardingView()
+    OnboardingView()
         .environment(HealthKitService())
-        .environment(NotificationService())
-        .environment(ProfileStore(container: container))
-        .modelContainer(container)
+        .modelContainer(PersistenceController.inMemory())
 }

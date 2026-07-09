@@ -23,10 +23,7 @@ struct SpotlightResultProvider: BMIResultProviding {
     func recentResults(limit: Int) async -> [BMIResultEntity] {
         let context = ModelContext(container)
 
-        // Resolve to the active profile's records (falls back to all pre-migration).
-        let activeID = ProfilePreferences.activeID()
         var descriptor = FetchDescriptor<BMIRecord>(
-            predicate: activeID.map { id in #Predicate<BMIRecord> { $0.profileID == id } },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         if limit != .max { descriptor.fetchLimit = max(0, limit) }

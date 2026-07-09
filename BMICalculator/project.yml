@@ -6,9 +6,11 @@
 #               -destination 'generic/platform=iOS Simulator' \
 #               CODE_SIGNING_ALLOWED=NO build
 #
-# First-build strategy: APP + TESTS only (widget added once the app compiles),
-# and NO GoogleMobileAds SPM package — AdsManager is #if canImport(GoogleMobileAds)
-# guarded, so omitting it excludes the ad code and avoids an SPM fetch over the VPN.
+# The GoogleMobileAds SPM package is linked into the app target so the banner +
+# capped interstitial (AdsManager, `#if canImport(GoogleMobileAds)`) are live. The
+# health/ad firewall (Guideline 5.1.3) is enforced in code: NPA requests only, no
+# health signal ever reaches the ad layer. Requires GADApplicationIdentifier in
+# Info.plist (present) and the real ad unit IDs in AdsManager (see its TODO).
 # Signing disabled (simulator). App Group / HealthKit usage strings are provided so
 # runtime degrades gracefully; the code already falls back when the App Group is absent.
 
@@ -19,6 +21,11 @@ options:
     iOS: "18.0"
   createIntermediateGroups: true
   generateEmptyDirectories: true
+
+packages:
+  GoogleMobileAds:
+    url: https://github.com/googleads/swift-package-manager-google-mobile-ads.git
+    from: "12.0.0"
 
 settings:
   base:
@@ -66,6 +73,8 @@ targets:
         CODE_SIGN_ENTITLEMENTS: BMICalculator.entitlements
     dependencies:
       - target: BMIWidget            # embeds the widget extension into the app
+      - package: GoogleMobileAds     # banner + capped interstitial (firewalled)
+        product: GoogleMobileAds
 
   BMICalculatorTests:
     type: bundle.unit-test
@@ -95,7 +104,6 @@ targets:
       - path: Core/BMICategory.swift
       - path: Core/BMIResult.swift
       - path: Core/BMICalculator.swift
-      - path: Core/HealthCalculators.swift
       - path: Intents/CalculateBMIIntent.swift
       - path: Intents/BMIResultEntity.swift
     settings:

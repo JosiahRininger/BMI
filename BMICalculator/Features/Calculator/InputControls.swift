@@ -111,6 +111,16 @@ struct WeightField: View {
         .accessibilityLabel("Weight")
         .accessibilityValue(Text(verbatim: String(format: "%.1f %@", value, unitLabel)))
         .accessibilityHint("Adjustable. Swipe up or down to change the weight.")
+        // Make the promised swipe gesture real: combining the children into one
+        // element drops the Stepper's operability, so wire the increment/decrement
+        // back with an adjustable action clamped to the same range and step.
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: value = min(value + step, range.upperBound)
+            case .decrement: value = max(value - step, range.lowerBound)
+            @unknown default: break
+            }
+        }
     }
 }
 

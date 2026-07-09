@@ -40,4 +40,17 @@ public enum HealthStandard: String, CaseIterable, Codable, Identifiable, Sendabl
             return "WHO public-health action points (18.5, 23, 27.5) used to flag cardiometabolic risk at a lower BMI in some Asian populations."
         }
     }
+
+    /// The half-open BMI range classified as a healthy weight under this
+    /// standard: `18.5 ..< 25` (standard) or `18.5 ..< 23` (Asian).
+    ///
+    /// This is the single source of truth for the healthy band; it mirrors the
+    /// `.healthy` case in ``BMICalculator/category(forBMI:standard:)`` and drives
+    /// the healthy-weight-range readout and the shaded chart band.
+    public var healthyBMIRange: Range<Double> {
+        switch self {
+        case .standard: return 18.5..<25
+        case .asian:    return 18.5..<23
+        }
+    }
 }

@@ -6,9 +6,9 @@
 //  no single feature module should: the SwiftData `ModelContainer` (placed in a
 //  shared App Group so the widget can read history), the long-lived services
 //  (`StoreState`/`StoreService`, `AdsManager`, `HealthKitService`,
-//  `NotificationService`, `ReviewPrompter`), the shared `@AppStorage` key
-//  namespace, and the deep-link router that turns `bmicalculator://…` URLs and
-//  App-Intent launches into in-app navigation.
+//  `ReviewPrompter`), the shared `@AppStorage` key namespace, and the deep-link
+//  router that turns `bmicalculator://…` URLs and App-Intent launches into
+//  in-app navigation.
 //
 //  ─────────────────────────────────────────────────────────────────────────
 //  HEALTH / AD FIREWALL (App Store Guideline 5.1.3)
@@ -23,7 +23,6 @@
 
 import SwiftUI
 import SwiftData
-import UserNotifications
 import StoreKit
 import CoreSpotlight
 
@@ -67,13 +66,6 @@ enum AppStorageKey {
 
     /// `String` — the chosen ``HealthStandard`` raw value (standard/asian).
     static let healthStandard = "app.healthStandard"
-
-    /// `String` — the chosen ``NotificationService/ReminderCadence`` raw value, the
-    /// single source of truth for reminders (Settings + onboarding + the service).
-    static let reminderCadence = "app.reminderCadence"
-
-    /// `String` — the chosen ``AppTheme`` raw value (BMI Pro accent palette).
-    static let appTheme = "app.appTheme"
 }
 
 // MARK: - Deep Link Routing
@@ -206,60 +198,20 @@ final class ReviewRequesterAdapter: ReviewRequesting {
     }
 }
 
-/// Bridges the Calculator's `LogRecording` contract to the retention services:
-/// records a streak entry and reschedules the weigh-in reminder so a just-logged
-/// person isn't pinged immediately. Receives no health data (firewall-safe).
+/// Bridges the Calculator's `LogRecording` contract to the widget: after a
+/// successful calculation, refreshes the shared snapshot so the home-screen
+/// widget reflects the latest BMI. Receives no health data (firewall-safe).
 @MainActor
 final class LogRecorderAdapter: LogRecording {
 
-    private let streak: StreakService
-    private let notifications: NotificationService
     private let modelContainer: ModelContainer
 
-    init(streak: StreakService, notifications: NotificationService, modelContainer: ModelContainer) {
-        self.streak = streak
-        self.notifications = notifications
+    init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
     }
 
     func recordEntry() {
-        streak.recordEntry()
-        // Publish the latest history to the App Group + refresh the widget.
         WidgetSync.update(from: modelContainer)
-        Task { await notifications.rescheduleAfterLog() }
-    }
-}
-
-// MARK: - Notification Delegate
-
-/// Routes notification taps and the "Log now" action into the app via the
-/// `bmicalculator://…` deep link carried in the notification's `userInfo`.
-/// Snooze is a no-op (the reminder is a repeating trigger, so the next
-/// occurrence is already scheduled).
-@MainActor
-final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
-
-    /// Set by the App to forward to the `DeepLinkRouter`.
-    var onDeepLink: ((URL) -> Void)?
-
-    /// Show banners while the app is foregrounded.
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            willPresent notification: UNNotification,
-                                            withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound])
-    }
-
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter,
-                                            didReceive response: UNNotificationResponse,
-                                            withCompletionHandler completionHandler: @escaping () -> Void) {
-        defer { completionHandler() }
-        guard response.actionIdentifier != NotificationService.snoozeActionID else { return }
-        let info = response.notification.request.content.userInfo
-        if let link = info["link"] as? String, let url = URL(string: link) {
-            // Delivered on the main thread; `self` is @MainActor (Sendable), so
-            // assumeIsolated reads the @MainActor `onDeepLink` without a hop.
-            MainActor.assumeIsolated { onDeepLink?(url) }
-        }
     }
 }
 
@@ -281,17 +233,7 @@ final class AppServices {
 
     // Platform integrations
     let healthKit: HealthKitService
-    let notifications: NotificationService
     let reviewPrompter: ReviewPrompter
-
-    // Retention
-    let streak: StreakService
-
-    // Appearance (Pro accent theme)
-    let appearance: AppearanceStore
-
-    // Profiles (Pro multi-person tracking)
-    let profiles: ProfileStore
 
     // Calculator-contract adapters
     let interstitialAdapter: InterstitialAdapter
@@ -307,50 +249,26 @@ final class AppServices {
         self.adsManager = adsManager
 
         self.healthKit = HealthKitService()
-        let notifications = NotificationService()
-        self.notifications = notifications
 
         let reviewPrompter = ReviewPrompter()
         self.reviewPrompter = reviewPrompter
 
-        let streak = StreakService()
-        self.streak = streak
-
-        self.appearance = AppearanceStore()
-
-        // Builds profiles + adopts any legacy records into the default profile.
-        self.profiles = ProfileStore(container: modelContainer)
-
         self.interstitialAdapter = InterstitialAdapter(adsManager)
         self.reviewRequester = ReviewRequesterAdapter(reviewPrompter)
-        self.logRecorder = LogRecorderAdapter(streak: streak, notifications: notifications, modelContainer: modelContainer)
+        self.logRecorder = LogRecorderAdapter(modelContainer: modelContainer)
     }
 
     /// Starts purchase observation, loads the product, syncs entitlements, and
-    /// boots the ad SDK on the free tier. Idempotent enough to call once at
-    /// launch from `.task`.
+    /// boots the ad SDK. Idempotent enough to call once at launch from `.task`.
     func start() async {
         // Reflect existing entitlement before anything renders an ad surface.
         await storeService.start()
         applyProStateToAds()
 
-        // Boot ads only when not Pro (the manager also guards this internally).
+        // Boot ads only when ads aren't removed (the manager also guards this).
         if !storeState.isPro {
             adsManager.start()
         }
-
-        // A Pro accent theme must not survive a lost entitlement, and the free
-        // tier is a single profile — collapse to the default when not Pro.
-        appearance.enforceEntitlement(isPro: storeState.isPro)
-        profiles.enforceFreeTier(isPro: storeState.isPro)
-
-        // Register the "Log now" / "Snooze" actions and refresh the auth snapshot.
-        notifications.registerCategories()
-        // Restore the saved reminder cadence so the first post-launch log honors
-        // the person's choice instead of the in-memory .weekly default (which
-        // would silently downgrade a Daily user or resurrect an Off one).
-        let cadenceRaw = UserDefaults.standard.string(forKey: AppStorageKey.reminderCadence)
-        notifications.cadence = NotificationService.ReminderCadence(rawValue: cadenceRaw ?? "") ?? .off
 
         // Mirror the chosen BMI-cutoff standard into the App Group so the
         // Siri/Shortcut intent (which may run headless in the extension process)
@@ -359,7 +277,6 @@ final class AppServices {
             let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard) ?? HealthStandard.standard.rawValue
             group.set(raw, forKey: AppStorageKey.healthStandard)
         }
-        await notifications.refreshStatus()
     }
 
     /// Pushes the current Pro flag into the ad manager so banners/interstitials
@@ -380,9 +297,6 @@ struct BMICalculatorApp: App {
     /// Routes deep links (URLs / App Intents) to tabs.
     @State private var router = DeepLinkRouter()
 
-    /// Routes notification taps / actions into the app via the deep-link router.
-    @State private var notificationDelegate = NotificationDelegate()
-
     /// First-run gate. When `false`, onboarding is presented before the app.
     @AppStorage(AppStorageKey.hasOnboarded) private var hasOnboarded = false
 
@@ -402,18 +316,12 @@ struct BMICalculatorApp: App {
     var body: some Scene {
         WindowGroup {
             content
-                // Accent follows the chosen Pro theme; reading `appearance.theme`
-                // here makes the tint reactive so a theme change recolors at once.
-                .tint(services.appearance.theme.accent)
-                .environment(services.appearance)
-                .environment(services.profiles)
+                .tint(Theme.brand)                       // the single brand accent
                 .environment(services.storeState)
                 .environment(services.storeService)
                 .environment(services.adsManager)
                 .environment(services.healthKit)
-                .environment(services.notifications)
                 .environment(services.reviewPrompter)
-                .environment(services.streak)
                 // The concrete review adapter is injected so a view with access
                 // to `@Environment(\.requestReview)` (RootView) can bind the
                 // live action into it — see `ReviewRequesterAdapter.bind`.
@@ -421,21 +329,16 @@ struct BMICalculatorApp: App {
                 .environment(router)
                 // Bind the Calculator module's environment-key contract so its
                 // view model can read Pro status, fire interstitials, ask for
-                // reviews, and record streak/log entries without importing Services.
+                // reviews, and refresh the widget without importing Services.
                 .environment(\.proState, services.storeState)
                 .environment(\.interstitialPresenter, services.interstitialAdapter)
                 .environment(\.reviewRequester, services.reviewRequester)
                 .environment(\.logRecorder, services.logRecorder)
-                // Keep ads + theme entitlement in sync the moment Pro flips.
-                .onChange(of: services.storeState.isPro) { _, isPro in
+                // Keep ads in sync the moment the Remove-Ads purchase flips.
+                .onChange(of: services.storeState.isPro) { _, _ in
                     services.applyProStateToAds()
-                    services.appearance.enforceEntitlement(isPro: isPro)
-                    services.profiles.enforceFreeTier(isPro: isPro)
                 }
                 .task {
-                    // Route notification taps / "Log now" actions into the app.
-                    notificationDelegate.onDeepLink = { url in router.handle(url: url) }
-                    UNUserNotificationCenter.current().delegate = notificationDelegate
                     // Back the Spotlight/Siri "recent BMI results" query with SwiftData.
                     BMIResultStore.configure(with: SpotlightResultProvider(container: modelContainer))
                     await services.start()

@@ -51,4 +51,53 @@ public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
         case .imperial, .stone: return "ft / in"
         }
     }
+
+    // MARK: Weight display
+
+    /// This system's smallest displayed weight increment: 1 kg, 1 lb, or 0.1 st.
+    public var weightDisplayStep: Double {
+        switch self {
+        case .metric, .imperial: return 1
+        case .stone: return 0.1
+        }
+    }
+
+    /// Converts a canonical kilogram weight into this system's compact display
+    /// weight: kilograms, pounds, or **decimal** stone (e.g. 11.4 st). This is
+    /// the same decimal form the calculator uses for entry, not stone+pounds.
+    public func displayWeight(fromKilograms kilograms: Double) -> Double {
+        switch self {
+        case .metric:   return kilograms
+        case .imperial: return BMICalculator.pounds(fromKilograms: kilograms)
+        case .stone:    return BMICalculator.pounds(fromKilograms: kilograms) / BMICalculator.poundsPerStone
+        }
+    }
+
+    /// Formats a canonical-kilogram weight range as a compact, unit-aware string
+    /// for this system, e.g. `"59–79 kg"`, `"130–174 lb"`, `"9.3–12.4 st"`.
+    ///
+    /// Endpoints are rounded **inward** (lower up, upper down) to
+    /// ``weightDisplayStep`` so both shown values stay inside the source range —
+    /// important when the range is a health band with an *exclusive* upper bound.
+    public func weightRangeString(fromKilograms kilogramRange: Range<Double>) -> String {
+        let step = weightDisplayStep
+        let rawLower = displayWeight(fromKilograms: kilogramRange.lowerBound)
+        let rawUpper = displayWeight(fromKilograms: kilogramRange.upperBound)
+
+        var lower = (rawLower / step).rounded(.up) * step
+        var upper = (rawUpper / step).rounded(.down) * step
+        // The band's upper bound is exclusive; if flooring landed exactly on it,
+        // step back one increment so the shown value is genuinely inside.
+        if upper >= rawUpper { upper -= step }
+        // Degenerate guard for an implausibly narrow range: show the raw bounds
+        // rather than an inverted one.
+        if lower > upper { lower = rawLower; upper = rawUpper }
+
+        switch self {
+        case .metric, .imperial:
+            return "\(Int(lower.rounded()))–\(Int(upper.rounded())) \(weightUnitLabel)"
+        case .stone:
+            return String(format: "%.1f–%.1f %@", lower, upper, weightUnitLabel)
+        }
+    }
 }

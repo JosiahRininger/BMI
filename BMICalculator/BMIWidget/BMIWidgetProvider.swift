@@ -116,7 +116,7 @@ struct BMIWidgetProvider: AppIntentTimelineProvider {
 
         // Use the entry exactly as the app saved it — it carries the BMI-cutoff
         // standard chosen in Settings (written by WidgetSync) — so the widget's
-        // category matches History / the CSV export rather than diverging.
+        // category matches History rather than diverging.
         let latest = newest
 
         // Seven most recent values, oldest → newest, for the sparkline.

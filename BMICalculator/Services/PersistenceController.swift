@@ -23,11 +23,7 @@ import SwiftData
 public enum PersistenceController {
 
     /// The SwiftData schema for the app's persisted models.
-    ///
-    /// Adding `BMIProfile` (a new table) and `BMIRecord.profileID` (a new
-    /// optional column) are both lightweight migrations, so existing on-disk
-    /// history upgrades automatically without a custom migration plan.
-    public static let schema = Schema([BMIRecord.self, BMIProfile.self])
+    public static let schema = Schema([BMIRecord.self])
 
     // MARK: Live container
 

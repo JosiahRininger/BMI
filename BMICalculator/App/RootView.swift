@@ -23,7 +23,6 @@ import SwiftUI
 enum RootTab: Int, Hashable, CaseIterable {
     case calculator
     case history
-    case metrics
     case settings
 }
 
@@ -43,25 +42,11 @@ struct RootView: View {
     /// SwiftUI's review-prompt action, only available inside a view hierarchy.
     @Environment(\.requestReview) private var requestReview
 
-    /// Pro/purchase state, to gate Pro features (e.g. history export).
+    /// Purchase state, used to hide the Remove-Ads upsell once ads are removed.
     @Environment(StoreState.self) private var storeState
 
-    /// Chosen accent theme. Read in `body` so a theme change re-renders the
-    /// visible tab and its content picks up the new `Theme.brand` immediately.
-    @Environment(AppearanceStore.self) private var appearance
-
-    /// Active profile, so History scopes its query to the right person and
-    /// re-renders when the person switches profiles.
-    @Environment(ProfileStore.self) private var profiles
-
-    /// Streak service, observed so a newly-earned milestone can be celebrated.
-    @Environment(StreakService.self) private var streak
-
-    /// Controls the Pro / Remove-Ads paywall sheet.
+    /// Controls the Remove-Ads sheet.
     @State private var isPaywallPresented = false
-
-    /// A just-earned milestone awaiting its one-time celebration sheet.
-    @State private var milestoneToCelebrate: StreakMilestone?
 
     var body: some View {
         @Bindable var router = router
@@ -76,24 +61,11 @@ struct RootView: View {
                 .tag(RootTab.calculator)
 
             // MARK: History
-            HistoryView(standard: currentStandard,
-                        isPro: storeState.isPro,
-                        onShowPaywall: { isPaywallPresented = true },
-                        profileID: profiles.activeProfileID)
+            HistoryView(standard: currentStandard)
                 .tabItem {
                     Label("History", systemImage: "chart.xyaxis.line")
                 }
                 .tag(RootTab.history)
-
-            // MARK: Metrics (the 6 extra calculators). Wrapped in its own
-            // NavigationStack because MoreMetricsView pushes via NavigationLink.
-            NavigationStack {
-                MoreMetricsView()
-            }
-            .tabItem {
-                Label("Metrics", systemImage: "square.grid.2x2")
-            }
-            .tag(RootTab.metrics)
 
             // MARK: Settings
             SettingsView()
@@ -102,7 +74,7 @@ struct RootView: View {
                 }
                 .tag(RootTab.settings)
         }
-        .tint(appearance.theme.accent)
+        .tint(Theme.brand)
         // React to deep links: switch to the matching tab, then clear the
         // one-shot signal so a repeat of the same route still fires.
         .onChange(of: router.pendingRoute) { _, route in
@@ -119,16 +91,6 @@ struct RootView: View {
         }
         .sheet(isPresented: $isPaywallPresented) {
             PaywallSheet()
-        }
-        // Celebrate a newly-earned streak milestone (fires only on a fresh add,
-        // never on initial load — `onChange` doesn't run on first appearance).
-        .onChange(of: streak.earnedMilestones) { _, milestones in
-            milestoneToCelebrate = milestones.last
-        }
-        .sheet(item: $milestoneToCelebrate) { milestone in
-            MilestoneCelebrationView(milestone: milestone) { milestoneToCelebrate = nil }
-                .presentationDetents([.medium])
-                .presentationDragIndicator(.visible)
         }
     }
 
@@ -228,7 +190,7 @@ struct PaywallSheet: View {
                 .font(.system(size: 44, weight: .semibold))
                 .foregroundStyle(Theme.brandGradient)
 
-            Text("BMI Pro")
+            Text("Remove Ads")
                 .font(.title.bold())
 
             Text("A one-time purchase. No subscription, ever.")
@@ -241,12 +203,8 @@ struct PaywallSheet: View {
 
     private var featureList: some View {
         VStack(alignment: .leading, spacing: 14) {
-            #if canImport(GoogleMobileAds)
-            featureRow("rectangle.slash", "Remove all ads")
-            #endif
-            featureRow("square.and.arrow.up", "Export your history (CSV & PDF)")
-            featureRow("paintpalette", "Custom accent themes")
-            featureRow("person.2.fill", "Track multiple people")
+            featureRow("rectangle.slash", "Remove all ads, forever")
+            featureRow("bolt.fill", "Keep the app fast and focused")
             featureRow("heart.text.square", "Support ongoing updates")
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -317,8 +275,8 @@ struct PaywallSheet: View {
 
     private var buyButtonTitle: String {
         if storeState.isProcessing { return "Purchasing…" }
-        if let price = storeState.displayPrice { return "Unlock Pro (\(price))" }
-        return "Unlock Pro"
+        if let price = storeState.displayPrice { return "Remove Ads (\(price))" }
+        return "Remove Ads"
     }
 
     /// Subtle glass/material backdrop behind the sheet content.
@@ -363,8 +321,5 @@ struct PaywallSheet: View {
         .environment(storeState)
         .environment(StoreService(state: storeState))
         .environment(ReviewRequesterAdapter(ReviewPrompter()))
-        .environment(StreakService())
-        .environment(AppearanceStore())
-        .environment(ProfileStore(container: container))
         .modelContainer(container)
 }

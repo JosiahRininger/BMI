@@ -105,6 +105,34 @@ public enum BMICalculator {
         return BMIResult(value: value, category: category, standard: standard)
     }
 
+    // MARK: Healthy weight range
+
+    /// The body-weight range (in kilograms) that lands in the **healthy** BMI
+    /// band for a given height under the chosen standard.
+    ///
+    /// Because the band is half-open (`18.5 ..< 25`), the returned range is
+    /// `[18.5·h², upperCutoff·h²)` in weight terms — a person at exactly the
+    /// upper bound classifies as overweight. Callers that display the range
+    /// should round *inward* so both shown endpoints stay inside the band.
+    ///
+    /// - Parameters:
+    ///   - heightMeters: Height in meters.
+    ///   - standard: The cutoff set to apply. Defaults to `.standard`.
+    /// - Returns: The healthy weight range in kg, or `nil` for a non-physical or
+    ///   non-finite height (so callers can simply omit the readout).
+    public static func healthyWeightRangeKilograms(
+        heightMeters: Double,
+        standard: HealthStandard = .standard
+    ) -> Range<Double>? {
+        guard heightMeters > 0, heightMeters.isFinite else { return nil }
+        let band = standard.healthyBMIRange
+        let heightSquared = heightMeters * heightMeters
+        let lower = band.lowerBound * heightSquared
+        let upper = band.upperBound * heightSquared
+        guard lower.isFinite, upper.isFinite, upper > lower else { return nil }
+        return lower..<upper
+    }
+
     // MARK: Unit conversions
 
     /// Converts pounds to kilograms (1 lb = 0.45359237 kg).

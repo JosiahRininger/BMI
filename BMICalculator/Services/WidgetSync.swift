@@ -21,11 +21,7 @@ enum WidgetSync {
     static func update(from container: ModelContainer) {
         let context = ModelContext(container)
 
-        // Show the active profile's history so the widget tracks whoever the
-        // person is currently viewing. Falls back to all records pre-migration.
-        let activeID = ProfilePreferences.activeID()
         var descriptor = FetchDescriptor<BMIRecord>(
-            predicate: activeID.map { id in #Predicate<BMIRecord> { $0.profileID == id } },
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         descriptor.fetchLimit = 7

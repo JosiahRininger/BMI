@@ -2,8 +2,11 @@
 //  AdsManager.swift
 //  BMICalculator
 //
-//  Google Mobile Ads (SPM) integration: a SwiftUI banner + a single, capped
-//  interstitial shown ONLY after a completed calculation.
+//  Google Mobile Ads (SPM) integration. The app ships BANNER-ONLY: a SwiftUI
+//  banner on the free tier. A single, capped interstitial (shown ONLY after a
+//  completed calc, ≈once per 3 calcs) is fully implemented but DORMANT — it
+//  stays off until a production interstitial unit is set in `AdUnit`. See the
+//  `AdUnit.interstitial` note.
 //
 //  ⚠️ HEALTH/AD FIREWALL (App Store Guideline 5.1.3):
 //  This file never receives or reads any weight / height / BMI / HealthKit
@@ -38,10 +41,15 @@ public enum AdUnit {
     private static let testBanner = "ca-app-pub-3940256099942544/2934735716"
     private static let testInterstitial = "ca-app-pub-3940256099942544/4411468910"
 
-    // TODO(prod): replace with the real ad units created in AdMob for this app,
-    // under app ID ca-app-pub-6687613409331343~7486203316.
-    private static let prodBanner = "ca-app-pub-6687613409331343/0000000000"
-    private static let prodInterstitial = "ca-app-pub-6687613409331343/1111111111"
+    // Real AdMob banner unit for this app (app ID ca-app-pub-6687613409331343~7486203316).
+    private static let prodBanner = "ca-app-pub-6687613409331343/5598406572"
+
+    // The app ships BANNER-ONLY by design: no production interstitial unit exists
+    // yet, so this is nil and every interstitial code path below no-ops. The
+    // interstitial plumbing (capped, firewalled) stays intact so enabling a
+    // post-calc interstitial later is a one-line change: create the unit in AdMob
+    // and set this to its ID.
+    private static let prodInterstitial: String? = nil
 
     public static var banner: String {
         #if DEBUG
@@ -51,11 +59,17 @@ public enum AdUnit {
         #endif
     }
 
-    public static var interstitial: String {
+    /// The interstitial ad unit, or `nil` when interstitials are disabled (no
+    /// production unit configured). When `nil`, `AdsManager` never loads or shows
+    /// an interstitial, so the app is banner-only. When a prod unit IS set, DEBUG
+    /// uses Google's test interstitial so debug builds never surface an ad the
+    /// store build wouldn't.
+    public static var interstitial: String? {
+        guard prodInterstitial != nil else { return nil }
         #if DEBUG
-        testInterstitial
+        return testInterstitial
         #else
-        prodInterstitial
+        return prodInterstitial
         #endif
     }
 }
@@ -154,14 +168,16 @@ public final class AdsManager: NSObject {
 
     // MARK: Interstitial loading
 
-    /// Loads (or reloads) the single interstitial. No-op when Pro.
+    /// Loads (or reloads) the single interstitial. No-op when Pro, or when no
+    /// interstitial unit is configured (banner-only build).
     public func loadInterstitial() {
         guard !isPro else { return }
         #if canImport(GoogleMobileAds)
+        guard let interstitialUnitID = AdUnit.interstitial else { return }
         Task { @MainActor in
             do {
                 let ad = try await InterstitialAd.load(
-                    with: AdUnit.interstitial,
+                    with: interstitialUnitID,
                     request: nonPersonalizedRequest()
                 )
                 ad.fullScreenContentDelegate = self

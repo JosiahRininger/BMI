@@ -58,38 +58,6 @@ struct CalculatorDerivedTests {
     }
 }
 
-// MARK: - MetricsInputModel derived values
-
-@Suite("Metrics model derived values")
-@MainActor
-struct MetricsModelDerivedTests {
-
-    @Test("heightCentimetersMetric reflects metric cm directly")
-    func metricHeight() {
-        let m = MetricsInputModel(unitSystem: .metric)
-        m.heightCentimeters = 168
-        #expect(close(m.heightCentimetersMetric, 168))
-    }
-
-    @Test("heightCentimetersMetric converts imperial feet/inches to cm")
-    func imperialHeight() {
-        let m = MetricsInputModel(unitSystem: .imperial)
-        m.imperialHeight = ImperialHeight(feet: 6, inches: 0)
-        #expect(close(m.heightCentimetersMetric, 182.88, 0.1))   // 6 ft = 182.88 cm
-    }
-
-    @Test("weightKilograms converts per unit")
-    func weight() {
-        let imperial = MetricsInputModel(unitSystem: .imperial)
-        imperial.weight = 154
-        #expect(close(imperial.weightKilograms, BMICalculator.kilograms(fromPounds: 154)))
-
-        let stone = MetricsInputModel(unitSystem: .stone)
-        stone.weight = 11
-        #expect(close(stone.weightKilograms, BMICalculator.kilograms(fromStone: 11)))
-    }
-}
-
 // MARK: - BMIResult construction
 
 @Suite("BMIResult construction")

@@ -43,8 +43,8 @@ extension EnvironmentValues {
     /// Review-prompt coordinator. Injected by the App from `ReviewPrompter`.
     @Entry var reviewRequester: (any ReviewRequesting)? = nil
 
-    /// Streak / weigh-in-reminder coordinator. Injected by the App over
-    /// `StreakService` + `NotificationService`.
+    /// Post-save hook. Injected by the App to refresh the home-screen widget
+    /// after a new measurement is recorded.
     @Entry var logRecorder: (any LogRecording)? = nil
 }
 
@@ -55,8 +55,9 @@ extension EnvironmentValues {
 // provide a `BannerAdView` (a `View`); we reference it through a thin protocol so
 // this file compiles standalone, and the App swaps in the concrete view.
 
-/// A placeholder banner that the Ads module replaces with a real (NPA) banner.
-/// Renders nothing when the person is Pro.
+/// The bottom banner slot. Renders the real non-personalized AdMob banner on the
+/// free tier when the ad SDK is linked, and nothing when the person is Pro (or in
+/// an ad-free build with no SDK). The banner is health-data-free by construction.
 struct BannerSlot: View {
     let isPro: Bool
 
@@ -65,19 +66,11 @@ struct BannerSlot: View {
             EmptyView()
         } else {
             #if canImport(GoogleMobileAds)
-            // Reserve the standard banner height so layout doesn't jump when the
-            // real (NPA) banner loads. Only present when the ad SDK is linked —
-            // an ad-free build (no SDK) shows nothing rather than a fake label.
-            Color.clear
-                .frame(height: 50)
-                .frame(maxWidth: .infinity)
-                .overlay(
-                    Text("Advertisement")
-                        .font(.caption2)
-                        .foregroundStyle(.tertiary)
-                )
-                .accessibilityHidden(true)
+            // The Ads module's real (NPA) banner. It reserves the standard 50pt
+            // height itself, so layout doesn't jump when the ad loads.
+            AdBannerView(isPro: isPro)
             #else
+            // Ad-free build (no SDK, e.g. previews): show nothing.
             EmptyView()
             #endif
         }
@@ -96,7 +89,6 @@ struct CalculatorView: View {
     @Environment(\.interstitialPresenter) private var interstitialPresenter
     @Environment(\.reviewRequester) private var reviewRequester
     @Environment(\.logRecorder) private var logRecorder
-    @Environment(ProfileStore.self) private var profiles
 
     // MARK: State
 
@@ -140,6 +132,7 @@ struct CalculatorView: View {
                 if let result = model.result {
                     ResultCard(
                         result: result,
+                        healthyWeightRange: model.healthyWeightRangeText,
                         showsUpsell: model.showsUpsell,
                         onUpsellTapped: onShowPaywall
                     )
@@ -163,6 +156,11 @@ struct CalculatorView: View {
         }
         .navigationTitle("BMI Calculator")
         .navigationBarTitleDisplayMode(.inline)
+        // A gentle confirming tap when a result lands. Keyed to resultGeneration
+        // (bumped once per real Calculate, not per live re-categorize), and a
+        // soft/light weight so it confirms without "celebrating" any category —
+        // the system honors the person's haptics setting automatically.
+        .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: model.resultGeneration)
         .task {
             bindCollaborators()
             model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
@@ -209,7 +207,7 @@ struct CalculatorView: View {
 
     private var calculateButton: some View {
         Button {
-            model.calculate(persistingInto: modelContext, profileID: profiles.activeProfileID)
+            model.calculate(persistingInto: modelContext)
         } label: {
             Text("Calculate")
                 .font(.headline)
@@ -279,7 +277,6 @@ private extension View {
     return NavigationStack {
         CalculatorView()
     }
-    .environment(ProfileStore(container: container))
     .modelContainer(container)
 }
 
@@ -290,6 +287,5 @@ private extension View {
     return NavigationStack {
         CalculatorView(model: vm)
     }
-    .environment(ProfileStore(container: container))
     .modelContainer(container)
 }

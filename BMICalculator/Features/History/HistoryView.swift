@@ -23,38 +23,15 @@ public struct HistoryView: View {
     /// Defaults to the universal CDC/WHO cutoffs.
     private let standard: HealthStandard
 
-    /// Records for the active profile, newest first. SwiftData keeps this live.
-    @Query private var records: [BMIRecord]
+    /// All saved records, newest first. SwiftData keeps this live.
+    @Query(sort: \BMIRecord.date, order: .reverse) private var records: [BMIRecord]
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(ProfileStore.self) private var profiles
 
     @State private var range: ChartRange = .month
-    @State private var showExportSheet = false
-    @State private var showManageProfiles = false
 
-    /// Whether the person owns Pro (gates export). Injected by the app shell.
-    private let isPro: Bool
-    /// Presents the Pro paywall when a non-Pro person taps a Pro feature.
-    private let onShowPaywall: () -> Void
-
-    public init(standard: HealthStandard = .standard,
-                isPro: Bool = false,
-                onShowPaywall: @escaping () -> Void = {},
-                profileID: UUID? = nil) {
+    public init(standard: HealthStandard = .standard) {
         self.standard = standard
-        self.isPro = isPro
-        self.onShowPaywall = onShowPaywall
-
-        // Scope history to the active profile. With no active profile (e.g.
-        // pre-migration or previews) show every record.
-        let sort = [SortDescriptor(\BMIRecord.date, order: .reverse)]
-        if let profileID {
-            let pid: UUID? = profileID
-            _records = Query(filter: #Predicate<BMIRecord> { $0.profileID == pid }, sort: sort)
-        } else {
-            _records = Query(sort: sort)
-        }
     }
 
     // MARK: Derived data
@@ -77,38 +54,6 @@ public struct HistoryView: View {
             .sorted { $0.day > $1.day }
     }
 
-    /// Progress-framed payload for the shareable card. Computed from records so
-    /// History needs no extra dependency. The card defaults to streak + trend
-    /// shape (no absolute BMI unless the person opts in inside the share sheet).
-    private var sharePayload: SharePayload {
-        // oldest → newest, dropping any non-finite BMI (mirrors TrendChart).
-        let trend = Array(rangedRecords.prefix(20)).reversed().map(\.bmi).filter { $0.isFinite }
-        return SharePayload(
-            streakDays: consecutiveDayStreak,
-            entryCount: records.count,
-            recentTrend: Array(trend),
-            dateRangeText: range.label
-        )
-    }
-
-    /// Consecutive-calendar-day streak ending at the most recent entry.
-    private var consecutiveDayStreak: Int {
-        let calendar = Calendar.current
-        let days = Set(records.map { calendar.startOfDay(for: $0.date) }).sorted(by: >)
-        guard let first = days.first else { return 0 }
-        // A streak is only "active" if the most recent entry is today or yesterday;
-        // otherwise it has lapsed and we must not advertise it on the share card.
-        guard calendar.isDateInToday(first) || calendar.isDateInYesterday(first) else { return 0 }
-        var streak = 1
-        var previous = first
-        for day in days.dropFirst() {
-            guard let diff = calendar.dateComponents([.day], from: day, to: previous).day, diff == 1 else { break }
-            streak += 1
-            previous = day
-        }
-        return streak
-    }
-
     // MARK: Body
 
     public var body: some View {
@@ -121,62 +66,7 @@ public struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
-            .toolbar {
-                // Profile switcher — only for Pro with more than one profile to
-                // switch between (free users are single-profile by entitlement).
-                ToolbarItem(placement: .topBarLeading) {
-                    if isPro, profiles.profiles.count > 1 {
-                        profileSwitcher
-                    }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        if isPro { showExportSheet = true } else { onShowPaywall() }
-                    } label: {
-                        Label("Export", systemImage: isPro ? "square.and.arrow.up" : "lock.fill")
-                    }
-                    .disabled(records.isEmpty)
-                    .accessibilityLabel(isPro ? "Export history" : "Export history, a Pro feature")
-                }
-            }
-            .sheet(isPresented: $showExportSheet) {
-                ExportSheet(records: records, standard: standard)
-            }
-            .sheet(isPresented: $showManageProfiles) {
-                ProfilesView()
-            }
         }
-    }
-
-    // MARK: Profile switcher
-
-    private var profileSwitcher: some View {
-        Menu {
-            Picker("Profile", selection: Binding(
-                get: { profiles.activeProfileID ?? profiles.profiles.first?.id },
-                set: { if let id = $0 { profiles.setActive(id) } }
-            )) {
-                ForEach(profiles.profiles) { profile in
-                    Text(profile.name).tag(Optional(profile.id))
-                }
-            }
-            Divider()
-            Button {
-                showManageProfiles = true
-            } label: {
-                Label("Manage Profiles…", systemImage: "person.2")
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "person.crop.circle")
-                Text(profiles.activeProfile?.name ?? "Profile")
-                    .lineLimit(1)
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
-            }
-        }
-        .accessibilityLabel("Active profile: \(profiles.activeProfile?.name ?? "none")")
-        .accessibilityHint("Switch or manage profiles")
     }
 
     private var content: some View {
@@ -189,11 +79,6 @@ public struct HistoryView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 8, trailing: 8))
 
                 SummaryStatsRow(records: rangedRecords)
-
-                // Opt-in, progress-framed share card (organic-growth mechanic).
-                ShareProgressButton(payload: sharePayload)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
             }
             .listRowSeparator(.hidden)
 
@@ -377,76 +262,27 @@ private struct EmptyHistoryView: View {
 
 /// The required screening-tool disclaimer, surfaced near results history.
 private struct DisclaimerFootnote: View {
+    private let text = "BMI is a screening tool, not a diagnosis. It doesn't measure body fat directly and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
+
     var body: some View {
-        Text("BMI is a screening tool, not a diagnosis. It doesn't measure body fat directly and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider.")
+        Text(text)
             .font(.footnote)
             .foregroundStyle(.secondary)
             .padding(.top, 4)
-            .accessibilityLabel("Disclaimer")
-    }
-}
-
-// MARK: - Export Sheet (Pro)
-
-/// Generates a CSV and a PDF of the history on appearance and offers them via
-/// the system share sheet. Local-first: files are written to a temp directory.
-private struct ExportSheet: View {
-    let records: [BMIRecord]
-    let standard: HealthStandard
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var csvURL: URL?
-    @State private var pdfURL: URL?
-
-    var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    if let csvURL {
-                        ShareLink(item: csvURL) {
-                            Label("Export as CSV", systemImage: "tablecells")
-                        }
-                    }
-                    if let pdfURL {
-                        ShareLink(item: pdfURL) {
-                            Label("Export as PDF", systemImage: "doc.richtext")
-                        }
-                    }
-                    if csvURL == nil, pdfURL == nil {
-                        HStack { ProgressView(); Text("Preparing export…") }
-                    }
-                } footer: {
-                    Text("Your data stays on your device until you choose where to share it.")
-                }
-            }
-            .navigationTitle("Export history")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-        .presentationDetents([.medium])
-        .task {
-            csvURL = HistoryExporter.csvFileURL(records: records, standard: standard)
-            pdfURL = HistoryExporter.pdfFileURL(records: records, standard: standard)
-        }
+            // Keep the "Disclaimer" framing but include the full text — a bare
+            // "Disclaimer" label previously silenced the entire message for VoiceOver.
+            .accessibilityLabel("Disclaimer. \(text)")
     }
 }
 
 // MARK: - Previews
 
 #Preview("With history") {
-    let container = ModelContainer.previewWithSampleHistory
-    return HistoryView()
-        .environment(ProfileStore(container: container))
-        .modelContainer(container)
+    HistoryView()
+        .modelContainer(.previewWithSampleHistory)
 }
 
 #Preview("Empty") {
-    let container = PersistenceController.inMemory()
-    return HistoryView()
-        .environment(ProfileStore(container: container))
-        .modelContainer(container)
+    HistoryView()
+        .modelContainer(PersistenceController.inMemory())
 }

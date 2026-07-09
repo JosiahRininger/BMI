@@ -3,9 +3,9 @@
 //  BMICalculator
 //
 //  The app's Settings screen. It owns the durable preferences (default units,
-//  health standard), the optional integrations (Apple Health, weekly reminder),
-//  the "Remove Ads / Pro" non-consumable purchase + Restore, and the legal /
-//  support rows (full disclaimer, privacy policy, rate us).
+//  health standard), the Apple Health connection, the "Remove Ads" non-consumable
+//  purchase + Restore, and the legal / support rows (full disclaimer, privacy
+//  policy, rate us).
 //
 //  Health/ad firewall: nothing on this screen passes any health value to an ad
 //  SDK. The only monetization surface here is the StoreKit 2 purchase flow,
@@ -23,26 +23,19 @@ struct SettingsView: View {
 
     @AppStorage(AppStorageKey.unitSystem) private var unitSystemRaw: String = UnitSystem.metric.rawValue
     @AppStorage(AppStorageKey.healthStandard) private var healthStandardRaw: String = HealthStandard.standard.rawValue
-    @AppStorage(AppStorageKey.reminderCadence) private var reminderCadenceRaw: String = NotificationService.ReminderCadence.off.rawValue
 
     // MARK: Services
 
     @Environment(StoreState.self) private var store
     @Environment(StoreService.self) private var storeService
     @Environment(HealthKitService.self) private var healthKit
-    @Environment(NotificationService.self) private var notifications
-    @Environment(AppearanceStore.self) private var appearance
-    @Environment(ProfileStore.self) private var profiles
     @Environment(\.openURL) private var openURL
 
     // MARK: Local State
 
-    @State private var isReminderRequesting = false
     @State private var healthState: HealthConnectState = .unknown
     @State private var purchaseError: String?
     @State private var showFullDisclaimer = false
-    @State private var showPaywall = false
-    @State private var showProfiles = false
     @State private var showPrivacy = false
 
     private enum HealthConnectState { case unknown, connected, notConnected, working }
@@ -65,8 +58,6 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 preferencesSection
-                appearanceSection
-                profilesSection
                 healthStandardSection
                 integrationsSection
                 proSection
@@ -82,12 +73,6 @@ struct SettingsView: View {
                 // Mirror the chosen standard into the App Group so other processes
                 // (the Siri/Shortcut intent) categorize the same way the app does.
                 UserDefaults(suiteName: AppConfig.appGroupID)?.set(raw, forKey: AppStorageKey.healthStandard)
-            }
-            .sheet(isPresented: $showPaywall) {
-                PaywallSheet()
-            }
-            .sheet(isPresented: $showProfiles) {
-                ProfilesView()
             }
             .alert("Purchase issue", isPresented: Binding(
                 get: { purchaseError != nil },
@@ -115,90 +100,6 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
         }
         .listRowBackground(DSColor.secondaryBackground)
-    }
-
-    // MARK: Appearance (Pro accent theme)
-
-    private var appearanceSection: some View {
-        Section {
-            LazyVGrid(
-                columns: [GridItem(.adaptive(minimum: 64, maximum: 84), spacing: DSSpacing.md)],
-                spacing: DSSpacing.md
-            ) {
-                ForEach(AppTheme.allCases) { theme in
-                    ThemeSwatch(
-                        theme: theme,
-                        isSelected: appearance.theme == theme,
-                        isLocked: theme.isPro && !store.isPro
-                    ) {
-                        selectTheme(theme)
-                    }
-                }
-            }
-            .padding(.vertical, DSSpacing.xs)
-
-            if !store.isPro {
-                Text("More palettes are part of BMI Pro.")
-                    .font(DSFont.caption)
-                    .foregroundStyle(DSColor.secondaryText)
-            }
-        } header: {
-            Text("Accent theme")
-        }
-        .listRowBackground(DSColor.secondaryBackground)
-    }
-
-    private func selectTheme(_ theme: AppTheme) {
-        if theme.isPro && !store.isPro {
-            showPaywall = true
-        } else {
-            appearance.theme = theme
-        }
-    }
-
-    // MARK: Profiles (Pro multi-person tracking)
-
-    private var profilesSection: some View {
-        Section {
-            Button {
-                showProfiles = true
-            } label: {
-                HStack {
-                    Label {
-                        Text("Profiles").foregroundStyle(DSColor.primaryText)
-                    } icon: {
-                        Image(systemName: "person.2.fill")
-                            .foregroundStyle(DSColor.brand)
-                            .accessibilityHidden(true)
-                    }
-                    Spacer()
-                    Text(profilesSummary)
-                        .foregroundStyle(DSColor.secondaryText)
-                    Image(systemName: "chevron.right")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(DSColor.secondaryText)
-                        .accessibilityHidden(true)
-                }
-                .frame(minHeight: 44)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("Profiles")
-            .accessibilityValue(profilesSummary)
-            .accessibilityHint("Track more than one person with BMI Pro")
-        } header: {
-            Text("People")
-        }
-        .listRowBackground(DSColor.secondaryBackground)
-    }
-
-    private var profilesSummary: String {
-        let count = profiles.profiles.count
-        if count <= 1 {
-            return profiles.activeProfile?.name ?? "Me"
-        }
-        return "\(count) profiles"
     }
 
     // MARK: Health Standard
@@ -252,36 +153,6 @@ struct SettingsView: View {
                 Spacer()
                 healthConnectControl
             }
-
-            // Check-in reminder cadence
-            HStack {
-                Label {
-                    Text("Check-in reminder")
-                        .foregroundStyle(DSColor.primaryText)
-                } icon: {
-                    Image(systemName: "bell.badge.fill")
-                        .foregroundStyle(DSColor.brand)
-                        .accessibilityHidden(true)
-                }
-                Spacer()
-                if isReminderRequesting {
-                    ProgressView()
-                        .accessibilityLabel("Setting up reminder")
-                } else {
-                    Picker("Check-in reminder", selection: Binding(
-                        get: { reminderCadence },
-                        set: setCadence
-                    )) {
-                        ForEach(NotificationService.ReminderCadence.allCases) { cadence in
-                            Text(cadence.title).tag(cadence)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .tint(DSColor.brand)
-                    .accessibilityHint("Choose how often to get a gentle check-in reminder")
-                }
-            }
         }
         .listRowBackground(DSColor.secondaryBackground)
     }
@@ -313,7 +184,7 @@ struct SettingsView: View {
             if store.isPro {
                 HStack {
                     Label {
-                        Text("BMI Pro is active")
+                        Text("Ads removed")
                             .foregroundStyle(DSColor.primaryText)
                     } icon: {
                         Image(systemName: "checkmark.seal.fill")
@@ -326,13 +197,13 @@ struct SettingsView: View {
                         .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("BMI Pro is active")
-                Text("Thank you. Pro is unlocked across the app.")
+                .accessibilityLabel("Ads removed")
+                Text("Thank you for supporting the app.")
                     .font(DSFont.caption)
                     .foregroundStyle(DSColor.secondaryText)
             } else {
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("Unlock BMI Pro")
+                    Text("Remove Ads")
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
                     Text(proSubtitle)
@@ -346,8 +217,8 @@ struct SettingsView: View {
                         purchasePro()
                     }
                     .disabled(store.isProcessing || store.displayPrice == nil)
-                    .accessibilityLabel(store.isProcessing ? "Purchasing BMI Pro" : purchaseTitle)
-                    .accessibilityHint("One-time purchase to unlock BMI Pro")
+                    .accessibilityLabel(store.isProcessing ? "Purchasing" : purchaseTitle)
+                    .accessibilityHint("One-time purchase to remove ads")
 
                     Button("Restore Purchases") { restore() }
                         .font(DSFont.subheadline)
@@ -356,7 +227,7 @@ struct SettingsView: View {
                         .contentShape(Rectangle())
                         .disabled(store.isProcessing)
                         .accessibilityLabel("Restore purchases")
-                        .accessibilityHint("Restores a previous BMI Pro purchase on this Apple ID")
+                        .accessibilityHint("Restores a previous purchase on this Apple ID")
                 }
                 .padding(.vertical, DSSpacing.xs)
             }
@@ -368,19 +239,14 @@ struct SettingsView: View {
 
     private var purchaseTitle: String {
         if let price = store.displayPrice {
-            return "Unlock Pro (\(price))"
+            return "Remove Ads (\(price))"
         }
-        return "Unlock Pro"
+        return "Remove Ads"
     }
 
-    /// Pro pitch copy. Only promises ad removal when the ad SDK is actually
-    /// linked, so an ad-free build doesn't claim a benefit it can't deliver.
+    /// Remove-Ads pitch copy. A single non-consumable unlock — no subscription.
     private var proSubtitle: String {
-        #if canImport(GoogleMobileAds)
-        return "One purchase removes all ads, unlocks history export and custom themes, and lets you track multiple people. No subscription, ever."
-        #else
-        return "One purchase unlocks history export and custom themes, and lets you track multiple people. No subscription, ever."
-        #endif
+        "One purchase removes all ads, forever. No subscription, ever."
     }
 
     // MARK: About / Legal
@@ -481,32 +347,6 @@ struct SettingsView: View {
         }
     }
 
-    private var reminderCadence: NotificationService.ReminderCadence {
-        NotificationService.ReminderCadence(rawValue: reminderCadenceRaw) ?? .off
-    }
-
-    private func setCadence(_ cadence: NotificationService.ReminderCadence) {
-        reminderCadenceRaw = cadence.rawValue
-        // Keep the service's in-memory cadence in sync so post-log rescheduling
-        // (which reads notifications.cadence) doesn't use a stale value.
-        notifications.cadence = cadence
-        guard cadence != .off else {
-            notifications.cancelAll()
-            return
-        }
-        isReminderRequesting = true
-        Task {
-            let granted = await notifications.requestAuthorization()
-            if granted {
-                await notifications.schedule(cadence: cadence)
-            } else {
-                reminderCadenceRaw = NotificationService.ReminderCadence.off.rawValue
-                notifications.cadence = .off
-            }
-            isReminderRequesting = false
-        }
-    }
-
     private func purchasePro() {
         Task {
             let succeeded = await storeService.purchase()
@@ -548,6 +388,7 @@ private struct DisclaimerSheet: View {
                     Image(systemName: "cross.case.fill")
                         .font(.largeTitle)
                         .foregroundStyle(DSColor.brand)
+                        .accessibilityHidden(true)
 
                     Text("About BMI")
                         .font(DSFont.title2)
@@ -572,64 +413,6 @@ private struct DisclaimerSheet: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - Theme Swatch
-
-/// A single accent-palette swatch in the Settings theme grid: a gradient circle
-/// with a selection ring, a checkmark when active, and a lock when it's a Pro
-/// palette the person doesn't own yet.
-private struct ThemeSwatch: View {
-    let theme: AppTheme
-    let isSelected: Bool
-    let isLocked: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            VStack(spacing: 6) {
-                ZStack {
-                    Circle()
-                        .fill(theme.gradient)
-                        .frame(width: 46, height: 46)
-                        .overlay(
-                            Circle().strokeBorder(
-                                // Unselected ring must read on both surfaces: a flat
-                                // black hairline vanishes on the dark-mode row.
-                                isSelected ? DSColor.primaryText
-                                           : Color.dynamic(light: .black.opacity(0.06),
-                                                           dark: .white.opacity(0.18)),
-                                lineWidth: isSelected ? 2.5 : 1
-                            )
-                        )
-                        .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
-
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.subheadline.weight(.bold))
-                            .foregroundStyle(.white)
-                    } else if isLocked {
-                        Image(systemName: "lock.fill")
-                            .font(.caption.weight(.bold))
-                            .foregroundStyle(.white.opacity(0.95))
-                    }
-                }
-
-                Text(theme.displayName)
-                    .font(DSFont.caption2)
-                    .foregroundStyle(DSColor.secondaryText)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(theme.displayName)
-        .accessibilityValue(isSelected ? "Selected" : (isLocked ? "Locked, BMI Pro" : "Available"))
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityHint(isLocked ? "Unlock with BMI Pro" : "Use this accent")
     }
 }
 
@@ -676,8 +459,5 @@ enum Disclaimer {
         .environment(storeState)
         .environment(StoreService(state: storeState))
         .environment(HealthKitService())
-        .environment(NotificationService())
-        .environment(AppearanceStore())
-        .environment(ProfileStore(container: container))
         .modelContainer(container)
 }
