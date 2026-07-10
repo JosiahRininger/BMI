@@ -105,6 +105,9 @@ struct ResultCard: View {
             .frame(maxWidth: .infinity)
             .frame(height: 160)
             categoryBlock
+            if showsMuscleNote {
+                muscleMassNote
+            }
             if let healthyWeightRange {
                 healthyRangeRow(healthyWeightRange)
             }
@@ -190,6 +193,46 @@ struct ResultCard: View {
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
+        .accessibilityElement(children: .combine)
+    }
+
+    // MARK: Muscle-mass caveat
+
+    /// Whether to surface the muscle-mass caveat. Only shown at or above
+    /// "overweight", where a lean, muscular person is most likely to be
+    /// mislabeled by BMI (muscle is dense, so it drives the number up).
+    private var showsMuscleNote: Bool {
+        switch result.category {
+        case .overweight, .obesityI, .obesityII, .obesityIII: return true
+        case .underweight, .healthy: return false
+        }
+    }
+
+    /// A prominent, reassuring note that BMI can't distinguish muscle from fat —
+    /// so a fit, muscular person seeing a high number isn't necessarily at risk.
+    private var muscleMassNote: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "figure.strengthtraining.traditional")
+                .font(.subheadline)
+                .foregroundStyle(CalcPalette.brandBlue)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Muscle counts as weight")
+                    .font(.footnote.weight(.semibold))
+                Text("BMI can't tell muscle from fat. If you're lean and muscular, a higher number here can simply mean more muscle — not excess body fat or added health risk.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(CalcPalette.brandBlue.opacity(0.12))
+        )
         .accessibilityElement(children: .combine)
     }
 
