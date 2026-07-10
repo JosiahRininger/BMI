@@ -458,6 +458,10 @@ private struct FeetInchesStepper: View {
                     }
                     .pickerStyle(.menu)
                     .tint(DSColor.brand)
+                    // Size the menu to its "5 ft" label so it never gets squeezed
+                    // between the Spacer and the inch steppers into a wrapped,
+                    // one-letter-per-line "5 / f / t".
+                    .fixedSize()
                     .accessibilityLabel("Height in feet")
 
                     StepperButtons(

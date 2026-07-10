@@ -93,9 +93,11 @@ struct SettingsView: View {
                 get: { unitSystem },
                 set: { unitSystem = $0 }
             )) {
-                Text("Metric (kg, cm)").tag(UnitSystem.metric)
-                Text("Imperial (lb, ft)").tag(UnitSystem.imperial)
-                Text("Stone (st)").tag(UnitSystem.stone)
+                // Short labels: three segments with the parenthetical unit hints
+                // ("Imperial (lb, ft)") overflow ~111pt/segment and truncate.
+                Text("Metric").tag(UnitSystem.metric)
+                Text("Imperial").tag(UnitSystem.imperial)
+                Text("Stone").tag(UnitSystem.stone)
             }
             .pickerStyle(.segmented)
         }
@@ -110,8 +112,11 @@ struct SettingsView: View {
                 get: { healthStandard },
                 set: { healthStandard = $0 }
             )) {
-                Text("Standard (WHO/CDC)").tag(HealthStandard.standard)
-                Text("Asian action points").tag(HealthStandard.asian)
+                // Short labels: the parenthetical detail ("Standard (WHO/CDC)" /
+                // "Asian action points") truncates in a 2-segment control once
+                // Dynamic Type steps up. The note + footer below spell it out.
+                Text("Standard").tag(HealthStandard.standard)
+                Text("Asian").tag(HealthStandard.asian)
             }
             .pickerStyle(.segmented)
 
