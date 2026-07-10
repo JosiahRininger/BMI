@@ -165,7 +165,7 @@ private struct StatTile: View {
     let value: Double?
 
     private var displayValue: String {
-        guard let value else { return "—" }
+        guard let value else { return "–" }
         return String(format: "%.1f", value)
     }
 

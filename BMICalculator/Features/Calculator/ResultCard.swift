@@ -219,7 +219,7 @@ struct ResultCard: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Muscle counts as weight")
                     .font(.footnote.weight(.semibold))
-                Text("BMI can't tell muscle from fat. If you're lean and muscular, a higher number here can simply mean more muscle — not excess body fat or added health risk.")
+                Text("BMI can't tell muscle from fat. If you're lean and muscular, a higher number here can simply mean more muscle, not excess body fat or added health risk.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
