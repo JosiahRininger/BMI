@@ -19,6 +19,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 // MARK: - Environment Bridges
 //
@@ -150,7 +151,16 @@ struct CalculatorView: View {
                        value: model.result)
         }
         .scrollDismissesKeyboard(.interactively)
-        .background(backgroundGradient)
+        // A tap anywhere outside the keyboard dismisses it. The gesture lives on
+        // the background *behind* the scroll content, so interactive controls
+        // (the weight field, pickers, steppers, buttons) consume their own taps
+        // and are never affected — only taps on empty space / labels fall through
+        // to here. The Calculate button dismisses via its own action below.
+        .background {
+            backgroundGradient
+                .contentShape(Rectangle())
+                .onTapGesture { dismissKeyboard() }
+        }
         .safeAreaInset(edge: .bottom) {
             BannerSlot(isPro: model.isPro)
         }
@@ -207,6 +217,10 @@ struct CalculatorView: View {
 
     private var calculateButton: some View {
         Button {
+            // Dismiss the keyboard as part of calculating, so tapping Calculate
+            // while editing weight both computes the result and puts the keyboard
+            // away (rather than leaving it covering the result card).
+            dismissKeyboard()
             model.calculate(persistingInto: modelContext)
         } label: {
             Text("Calculate")
@@ -230,6 +244,17 @@ struct CalculatorView: View {
             endPoint: .center
         )
         .ignoresSafeArea()
+    }
+
+    // MARK: Keyboard
+
+    /// Resigns the first responder to dismiss the keyboard. Sending the action to
+    /// `nil` walks the responder chain to whatever is focused (the weight field),
+    /// so this works without hoisting the field's `@FocusState` up here.
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+        )
     }
 
     // MARK: Collaborator Binding
