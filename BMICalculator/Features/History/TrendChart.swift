@@ -204,11 +204,14 @@ public struct TrendChart: View {
         return min(safeLower, safeUpper)...max(safeLower, safeUpper)
     }
 
-    /// The X-axis domain spanning the selected range up to now.
+    /// The X-axis domain spanning the selected range up to now — extended to the
+    /// newest record if the device clock puts a saved reading in the future, so
+    /// that point stays visible instead of clipping off the right edge.
     private var xDomain: ClosedRange<Date> {
         let now = Date()
         let start = visibleRecords.first?.date ?? range.startDate(relativeTo: now)
-        return min(start, range.startDate(relativeTo: now))...now
+        let end = max(now, visibleRecords.last?.date ?? now)
+        return min(start, range.startDate(relativeTo: now))...end
     }
 
     // MARK: Body

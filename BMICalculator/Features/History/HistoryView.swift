@@ -37,9 +37,11 @@ public struct HistoryView: View {
     // MARK: Derived data
 
     /// Records within the selected range (for chart + stats), newest first.
+    /// Drops any non-finite BMI so the average / high / low tiles can't render
+    /// "nan" — mirroring the chart's own finite guard in `TrendChart`.
     private var rangedRecords: [BMIRecord] {
         let start = range.startDate()
-        return records.filter { $0.date >= start }
+        return records.filter { $0.date >= start && $0.bmi.isFinite }
     }
 
     /// Records grouped by calendar day, each group sorted newest-first, and
