@@ -96,3 +96,25 @@ with your App Store Connect analytics + Benchmarks tab after 60–90 days.
 
 **Caveat:** one-time-unlock conversion data is thin and subscription-biased industry-wide; treat every
 number here as a planning assumption to validate against your own funnel.
+
+## 6. Price benchmarks & how to test price
+
+**Where $1.99 sits (external benchmarks, directional — not Apple first-party data):**
+- Typical one-time ad-removal band for a utility/casual app: **$0.99–$2.99**, with **$1.99 the most
+  common** price point; **$3.99–$4.99** is generally reserved for premium/*bundled* unlocks — which is
+  why $4.99 made sense for the old multi-feature "Pro" bundle but not for ad-removal-only.
+- One-time ad-removal conversion commonly runs **~2–4% on iOS** (higher willingness-to-pay than
+  Android). Third-party blog figures — validate against your own funnel.
+- Real-world comps: **Fitter** charges exactly **$1.99** for ad removal (bundled with export/passcode);
+  a competing BMI app used **$0.99**. So $1.99 sits at/slightly above the niche's low end — reasonable,
+  with headroom to test $2.99.
+
+**How to actually test price (Apple has no native price A/B test):**
+- **Product Page Optimization (PPO) tests creative only** — icon, screenshots, previews — **not** price,
+  title, or description. Don't expect PPO to answer the price question.
+- Test price **sequentially**: run **$1.99 for N weeks → $2.99 for N weeks** over comparable windows and
+  compare **revenue-per-download** and conversion. Optionally use **Custom Product Pages** for
+  campaign-specific messaging. Changing the IAP price is a one-field edit in App Store Connect (no build).
+- **Decision threshold:** if ad-removal conversion is materially **below ~2%**, the prompt
+  **timing/placement** is the likelier culprit, not the price — fix the UX first (show the upsell after
+  the first result "aha moment", keep it dismissible, always ship **Restore Purchases**), *then* test price.

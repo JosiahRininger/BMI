@@ -213,6 +213,34 @@ Description compliance checklist:
 
 ---
 
+## Competitor landscape & our differentiators
+
+Snapshot of adjacent US BMI/body-metric apps at research time — **re-check the
+live listings before finalizing positioning**, as prices/metadata drift.
+
+| App | Positioning | Monetization |
+| --- | --- | --- |
+| BMI Calculator – Weight Loss (appovo) | WHO/DGE categories, visual gauge | Free + ads; one-time ad-removal IAP + Restore |
+| BMI Calculator: Weight Tracker (Leap Health) | Full medical disclaimer; Apple Health sync | Free + IAP |
+| Fitter – Fitness Calculator | BMI + BMR + body-fat + waist-to-hip; "honest about limitations" | Free + **$1.99** ad-removal (bundled export/passcode) |
+| Weight Monitor / Better Weight (Habitics) | Weight tracker & BMI; charts; on-device privacy | Free + IAP |
+| Ideal Weight & BMI (Artur Jakucewicz) | Multi-calculator + barcode; family calculators | Free + ads (Usage/Advertising/Diagnostics – Not Linked) |
+
+**Takeaways for us:**
+- The category norm is **free + a single non-personalized banner + a cheap one-time ad-removal IAP** — exactly our model ($1.99, matching Fitter).
+- Winners pair **"BMI / Body Mass Index"** in the title with **"weight tracker"** — our Title/Subtitle already do.
+- The two standout differentiators (per the research) are **BMI history/tracking** — many competitors are calculator-only — and **honesty about BMI's limitations**. We have both (the trend chart, plus the muscle-mass caveat and the strengthened disclaimer), and the honesty angle *reinforces* our 1.4.1 posture.
+- Several competitors chase breadth (body fat, BMR, waist, family calculators). We deliberately don't — our edge is the **cleanest, most focused** BMI tracker. Keep metadata BMI-centric; never keyword-target features we cut.
+
+## Keyword iteration (post-launch)
+
+Treat the keyword field as a **hypothesis**, not a final answer:
+- Validate token volume/difficulty with **Apple Search Ads "Search Popularity"** + a third-party tool (**AppTweak / App Radar / MobileAction**) before locking.
+- After launch, refine roughly **every 4 weeks** from the App Store Connect **Search-term report**: promote terms actually driving impressions/taps into Title/Subtitle; swap zero-impression tokens out of the keyword field.
+- Metadata changes ship as normal version updates — they **can't** be A/B'd (PPO tests creative only; see §5). Price changes are **sequential**, not a native split test (see [`MONETIZATION.md`](./MONETIZATION.md)).
+
+---
+
 ## 8. Rollout Sequence (recommended order)
 
 1. **Ship metadata update** (Title, Subtitle, US keyword field, new description) as a normal version.

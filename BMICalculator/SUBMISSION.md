@@ -80,10 +80,10 @@ WHAT YOU CAN DO
 • Add Home Screen and Lock Screen widgets to see your latest number at a glance
 • Use Spotlight and Siri Shortcuts to calculate without even opening the app
 • Sync weight and height with Apple Health so your data stays consistent across apps
-• Designed for adults — clear, non-judgmental, and person-first throughout
+• Designed for adults: clear, non-judgmental, and person-first throughout
 
 REMOVE ADS (optional, one-time purchase)
-The free version shows a single, non-personalized banner ad. Prefer none? One tap removes it for good — no subscription, ever.
+The free version shows a single, non-personalized banner ad. Prefer none? One tap removes it for good. No subscription, ever.
 
 PRIVATE BY DESIGN
 Your measurements stay on your device. No account, no sign-up, and no selling of your data. Your health data is never used for ads.
@@ -95,7 +95,7 @@ Download BMI Calculator and start tracking your numbers today.
 ```
 **What's New (release notes)**:
 ```
-A complete rewrite for iOS 26 — faster, cleaner, and more private.
+A complete rewrite for iOS 26: faster, cleaner, and more private.
 • New: history with a trend chart, Home/Lock Screen widgets, and Spotlight & Siri shortcuts
 • New: the healthy weight range for your height, plus WHO/CDC and WHO Asian BMI cutoffs
 • New: Apple Health sync, and an optional one-time Remove Ads purchase
