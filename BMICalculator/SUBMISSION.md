@@ -141,25 +141,69 @@ removeAdsProductID = "com.bmi.removeads"
 
 Your app's own code collects nothing, and health data never leaves the device.
 The one nuance is the **Google AdMob banner**, whose SDK collects some data to
-serve the ad — so answer for the SDK, not just your code:
+serve the ad — so answer for the SDK, not just your code. Answer **"Yes, we
+collect data"** (the developer, not Google, is treated as the collector even for
+non-personalized ads).
 
-- **"Do you or your third-party partners collect data from this app?"** → **Yes**,
-  because the Google Mobile Ads SDK collects data to serve the banner.
-- **Data Used to Track You:** **none.** The banner is **non-personalized**
-  (`npa=1`), so there is no cross-app/website advertising tracking and no IDFA use.
-- **Data Not Linked to You:** declare the categories the AdMob SDK collects to
-  serve **non-personalized** ads (typically device identifiers, plus usage and
-  diagnostic data). Confirm the exact list against Google's current
-  "AdMob and Apple's App Privacy questions" guidance before you submit.
+**We ship "Config A" (no tracking, no ATT prompt).** In code we (a) request only
+non-personalized ads (`npa=1`), (b) never access the IDFA / never show an ATT
+prompt, and (c) call `MobileAds.shared.requestConfiguration.setPublisherFirstPartyIDEnabled(false)`
+at startup (in `AdsManager.start()`). That last call is the one that makes the
+"No tracking" answer *truthful* — non-personalized alone does NOT justify skipping
+the tracking section, and that mismatch is the #1 AdMob 5.1.2 rejection. Because
+of this posture: **do NOT** add `NSUserTrackingUsageDescription`, and leave the
+**"Data Used to Track You"** section **empty**.
+
+Declare each AdMob data type under **Data Not Linked to You** exactly as below
+(Device ID must be declared — the SDK still uses app/developer-bounded IDs even
+with the IDFA zeroed):
+
+| Apple data type | Category | Linked? | Tracking? | Purposes |
+|---|---|---|---|---|
+| Device ID | Identifiers | Not Linked | **No** | Third-Party Advertising; Analytics |
+| Product Interaction | Usage Data | Not Linked | **No** | Third-Party Advertising; Analytics; App Functionality |
+| Advertising Data | Usage Data | Not Linked | **No** | Third-Party Advertising |
+| Performance Data | Diagnostics | Not Linked | **No** | Third-Party Advertising; Analytics; App Functionality |
+| Crash Data | Diagnostics | Not Linked | **No** | App Functionality |
+| Other Diagnostic Data | Diagnostics | Not Linked | **No** | App Functionality |
+| Coarse Location (from IP) | Location | Not Linked | **No** | Third-Party Advertising; Analytics |
+
 - **Data Linked to You:** **none.**
-- Your **health/measurement data** (height, weight, BMI, history) is **not
-  collected**: it lives only on device, HealthKit data stays on device and is
-  never sent to you, and it is firewalled from the ad SDK. The IAP is processed by
-  Apple, not you.
+- **Health & Fitness:** do **NOT** declare it. Height/weight/BMI/history live only
+  on device (SwiftData + HealthKit), are never sent off device, and are firewalled
+  from the ad SDK — so they are **not "collected."** Declaring Health & Fitness
+  *and* third-party advertising on the same app is a reviewer red flag; keep them
+  disjoint. The IAP is processed by Apple, not you.
 
-The `PrivacyInfo.xcprivacy` manifest in the build (UserDefaults reasons CA92.1 +
-1C8F.1), plus the Google Mobile Ads SDK's own bundled privacy manifest, back up
-these answers.
+**Verify, don't trust the prose:** generate Xcode's **Privacy Report** from the
+archive and mirror the Google Mobile Ads SDK's shipped `PrivacyInfo.xcprivacy`
+(GMA 11.2.0+; we link 12.14.0) into these answers exactly. Our app's own
+`PrivacyInfo.xcprivacy` (UserDefaults reasons CA92.1 + 1C8F.1) declares no
+collection/tracking, which is correct for the on-device app code.
+
+### Guideline compliance pre-flight (2026)
+
+The two structural rejection risks for a BMI-app-with-ads — the HealthKit↔ad-SDK
+firewall (5.1.3) and the AdMob privacy-label/ATT mismatch (5.1.2) — are both
+handled in code. Status of every gate:
+
+| Guideline | Requirement | Status |
+|---|---|---|
+| **1.4.1** medical | Visible disclaimer on results + About; cite WHO/CDC; remind to see a doctor; no diagnosis claims | ✅ done (ResultCard + History + Settings disclaimer; standard = "Standard (WHO/CDC)") |
+| **5.1.3** ad firewall | No HealthKit-derived value ever reaches the ad SDK/analytics; NPA only | ✅ done (adversarially verified; `npa=1`, no health signal in ad path) |
+| **5.1.2** tracking/ATT | Privacy label matches behavior; skip ATT only if genuinely no tracking | ✅ code (Config A: `setPublisherFirstPartyIDEnabled(false)`, no IDFA, no ATT). 🔲 **you:** fill the §4 label table in ASC |
+| **2.5.1** HealthKit core | HealthKit must back a real feature | ✅ done (reads height/weight to prefill; write path available) |
+| **3.1.1** IAP + Restore | Ad-removal is a non-consumable IAP with a visible Restore | ✅ done (Remove-Ads + Restore in Settings **and** the paywall) |
+| **2.3.1 / 2.3.7** metadata | No diagnosis/treatment claims; no price/competitor in name/subtitle; don't claim cut features (e.g. body fat) | ✅ copy is clean. 🔲 **you:** final ASC metadata review |
+| **4.2** min functionality | More than a one-screen calculator | ✅ done (history + trend + HealthKit + units + WHO categories) |
+| **5.1.1(i)** privacy policy | Linked in-app **and** in ASC | ✅ in-app link. 🔲 **you:** deploy the page + set the ASC Privacy Policy URL |
+| **Age rating** | Answer the new medical/wellness questionnaire honestly by **Jan 31, 2026** | 🔲 **you** (ASC — see §5) |
+| **Info.plist** | `GADApplicationIdentifier` ✅; both HealthKit usage strings ✅; **no** `NSUserTrackingUsageDescription` ✅ (correct for Config A) | ✅ done |
+
+If App Review still flags **5.1.2** despite Config A, that signals residual
+tracking (IDFA access or Publisher first-party ID still on) — recheck the code
+above or implement ATT ("Config B"). If a reviewer cites **2.5.1**, deepen the
+HealthKit feature (write BMI to Health) rather than removing HealthKit.
 
 ---
 

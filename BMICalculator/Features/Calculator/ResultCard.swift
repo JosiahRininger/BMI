@@ -57,7 +57,7 @@ extension BMICategory {
 /// Shared screening disclaimer surfaced near every result (and in Settings).
 enum BMIDisclaimer {
     static let text =
-    "BMI is a screening tool, not a diagnosis. It doesn't measure body fat directly and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
+    "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
 }
 
 // MARK: - Gauge Scale Mapping

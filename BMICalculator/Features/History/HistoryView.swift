@@ -264,7 +264,7 @@ private struct EmptyHistoryView: View {
 
 /// The required screening-tool disclaimer, surfaced near results history.
 private struct DisclaimerFootnote: View {
-    private let text = "BMI is a screening tool, not a diagnosis. It doesn't measure body fat directly and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
+    private let text = "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
 
     var body: some View {
         Text(text)

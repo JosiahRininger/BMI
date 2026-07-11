@@ -145,6 +145,16 @@ public final class AdsManager: NSObject {
         didStart = true
 
         #if canImport(GoogleMobileAds)
+        // Privacy "Config A" (no tracking, no ATT prompt): disable the Publisher
+        // first-party ID so the SDK performs no cross-app ad measurement. Combined
+        // with never accessing the IDFA (we present no ATT prompt) and requesting
+        // only non-personalized ads (npa=1, below), this lets the App Privacy label
+        // honestly answer "No" to "Used to Track You" and skip ATT — the correct,
+        // rejection-safe posture for a family-friendly health utility that keeps
+        // all HealthKit data on-device (App Review Guideline 5.1.2 / 5.1.3).
+        // "Non-personalized" alone does NOT justify skipping tracking; this call is
+        // what makes the no-tracking answer truthful.
+        MobileAds.shared.requestConfiguration.setPublisherFirstPartyIDEnabled(false)
         MobileAds.shared.start(completionHandler: nil)
         loadInterstitial()
         #endif
