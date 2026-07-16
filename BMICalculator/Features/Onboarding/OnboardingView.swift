@@ -415,6 +415,9 @@ private struct LabeledValueStepper: View {
             }
         }
         .accessibilityElement(children: .combine)
+        // Explicit label so VoiceOver reads "Height, 170 cm, adjustable" instead
+        // of concatenating the title, value, and the two button labels.
+        .accessibilityLabel(title)
         .accessibilityValue("\(formatted) \(unit)")
         .accessibilityAdjustableAction { direction in
             switch direction {
@@ -470,8 +473,20 @@ private struct FeetInchesStepper: View {
                         step: 1,
                         wrap: true
                     )
+                    // Collapse the +/- pair into one adjustable element so VoiceOver
+                    // announces "Inches, 7 inches, adjustable" and swipe up/down
+                    // works (matching the metric stepper), instead of two bare
+                    // Decrease/Increase buttons with no noun or value.
+                    .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Inches")
                     .accessibilityValue("\(String(format: "%.0f", inches)) inches")
+                    .accessibilityAdjustableAction { direction in
+                        switch direction {
+                        case .increment: inches = inches >= 11 ? 0 : inches + 1
+                        case .decrement: inches = inches <= 0 ? 11 : inches - 1
+                        @unknown default: break
+                        }
+                    }
                 }
             }
         }

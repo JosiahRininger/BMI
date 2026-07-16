@@ -100,6 +100,7 @@ struct SettingsView: View {
                 Text("Stone").tag(UnitSystem.stone)
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel("Default units")
         }
         .listRowBackground(DSColor.secondaryBackground)
     }
@@ -119,6 +120,7 @@ struct SettingsView: View {
                 Text("Asian").tag(HealthStandard.asian)
             }
             .pickerStyle(.segmented)
+            .accessibilityLabel("BMI category cutoffs")
 
             Text(healthStandardNote)
                 .font(DSFont.caption)
@@ -263,12 +265,14 @@ struct SettingsView: View {
             } label: {
                 settingsRow(title: "Privacy Policy", systemImage: "hand.raised.fill", showsChevron: true)
             }
+            .accessibilityHint("Opens the privacy policy in an in-app browser")
 
             Button {
                 requestReview()
             } label: {
                 settingsRow(title: "Rate us on the App Store", systemImage: "star.fill", showsChevron: true)
             }
+            .accessibilityHint("Opens the App Store to write a review")
 
             Button {
                 showFullDisclaimer = true

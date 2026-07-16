@@ -114,7 +114,10 @@ public struct HistoryView: View {
     private var rangePicker: some View {
         Picker("Time range", selection: $range) {
             ForEach(ChartRange.allCases) { range in
+                // Segment shows "7D"; VoiceOver speaks the spelled-out form
+                // ("Last 7 days") instead of "7 D".
                 Text(range.label).tag(range)
+                    .accessibilityLabel(range.accessibilityLabel)
             }
         }
         .pickerStyle(.segmented)

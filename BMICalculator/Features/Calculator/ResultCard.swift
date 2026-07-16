@@ -104,6 +104,10 @@ struct ResultCard: View {
             )
             .frame(maxWidth: .infinity)
             .frame(height: 160)
+            // The gauge's spoken value duplicates the header + category block +
+            // card summary, so hide it from VoiceOver *here* (its own label stays
+            // the text equivalent when the gauge is used standalone elsewhere).
+            .accessibilityHidden(true)
             categoryBlock
             if showsMuscleNote {
                 muscleMassNote
@@ -309,7 +313,9 @@ struct ResultCard: View {
         }
         .buttonStyle(.plain)
         .calcUpsellChrome()
-        .accessibilityElement(children: .combine)
+        // A Button is already one accessible element; wrapping it in
+        // `.accessibilityElement` can drop the button trait/activation. The
+        // label + hint on the Button (with the icons hidden above) are enough.
         .accessibilityLabel("Remove ads with Pro")
         .accessibilityHint("Opens the one-time purchase to remove ads.")
     }

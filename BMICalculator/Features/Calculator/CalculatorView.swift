@@ -103,6 +103,11 @@ struct CalculatorView: View {
     /// When Reduce Motion is on, result insertion crossfades rather than springs.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// Moves VoiceOver focus onto the result card the moment it lands, so a
+    /// blind person hears the verdict after tapping Calculate instead of the
+    /// result appearing silently. Invisible / no-op when VoiceOver is off.
+    @AccessibilityFocusState private var resultFocused: Bool
+
     /// Forwarded to the parent to present the Pro paywall / IAP sheet.
     var onShowPaywall: () -> Void
 
@@ -138,6 +143,7 @@ struct CalculatorView: View {
                         onUpsellTapped: onShowPaywall
                     )
                     .id(model.resultGeneration) // identity per real calc, not per re-categorize
+                    .accessibilityFocused($resultFocused)
                 }
             }
             .padding(.horizontal, 20)
@@ -186,6 +192,13 @@ struct CalculatorView: View {
         .onChange(of: model.weight) { _, _ in model.clearResult() }
         .onChange(of: model.heightCentimeters) { _, _ in model.clearResult() }
         .onChange(of: model.imperialHeight) { _, _ in model.clearResult() }
+        // On each real Calculate, move VoiceOver focus to the freshly-shown result
+        // card so its summary is spoken. Fires only when generation advances (a
+        // real calc), never on a live standard re-categorize. No effect if
+        // VoiceOver is off, so sighted UX is unchanged.
+        .onChange(of: model.resultGeneration) { _, generation in
+            if generation > 0 { resultFocused = true }
+        }
     }
 
     // MARK: Inputs
