@@ -275,6 +275,12 @@ struct OnboardingView: View {
     /// Persists the `hasOnboarded` flag, optionally writes the first record,
     /// and hands control back to the host.
     private func finish(persistRecord: Bool) {
+        // Force-persist the unit system (even on Skip, and even if the person
+        // never toggled it) so the Calculator opens in the SAME units onboarding
+        // showed. @AppStorage doesn't write its default until assigned, so without
+        // this a US user who onboards in imperial would land on a metric home.
+        storedUnitSystemRaw = unitSystem.rawValue
+
         // Save the first record even if the user swiped past the result page
         // without tapping "See my result" (so `result` is still nil). The engine
         // is non-failing, so compute it on the fly from the validated inputs —
@@ -298,6 +304,11 @@ struct OnboardingView: View {
             )
             modelContext.insert(record)
             try? modelContext.save()
+
+            // Seed the Calculator with exactly what they entered, so onboarding
+            // and the home screen show the same body on first launch.
+            CalculatorViewModel.saveLastBody(weightKilograms: metric.weightKilograms,
+                                             heightMeters: metric.heightMeters)
         }
 
         hasOnboarded = true

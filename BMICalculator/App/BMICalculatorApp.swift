@@ -65,6 +65,15 @@ enum AppStorageKey {
 
     /// `String` — the chosen ``HealthStandard`` raw value (standard/asian).
     static let healthStandard = "app.healthStandard"
+
+    /// `Double` — the last body the person entered, in canonical kilograms, so the
+    /// Calculator opens pre-filled with it (seeded from onboarding on day one,
+    /// then kept current on each calculation). Absent until first written.
+    static let lastWeightKilograms = "app.lastWeightKilograms"
+
+    /// `Double` — the last entered height in canonical meters. Pairs with
+    /// ``lastWeightKilograms``.
+    static let lastHeightMeters = "app.lastHeightMeters"
 }
 
 // MARK: - Deep Link Routing

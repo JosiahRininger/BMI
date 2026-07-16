@@ -182,3 +182,41 @@ struct CalculatorViewModelCalculateTests {
         #expect(vm.result != nil)   // result still computed, just not saved
     }
 }
+
+// MARK: - Onboarding → Calculator alignment (seedBody / last-body)
+
+@Suite("Body seed alignment")
+@MainActor
+struct BodySeedTests {
+
+    @Test("seedBody fills metric inputs from a canonical body")
+    func seedMetric() {
+        let vm = CalculatorViewModel(unitSystem: .metric)
+        vm.seedBody(weightKilograms: 82, heightMeters: 1.83)
+        #expect(vm.weight == 82)
+        #expect(vm.heightCentimeters == 183)
+        #expect(abs(vm.weightKilograms - 82) < 0.001)
+        #expect(abs(vm.heightMeters - 1.83) < 0.001)
+    }
+
+    @Test("seedBody converts to the active imperial units and round-trips")
+    func seedImperial() {
+        let vm = CalculatorViewModel(unitSystem: .imperial)
+        vm.seedBody(weightKilograms: 80, heightMeters: 1.80)
+        #expect(vm.weight == BMICalculator.pounds(fromKilograms: 80).rounded())
+        #expect(vm.imperialHeight.feet == 5)
+        #expect(vm.imperialHeight.inches == 11)          // 1.80 m ≈ 5 ft 11 in
+        #expect(abs(vm.weightKilograms - 80) < 0.5)
+        #expect(abs(vm.heightMeters - 1.80) < 0.02)
+    }
+
+    @Test("seedBody ignores non-physical input")
+    func seedGuards() {
+        let vm = CalculatorViewModel(unitSystem: .metric)
+        vm.seedBody(weightKilograms: 70, heightMeters: 1.70)   // known-good baseline
+        vm.seedBody(weightKilograms: 0, heightMeters: 1.70)    // ignored
+        vm.seedBody(weightKilograms: 70, heightMeters: .nan)   // ignored
+        #expect(vm.weight == 70)
+        #expect(vm.heightCentimeters == 170)
+    }
+}

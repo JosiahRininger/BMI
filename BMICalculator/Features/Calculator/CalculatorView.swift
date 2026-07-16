@@ -118,7 +118,14 @@ struct CalculatorView: View {
     /// because environment values are not available at `init` time.
     init(onShowPaywall: @escaping () -> Void = {}) {
         self.onShowPaywall = onShowPaywall
-        _model = State(initialValue: CalculatorViewModel())
+        let model = CalculatorViewModel()
+        // Open pre-filled with the person's last body — seeded from onboarding on
+        // day one, then their most recent calc — so onboarding and this screen
+        // show the same units and numbers instead of resetting to a default body.
+        if let body = CalculatorViewModel.savedLastBody {
+            model.seedBody(weightKilograms: body.weightKilograms, heightMeters: body.heightMeters)
+        }
+        _model = State(initialValue: model)
     }
 
     /// Test/preview seam: inject a pre-configured view model.

@@ -219,6 +219,27 @@ public final class CalculatorViewModel {
         return HealthStandard(rawValue: raw ?? "") ?? .standard
     }
 
+    /// The last body the person entered (canonical kg + m), or `nil` if none has
+    /// been saved yet. Onboarding writes it so the Calculator opens pre-filled
+    /// with what they just entered; each real calculation keeps it current.
+    public nonisolated static var savedLastBody: (weightKilograms: Double, heightMeters: Double)? {
+        let defaults = UserDefaults.standard
+        guard let weightKilograms = defaults.object(forKey: AppStorageKey.lastWeightKilograms) as? Double,
+              let heightMeters = defaults.object(forKey: AppStorageKey.lastHeightMeters) as? Double,
+              weightKilograms > 0, heightMeters > 0 else { return nil }
+        return (weightKilograms, heightMeters)
+    }
+
+    /// Persists the last entered body (canonical kg + m) for the Calculator to
+    /// seed from on the next launch. No-op for non-physical / non-finite input.
+    public nonisolated static func saveLastBody(weightKilograms: Double, heightMeters: Double) {
+        guard weightKilograms > 0, heightMeters > 0,
+              weightKilograms.isFinite, heightMeters.isFinite else { return }
+        let defaults = UserDefaults.standard
+        defaults.set(weightKilograms, forKey: AppStorageKey.lastWeightKilograms)
+        defaults.set(heightMeters, forKey: AppStorageKey.lastHeightMeters)
+    }
+
     public init(
         unitSystem: UnitSystem = CalculatorViewModel.savedUnitSystem,
         standard: HealthStandard = CalculatorViewModel.savedStandard,
@@ -242,6 +263,38 @@ public final class CalculatorViewModel {
         case .imperial: self.weight = BMICalculator.pounds(fromKilograms: 70).rounded()
         case .stone:    self.weight = (BMICalculator.pounds(fromKilograms: 70) / BMICalculator.poundsPerStone * 10).rounded() / 10
         }
+    }
+
+    /// Pre-fills the inputs from a canonical body (kg + m) — used to seed the
+    /// Calculator with what the person entered in onboarding (and, thereafter,
+    /// their last measurement) so the two screens stay aligned. Sets both height
+    /// representations and the active-unit weight, each clamped to its range, so
+    /// the value survives a later unit toggle. No-op for non-physical input.
+    public func seedBody(weightKilograms: Double, heightMeters: Double) {
+        guard weightKilograms > 0, heightMeters > 0,
+              weightKilograms.isFinite, heightMeters.isFinite else { return }
+
+        // Height: seed both the metric (cm) and imperial (ft/in) forms.
+        let centimeters = (heightMeters * 100).rounded()
+        heightCentimeters = min(max(centimeters, heightCentimetersRange.lowerBound),
+                                heightCentimetersRange.upperBound)
+
+        let totalInches = heightMeters / BMICalculator.metersPerInch
+        var feet = Int(totalInches / Double(BMICalculator.inchesPerFoot))
+        var inches = ((totalInches - Double(feet * BMICalculator.inchesPerFoot)) * 2).rounded() / 2
+        if inches >= Double(BMICalculator.inchesPerFoot) { feet += 1; inches -= Double(BMICalculator.inchesPerFoot) }
+        feet = min(max(feet, feetRange.lowerBound), feetRange.upperBound)
+        inches = min(max(inches, inchesRange.lowerBound), inchesRange.upperBound)
+        imperialHeight = ImperialHeight(feet: feet, inches: inches)
+
+        // Weight: convert to the active display unit and clamp to its range.
+        let displayWeight: Double
+        switch unitSystem {
+        case .metric:   displayWeight = weightKilograms
+        case .imperial: displayWeight = BMICalculator.pounds(fromKilograms: weightKilograms).rounded()
+        case .stone:    displayWeight = (BMICalculator.pounds(fromKilograms: weightKilograms) / BMICalculator.poundsPerStone * 10).rounded() / 10
+        }
+        weight = min(max(displayWeight, weightRange.lowerBound), weightRange.upperBound)
     }
 
     // MARK: Derived Display Helpers
@@ -372,6 +425,10 @@ public final class CalculatorViewModel {
         // Best-effort save; SwiftData autosaves on most contexts, but an
         // explicit save surfaces obvious failures during development.
         try? context.save()
+
+        // Remember this body so the Calculator opens pre-filled with it next
+        // launch (keeps the onboarding-seeded values current as they change).
+        Self.saveLastBody(weightKilograms: weightKilograms, heightMeters: heightMeters)
     }
 
     // MARK: Unit Conversion
