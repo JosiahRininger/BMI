@@ -93,14 +93,19 @@ BMI is a screening tool, not a diagnosis. It is a general indicator that does no
 
 Download BMI Calculator and start tracking your numbers today.
 ```
-**What's New (release notes)**:
+**What's New (release notes)** — v2.0:
 ```
-A complete rewrite for iOS 26: faster, cleaner, and more private.
-• New: history with a trend chart, Home/Lock Screen widgets, and Spotlight & Siri shortcuts
-• New: the healthy weight range for your height, plus WHO/CDC and WHO Asian BMI cutoffs
-• New: Apple Health sync, and an optional one-time Remove Ads purchase
-• Redesigned, accessible interface with full light & dark mode support
-• Lots of fixes and reliability improvements
+Version 2.0 is a complete, ground-up rebuild for iOS 26: faster, cleaner, and more private.
+
+• New: your healthy weight range for your height, shown in your units
+• New: a History tab with a trend chart that highlights the healthy range
+• New: Home Screen and Lock Screen widgets, plus Spotlight and Siri "Calculate BMI"
+• New: Apple Health sync, and a choice of WHO/CDC or WHO Asian BMI cutoffs
+• New: clearer context on what BMI can and can't tell you, including how muscle can raise the number
+• Improved: full VoiceOver and Dynamic Type support, with a refined light and dark design
+• Optional: a one-time Remove Ads purchase. No subscription, ever.
+
+Your measurements stay on your device.
 ```
 
 **URLs**:
