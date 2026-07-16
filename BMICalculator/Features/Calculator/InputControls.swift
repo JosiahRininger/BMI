@@ -67,8 +67,9 @@ struct HealthStandardToggle: View {
 
 // MARK: - WeightField
 
-/// Adaptive weight entry. A stepper-backed numeric field with a unit suffix so
-/// people can type precisely or nudge in 0.5 increments.
+/// Adaptive weight entry. The number sits in an obviously-tappable field (rounded
+/// chrome + edit glyph + focus highlight) so it reads as "tap to type", with a
+/// −/+ stepper alongside for fine 0.5-unit nudges.
 struct WeightField: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
@@ -81,28 +82,8 @@ struct WeightField: View {
     var body: some View {
         LabeledInputRow(title: "Weight", systemImage: "scalemass") {
             HStack(spacing: 12) {
-                TextField("Weight", value: $value, format: .number.precision(.fractionLength(0...1)))
-                    .keyboardType(.decimalPad)
-                    .multilineTextAlignment(.trailing)
-                    .font(.title3.monospacedDigit())
-                    .frame(minWidth: 64, minHeight: 44)
-                    .focused($isEditing)
-                    // Clamp to the valid range only when editing FINISHES. Clamping
-                    // on every keystroke turned a leading "1" (below the imperial
-                    // 4 lb floor) into "4", so "185" became "485".
-                    .onChange(of: isEditing) { _, editing in
-                        if !editing {
-                            value = min(max(value, range.lowerBound), range.upperBound)
-                        }
-                    }
-
-                Text(unitLabel)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    // No fixed width — let the unit suffix grow at large
-                    // Dynamic Type instead of clipping.
-                    .fixedSize(horizontal: true, vertical: false)
-
+                editableField
+                Spacer(minLength: 0)
                 Stepper("Adjust weight", value: $value, in: range, step: step)
                     .labelsHidden()
             }
@@ -110,7 +91,7 @@ struct WeightField: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Weight")
         .accessibilityValue(Text(verbatim: String(format: "%.1f %@", value, unitLabel)))
-        .accessibilityHint("Adjustable. Swipe up or down to change the weight.")
+        .accessibilityHint("Tap to type a value, or swipe up or down to adjust.")
         // Make the promised swipe gesture real: combining the children into one
         // element drops the Stepper's operability, so wire the increment/decrement
         // back with an adjustable action clamped to the same range and step.
@@ -121,6 +102,51 @@ struct WeightField: View {
             @unknown default: break
             }
         }
+    }
+
+    /// The tappable number field. The rounded chrome + edit glyph signal that the
+    /// number is editable; tapping anywhere in it opens the number pad.
+    private var editableField: some View {
+        let shape = RoundedRectangle(cornerRadius: 12, style: .continuous)
+        return HStack(spacing: 6) {
+            Image(systemName: "square.and.pencil")
+                .font(.footnote)
+                .foregroundStyle(isEditing ? CalcPalette.brandBlue : .secondary)
+                .accessibilityHidden(true)
+
+            TextField("Weight", value: $value, format: .number.precision(.fractionLength(0...1)))
+                .keyboardType(.decimalPad)
+                .multilineTextAlignment(.trailing)
+                .font(.title2.weight(.semibold).monospacedDigit())
+                .foregroundStyle(CalcPalette.brandBlue)
+                .focused($isEditing)
+                .frame(minWidth: 52)
+                // Clamp to the valid range only when editing FINISHES. Clamping on
+                // every keystroke turned a leading "1" (below the imperial 4 lb
+                // floor) into "4", so "185" became "485".
+                .onChange(of: isEditing) { _, editing in
+                    if !editing {
+                        value = min(max(value, range.lowerBound), range.upperBound)
+                    }
+                }
+
+            Text(unitLabel)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .frame(minHeight: 48)
+        .background(shape.fill(isEditing ? CalcPalette.brandBlue.opacity(0.10)
+                                         : Color.primary.opacity(0.05)))
+        .overlay(shape.strokeBorder(isEditing ? CalcPalette.brandBlue
+                                              : Color.primary.opacity(0.14),
+                                    lineWidth: isEditing ? 2 : 1))
+        .contentShape(shape)
+        // Tapping anywhere in the field (not just the tiny number) focuses it.
+        .onTapGesture { isEditing = true }
+        .animation(.easeInOut(duration: 0.15), value: isEditing)
     }
 }
 
