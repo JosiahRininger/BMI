@@ -172,18 +172,33 @@ struct MetricHeightField: View {
 
     var body: some View {
         LabeledInputRow(title: "Height", systemImage: "ruler") {
-            Picker("Height in centimeters", selection: selection) {
-                ForEach(options, id: \.self) { cm in
-                    Text("\(cm) cm").tag(cm)
+            ZStack {
+                heightSelectionBand
+                Picker("Height in centimeters", selection: selection) {
+                    ForEach(options, id: \.self) { cm in
+                        Text("\(cm) cm").tag(cm)
+                    }
                 }
+                .pickerStyle(.wheel)
+                .frame(height: 120)
+                .clipped()
             }
-            .pickerStyle(.wheel)
-            .frame(height: 120)
-            .clipped()
         }
         .accessibilityLabel("Height")
         .accessibilityValue("\(Int(centimeters.rounded())) centimeters")
+        .accessibilityHint("Scroll to change")
     }
+}
+
+/// A subtle brand-tinted band behind a wheel's centered row, so the selected
+/// value reads as a live, scrollable selection (matches the weight field's active
+/// tint). Non-interactive so it never intercepts the wheel's scroll gesture.
+private var heightSelectionBand: some View {
+    RoundedRectangle(cornerRadius: 10, style: .continuous)
+        .fill(CalcPalette.brandBlue.opacity(0.08))
+        .frame(height: 38)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
 }
 
 // MARK: - ImperialHeightField
@@ -213,29 +228,33 @@ struct ImperialHeightField: View {
 
     var body: some View {
         LabeledInputRow(title: "Height", systemImage: "ruler") {
-            HStack(spacing: 0) {
-                Picker("Feet", selection: feetSelection) {
-                    ForEach(feetOptions, id: \.self) { ft in
-                        Text("\(ft) ft").tag(ft)
+            ZStack {
+                heightSelectionBand
+                HStack(spacing: 0) {
+                    Picker("Feet", selection: feetSelection) {
+                        ForEach(feetOptions, id: \.self) { ft in
+                            Text("\(ft) ft").tag(ft)
+                        }
                     }
-                }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
+                    .pickerStyle(.wheel)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
 
-                Picker("Inches", selection: inchesSelection) {
-                    ForEach(inchOptions, id: \.self) { inch in
-                        Text(inchLabel(inch)).tag(inch)
+                    Picker("Inches", selection: inchesSelection) {
+                        ForEach(inchOptions, id: \.self) { inch in
+                            Text(inchLabel(inch)).tag(inch)
+                        }
                     }
+                    .pickerStyle(.wheel)
+                    .frame(maxWidth: .infinity)
+                    .clipped()
                 }
-                .pickerStyle(.wheel)
-                .frame(maxWidth: .infinity)
-                .clipped()
+                .frame(height: 120)
             }
-            .frame(height: 120)
         }
         .accessibilityLabel("Height")
         .accessibilityValue("\(height.feet) feet \(inchLabel(height.inches))")
+        .accessibilityHint("Scroll to change")
     }
 
     private func inchLabel(_ inch: Double) -> String {
