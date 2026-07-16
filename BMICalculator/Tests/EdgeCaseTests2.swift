@@ -43,22 +43,25 @@ struct SavedPreferenceTests {
 
     @Test("savedStandard decodes the persisted value and falls back to standard")
     func savedStandard() {
-        UserDefaults.standard.set("asian", forKey: "app.healthStandard")
-        #expect(CalculatorViewModel.savedStandard == .asian)
-        UserDefaults.standard.set("standard", forKey: "app.healthStandard")
-        #expect(CalculatorViewModel.savedStandard == .standard)
-        UserDefaults.standard.removeObject(forKey: "app.healthStandard")
-        #expect(CalculatorViewModel.savedStandard == .standard)   // fallback
+        // Isolated suite so parallel tests mutating .standard can't race this.
+        let defaults = UserDefaults(suiteName: "test.savedStandard.\(UUID().uuidString)")!
+        defaults.set("asian", forKey: "app.healthStandard")
+        #expect(CalculatorViewModel.savedStandard(from: defaults) == .asian)
+        defaults.set("standard", forKey: "app.healthStandard")
+        #expect(CalculatorViewModel.savedStandard(from: defaults) == .standard)
+        defaults.removeObject(forKey: "app.healthStandard")
+        #expect(CalculatorViewModel.savedStandard(from: defaults) == .standard)   // fallback
     }
 
     @Test("savedUnitSystem decodes the persisted value and falls back to metric")
     func savedUnit() {
-        UserDefaults.standard.set("imperial", forKey: "app.unitSystem")
-        #expect(CalculatorViewModel.savedUnitSystem == .imperial)
-        UserDefaults.standard.set("stone", forKey: "app.unitSystem")
-        #expect(CalculatorViewModel.savedUnitSystem == .stone)
-        UserDefaults.standard.removeObject(forKey: "app.unitSystem")
-        #expect(CalculatorViewModel.savedUnitSystem == .metric)
+        let defaults = UserDefaults(suiteName: "test.savedUnit.\(UUID().uuidString)")!
+        defaults.set("imperial", forKey: "app.unitSystem")
+        #expect(CalculatorViewModel.savedUnitSystem(from: defaults) == .imperial)
+        defaults.set("stone", forKey: "app.unitSystem")
+        #expect(CalculatorViewModel.savedUnitSystem(from: defaults) == .stone)
+        defaults.removeObject(forKey: "app.unitSystem")
+        #expect(CalculatorViewModel.savedUnitSystem(from: defaults) == .metric)
     }
 
     @Test("A record categorizes differently under the Asian standard at BMI 24")

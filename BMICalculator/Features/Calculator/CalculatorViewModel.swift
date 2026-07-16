@@ -207,15 +207,22 @@ public final class CalculatorViewModel {
     /// every change), so the calculator opens in the units they last used.
     /// `nonisolated` so it can seed the init's default argument; reads only the
     /// thread-safe `UserDefaults`.
-    public nonisolated static var savedUnitSystem: UnitSystem {
-        let raw = UserDefaults.standard.string(forKey: AppStorageKey.unitSystem)
+    public nonisolated static var savedUnitSystem: UnitSystem { savedUnitSystem(from: .standard) }
+
+    /// Testable overload reading from an injectable store, so unit tests can use
+    /// an isolated `UserDefaults` suite instead of racing on `.standard`.
+    public nonisolated static func savedUnitSystem(from defaults: UserDefaults) -> UnitSystem {
+        let raw = defaults.string(forKey: AppStorageKey.unitSystem)
         return UnitSystem(rawValue: raw ?? "") ?? .metric
     }
 
     /// The saved BMI-cutoff standard (chosen in Settings), so the calculator
     /// categorizes with the person's preference without a per-screen toggle.
-    public nonisolated static var savedStandard: HealthStandard {
-        let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard)
+    public nonisolated static var savedStandard: HealthStandard { savedStandard(from: .standard) }
+
+    /// Testable overload — see ``savedUnitSystem(from:)``.
+    public nonisolated static func savedStandard(from defaults: UserDefaults) -> HealthStandard {
+        let raw = defaults.string(forKey: AppStorageKey.healthStandard)
         return HealthStandard(rawValue: raw ?? "") ?? .standard
     }
 
