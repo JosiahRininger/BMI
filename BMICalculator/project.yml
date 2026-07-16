@@ -52,10 +52,12 @@ targets:
       - path: Intents
       - path: BMIWidget/BMISharedStore.swift   # shared App-Group store (also in widget)
       - path: PrivacyInfo.xcprivacy            # App Store privacy manifest (resource)
+      - path: Assets.xcassets                  # app icon (AppIcon set)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI
         PRODUCT_NAME: BMICalculator
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: "YES"
         # Partial Info.plist supplies CFBundleURLTypes (the bmicalculator:// scheme
         # the widget / Control Center / Siri deep-link into — it can't be expressed
