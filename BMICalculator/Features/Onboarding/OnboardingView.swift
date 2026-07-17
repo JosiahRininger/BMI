@@ -370,177 +370,29 @@ private struct MeasurementEntry: View {
     @Binding var input: OnboardingInput
     let unitSystem: UnitSystem
 
+    /// Bridges the onboarding model's separate feet/inches fields to the shared
+    /// `ImperialHeightField`, which works in `ImperialHeight`.
+    private var imperialHeight: Binding<ImperialHeight> {
+        Binding(
+            get: { ImperialHeight(feet: input.heightFeet, inches: input.heightInches) },
+            set: { input.heightFeet = $0.feet; input.heightInches = $0.inches }
+        )
+    }
+
+    // Reuse the exact Calculator controls so onboarding entry looks and behaves
+    // identically to the home page: a tappable weight field + a wheel height
+    // picker with the brand selection band.
     var body: some View {
         VStack(spacing: DSSpacing.md) {
             switch unitSystem {
             case .metric:
-                LabeledValueStepper(
-                    title: "Height",
-                    value: $input.heightCentimeters,
-                    range: 80...250,
-                    step: 1,
-                    unit: "cm"
-                )
-                LabeledValueStepper(
-                    title: "Weight",
-                    value: $input.weightKilograms,
-                    range: 20...400,
-                    step: 0.5,
-                    unit: "kg"
-                )
+                WeightField(value: $input.weightKilograms, range: 20...400, unitLabel: "kg")
+                MetricHeightField(centimeters: $input.heightCentimeters, range: 50...250)
             case .imperial, .stone:
-                FeetInchesStepper(feet: $input.heightFeet, inches: $input.heightInches)
-                LabeledValueStepper(
-                    title: "Weight",
-                    value: $input.weightPounds,
-                    range: 44...880,
-                    step: 1,
-                    unit: "lb"
-                )
+                WeightField(value: $input.weightPounds, range: 44...880, unitLabel: "lb")
+                ImperialHeightField(height: imperialHeight, feetRange: 1...8, inchesRange: 0...11.5)
             }
         }
-    }
-}
-
-/// A titled row with a large value readout and minus/plus controls.
-private struct LabeledValueStepper: View {
-    let title: String
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let step: Double
-    let unit: String
-
-    var body: some View {
-        DSCard {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .font(DSFont.subheadline)
-                        .foregroundStyle(DSColor.secondaryText)
-                    Text("\(formatted) \(unit)")
-                        .font(DSFont.title3.monospacedDigit())
-                        .foregroundStyle(DSColor.primaryText)
-                }
-                Spacer()
-                StepperButtons(value: $value, range: range, step: step)
-            }
-        }
-        .accessibilityElement(children: .combine)
-        // Explicit label so VoiceOver reads "Height, 170 cm, adjustable" instead
-        // of concatenating the title, value, and the two button labels.
-        .accessibilityLabel(title)
-        .accessibilityValue("\(formatted) \(unit)")
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: value = min(range.upperBound, value + step)
-            case .decrement: value = max(range.lowerBound, value - step)
-            @unknown default: break
-            }
-        }
-    }
-
-    private var formatted: String {
-        step < 1 ? String(format: "%.1f", value) : String(format: "%.0f", value)
-    }
-}
-
-/// Height entry for imperial: feet picker + inches stepper.
-private struct FeetInchesStepper: View {
-    @Binding var feet: Int
-    @Binding var inches: Double
-
-    var body: some View {
-        DSCard {
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Height")
-                        .font(DSFont.subheadline)
-                        .foregroundStyle(DSColor.secondaryText)
-                    Text("\(feet) ft \(String(format: "%.0f", inches)) in")
-                        .font(DSFont.title3.monospacedDigit())
-                        .foregroundStyle(DSColor.primaryText)
-                }
-                // Combine only the read-out text; leave the Picker and the
-                // inch steppers as individually operable VoiceOver elements.
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel("Height")
-                .accessibilityValue("\(feet) feet \(String(format: "%.0f", inches)) inches")
-                Spacer()
-                HStack(spacing: DSSpacing.sm) {
-                    Picker("Feet", selection: $feet) {
-                        ForEach(2...8, id: \.self) { Text("\($0) ft").tag($0) }
-                    }
-                    .pickerStyle(.menu)
-                    .tint(DSColor.brand)
-                    // Size the menu to its "5 ft" label so it never gets squeezed
-                    // between the Spacer and the inch steppers into a wrapped,
-                    // one-letter-per-line "5 / f / t".
-                    .fixedSize()
-                    .accessibilityLabel("Height in feet")
-
-                    StepperButtons(
-                        value: $inches,
-                        range: 0...11,
-                        step: 1,
-                        wrap: true
-                    )
-                    // Collapse the +/- pair into one adjustable element so VoiceOver
-                    // announces "Inches, 7 inches, adjustable" and swipe up/down
-                    // works (matching the metric stepper), instead of two bare
-                    // Decrease/Increase buttons with no noun or value.
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel("Inches")
-                    .accessibilityValue("\(String(format: "%.0f", inches)) inches")
-                    .accessibilityAdjustableAction { direction in
-                        switch direction {
-                        case .increment: inches = inches >= 11 ? 0 : inches + 1
-                        case .decrement: inches = inches <= 0 ? 11 : inches - 1
-                        @unknown default: break
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/// Reusable minus/plus pair used by the steppers above.
-private struct StepperButtons: View {
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let step: Double
-    var wrap: Bool = false
-
-    var body: some View {
-        HStack(spacing: DSSpacing.sm) {
-            roundButton(systemImage: "minus") {
-                if wrap && value - step < range.lowerBound {
-                    value = range.upperBound
-                } else {
-                    value = max(range.lowerBound, value - step)
-                }
-            }
-            roundButton(systemImage: "plus") {
-                if wrap && value + step > range.upperBound {
-                    value = range.lowerBound
-                } else {
-                    value = min(range.upperBound, value + step)
-                }
-            }
-        }
-    }
-
-    private func roundButton(systemImage: String, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: systemImage)
-                .font(.headline)
-                .frame(width: 40, height: 40)
-        }
-        .buttonStyle(.dsCircularGlass)
-        // Ensure at least a 44x44pt hit target while keeping the 40pt glass visual.
-        .frame(minWidth: 44, minHeight: 44)
-        .contentShape(Rectangle())
-        .accessibilityLabel(systemImage == "plus" ? "Increase" : "Decrease")
     }
 }
 
