@@ -48,6 +48,18 @@ extension BMICategory {
         case .obesityIII:  return Color(red: 0.84, green: 0.18, blue: 0.18) // red
         }
     }
+
+    /// SF Symbol distinguishing the band by shape (not color alone), matching the
+    /// app's result card. The widget target lacks the app's `symbolName`, so it's
+    /// mirrored here.
+    var widgetSymbol: String {
+        switch self {
+        case .underweight: return "arrow.down.circle.fill"
+        case .healthy:     return "checkmark.circle.fill"
+        case .overweight:  return "arrow.up.circle.fill"
+        case .obesityI, .obesityII, .obesityIII: return "exclamationmark.circle.fill"
+        }
+    }
 }
 
 // MARK: - Sparkline
@@ -114,49 +126,84 @@ private struct TrendSparkline: View {
     }
 }
 
-// MARK: - Subviews
+// MARK: - Category Chip
 
-/// The large value + category readout shared by the small and medium layouts.
-private struct BMIReadout: View {
-    let entry: BMIWidgetEntry
-    var compact: Bool = false
+/// A compact, colored pill naming the category with its shape symbol — the
+/// widget's clear, glanceable verdict.
+private struct CategoryChip: View {
+    let category: BMICategory
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: category.widgetSymbol)
+                .font(.system(size: 10, weight: .bold))
+            Text(category.title)
+                .font(.caption2.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+        }
+        .foregroundStyle(category.bandColor)
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(Capsule().fill(category.bandColor.opacity(0.16)))
+        .accessibilityHidden(true)
+    }
+}
 
-    private var category: BMICategory? { entry.latest?.category }
+// MARK: - BMI Scale Bar
+
+/// The widget's visual anchor: a rounded spectrum bar spanning underweight →
+/// obesity, with a marker showing exactly where this BMI sits. Ties the widget
+/// to the app's "where are you on the scale" gauge identity.
+private struct BMIScaleBar: View {
+    let bmi: Double
+    let category: BMICategory
+
+    private let lo = 15.0
+    private let hi = 40.0
+
+    /// (BMI span, color) segments proportional to the fixed 15–40 domain.
+    private var segments: [(span: Double, color: Color)] {
+        [
+            (18.5 - 15,  BMICategory.underweight.bandColor),
+            (25 - 18.5,  BMICategory.healthy.bandColor),
+            (30 - 25,    BMICategory.overweight.bandColor),
+            (35 - 30,    BMICategory.obesityI.bandColor),
+            (40 - 35,    BMICategory.obesityII.bandColor)
+        ]
+    }
+
+    private var fraction: Double { min(max((bmi - lo) / (hi - lo), 0), 1) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 2 : 4) {
-            Text("BMI")
-                .font(.caption2.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
+        GeometryReader { geo in
+            let w = geo.size.width
+            let barHeight = 8.0
+            let markerSize = 15.0
+            let markerX = min(max(fraction * w, markerSize / 2), w - markerSize / 2)
 
-            if let latest = entry.latest, let category {
-                Text(latest.rounded.formatted(.number.precision(.fractionLength(1))))
-                    .font(.system(size: compact ? 30 : 40, weight: .bold, design: .rounded))
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                    .contentTransition(.numericText())
-                    .foregroundStyle(.primary)
+            ZStack(alignment: .leading) {
+                HStack(spacing: 0) {
+                    ForEach(Array(segments.enumerated()), id: \.offset) { _, seg in
+                        Rectangle()
+                            .fill(seg.color)
+                            .frame(width: w * seg.span / (hi - lo))
+                    }
+                }
+                .frame(height: barHeight)
+                .clipShape(Capsule())
+                .frame(maxHeight: .infinity, alignment: .center)
 
-                Text(category.title)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(category.bandColor)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-            } else {
-                Text("--")
-                    .font(.system(size: compact ? 30 : 40, weight: .bold, design: .rounded))
-                    .foregroundStyle(.secondary)
-                Text("Tap to add a measurement")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                Circle()
+                    .fill(.white)
+                    .overlay(Circle().strokeBorder(category.bandColor, lineWidth: 2.5))
+                    .frame(width: markerSize, height: markerSize)
+                    .shadow(color: .black.opacity(0.22), radius: 1.5, y: 0.5)
+                    .offset(x: markerX - markerSize / 2)
+                    .frame(maxHeight: .infinity, alignment: .center)
             }
         }
-        // Speak one concise summary ("BMI 24.1, Healthy weight") rather than three
-        // disconnected fragments, and never a bare number with no context.
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(BMIWidgetAccessibility.readoutLabel(for: entry))
+        .frame(height: 16)
+        .accessibilityHidden(true)
     }
 }
 
@@ -195,66 +242,105 @@ enum BMIWidgetAccessibility {
 
 // MARK: - Widget Layouts
 
-/// System small: value, category, and a small sparkline.
+/// System small: big category-colored value, category chip, and the scale bar.
 private struct BMISmallView: View {
     let entry: BMIWidgetEntry
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            BMIReadout(entry: entry)
-            Spacer(minLength: 0)
-            if entry.trend.count > 1 {
-                TrendSparkline(values: entry.trend, lineColor: BMIWidgetPalette.brand)
-                    .frame(height: 26)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(BMIWidgetAccessibility.trendLabel(for: entry.trend) ?? "")
-                    .accessibilityHidden(BMIWidgetAccessibility.trendLabel(for: entry.trend) == nil)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("BMI")
+                .font(.caption2.weight(.bold))
+                .kerning(0.5)
+                .foregroundStyle(.secondary)
+
+            if let latest = entry.latest {
+                Text(latest.rounded.formatted(.number.precision(.fractionLength(1))))
+                    .font(.system(size: 46, weight: .bold, design: .rounded))
+                    .foregroundStyle(latest.category.bandColor)
+                    .minimumScaleFactor(0.6)
+                    .lineLimit(1)
+                    .contentTransition(.numericText())
+                CategoryChip(category: latest.category)
+                    .padding(.top, 3)
+                Spacer(minLength: 8)
+                BMIScaleBar(bmi: latest.rounded, category: latest.category)
+            } else {
+                Spacer(minLength: 0)
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 30, weight: .semibold))
+                    .foregroundStyle(BMIWidgetPalette.brand)
+                Text("Tap to add your first measurement")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(3)
+                    .padding(.top, 4)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(BMIWidgetAccessibility.readoutLabel(for: entry))
     }
 }
 
-/// System medium: readout on the left, larger trend on the right.
+/// System medium: readout + chip on the left, relative date + trend on the
+/// right, and the full-width scale bar anchoring the bottom.
 private struct BMIMediumView: View {
     let entry: BMIWidgetEntry
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 6) {
-                BMIReadout(entry: entry)
+        VStack(alignment: .leading, spacing: 10) {
+            if let latest = entry.latest {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("BMI")
+                            .font(.caption2.weight(.bold)).kerning(0.5)
+                            .foregroundStyle(.secondary)
+                        Text(latest.rounded.formatted(.number.precision(.fractionLength(1))))
+                            .font(.system(size: 44, weight: .bold, design: .rounded))
+                            .foregroundStyle(latest.category.bandColor)
+                            .minimumScaleFactor(0.6).lineLimit(1)
+                            .contentTransition(.numericText())
+                        CategoryChip(category: latest.category)
+                    }
+                    Spacer(minLength: 0)
+                    VStack(alignment: .trailing, spacing: 6) {
+                        Text(latest.date, format: .relative(presentation: .named))
+                            .font(.caption2).foregroundStyle(.secondary)
+                            .lineLimit(1)
+                        if entry.trend.count > 1 {
+                            TrendSparkline(values: entry.trend, lineColor: latest.category.bandColor)
+                                .frame(width: 132, height: 46)
+                        }
+                    }
+                }
                 Spacer(minLength: 0)
-                if let latest = entry.latest {
-                    Text(latest.date, format: .relative(presentation: .named))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
+                BMIScaleBar(bmi: latest.rounded, category: latest.category)
+            } else {
+                HStack(spacing: 12) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 34, weight: .semibold))
+                        .foregroundStyle(BMIWidgetPalette.brand)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("No measurement yet")
+                            .font(.subheadline.weight(.semibold))
+                        Text("Tap to calculate and track your BMI")
+                            .font(.caption2).foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer(minLength: 0)
                 }
+                Spacer(minLength: 0)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text("7-entry trend")
-                    .font(.caption2.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                if entry.trend.count > 1 {
-                    TrendSparkline(values: entry.trend, lineColor: BMIWidgetPalette.brand)
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel(BMIWidgetAccessibility.trendLabel(for: entry.trend) ?? "7-entry trend")
-                } else {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(.quaternary)
-                        .overlay(
-                            Text("Add a few entries to see your trend")
-                                .font(.caption2)
-                                .multilineTextAlignment(.center)
-                                .foregroundStyle(.secondary)
-                                .padding(6)
-                        )
-                        .accessibilityElement(children: .ignore)
-                        .accessibilityLabel("Add a few entries to see your trend")
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(mediumAccessibilityLabel)
+    }
+
+    private var mediumAccessibilityLabel: String {
+        let readout = BMIWidgetAccessibility.readoutLabel(for: entry)
+        guard let trend = BMIWidgetAccessibility.trendLabel(for: entry.trend) else { return readout }
+        return "\(readout). \(trend)"
     }
 }
 
@@ -345,10 +431,14 @@ struct BMIWidgetEntryView: View {
 
     @ViewBuilder
     private var glassBackground: some View {
+        // Subtly tint the whole widget by the current category (green for healthy,
+        // orange for overweight, …) so the surface quietly reflects the verdict;
+        // brand blue before any measurement exists.
+        let tintColor = entry.latest?.category.bandColor ?? BMIWidgetPalette.brand
         let tint = LinearGradient(
             colors: [
-                BMIWidgetPalette.brand.opacity(0.16),
-                BMIWidgetPalette.brand.opacity(0.04)
+                tintColor.opacity(0.16),
+                tintColor.opacity(0.03)
             ],
             startPoint: .topLeading,
             endPoint: .bottomTrailing
