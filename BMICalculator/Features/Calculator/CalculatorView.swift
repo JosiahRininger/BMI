@@ -100,6 +100,11 @@ struct CalculatorView: View {
     /// was removed).
     @AppStorage(AppStorageKey.healthStandard) private var standardRaw = HealthStandard.standard.rawValue
 
+    /// The default units chosen in Settings. Observed so the calculator switches
+    /// units live when the person changes them there (its own toggle also writes
+    /// this key, so the two stay in sync).
+    @AppStorage(AppStorageKey.unitSystem) private var unitSystemRaw = UnitSystem.metric.rawValue
+
     /// When Reduce Motion is on, result insertion crossfades rather than springs.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -190,10 +195,20 @@ struct CalculatorView: View {
         .task {
             bindCollaborators()
             model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
+            if let u = UnitSystem(rawValue: unitSystemRaw), u != model.unitSystem {
+                model.unitSystem = u
+            }
         }
         // Keep the calculator's categorization in sync with the Settings choice.
         .onChange(of: standardRaw) { _, raw in
             model.standard = HealthStandard(rawValue: raw) ?? .standard
+        }
+        // Keep the calculator's units in sync with the Settings choice (its own
+        // toggle writes the same key; the guard avoids a redundant re-convert).
+        .onChange(of: unitSystemRaw) { _, raw in
+            if let u = UnitSystem(rawValue: raw), u != model.unitSystem {
+                model.unitSystem = u
+            }
         }
         // Editing inputs invalidates the shown result, so hide the old card
         // rather than leave a BMI that contradicts the inputs on screen until

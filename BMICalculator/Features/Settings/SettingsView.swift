@@ -14,6 +14,7 @@
 
 import SwiftUI
 import SafariServices
+import SwiftData
 
 // MARK: - Settings
 
@@ -30,6 +31,7 @@ struct SettingsView: View {
     @Environment(StoreService.self) private var storeService
     @Environment(HealthKitService.self) private var healthKit
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var modelContext
 
     // MARK: Local State
 
@@ -73,6 +75,9 @@ struct SettingsView: View {
                 // Mirror the chosen standard into the App Group so other processes
                 // (the Siri/Shortcut intent) categorize the same way the app does.
                 UserDefaults(suiteName: AppConfig.appGroupID)?.set(raw, forKey: AppStorageKey.healthStandard)
+                // Re-snapshot the widget so it re-categorizes with the new standard
+                // immediately, not just after the next calculation.
+                WidgetSync.update(from: modelContext.container)
             }
             .alert("Purchase issue", isPresented: Binding(
                 get: { purchaseError != nil },

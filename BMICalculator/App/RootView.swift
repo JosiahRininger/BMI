@@ -48,6 +48,10 @@ struct RootView: View {
     /// Controls the Remove-Ads sheet.
     @State private var isPaywallPresented = false
 
+    /// The BMI-cutoff standard chosen in Settings, observed so History re-colors
+    /// its rows live when the person changes it (not just on a tab re-render).
+    @AppStorage(AppStorageKey.healthStandard) private var standardRaw = HealthStandard.standard.rawValue
+
     var body: some View {
         @Bindable var router = router
 
@@ -107,11 +111,11 @@ struct RootView: View {
         router.pendingRoute = nil
     }
 
-    /// The current BMI-cutoff standard, read from shared preferences so History
-    /// colors its rows with the same overlay the person picked in Settings.
+    /// The current BMI-cutoff standard the person picked in Settings, so History
+    /// colors its rows with the same overlay. Backed by `@AppStorage` above, so a
+    /// change re-renders RootView and re-passes it to `HistoryView`.
     private var currentStandard: HealthStandard {
-        let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard)
-        return HealthStandard(rawValue: raw ?? HealthStandard.standard.rawValue) ?? .standard
+        HealthStandard(rawValue: standardRaw) ?? .standard
     }
 }
 
