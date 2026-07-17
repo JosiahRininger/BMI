@@ -162,6 +162,9 @@ struct CalculatorView: View {
             .frame(maxWidth: .infinity)
             .animation(reduceMotion ? nil : .spring(response: 0.45, dampingFraction: 0.85),
                        value: model.result)
+            // Reliably dismiss on taps to labels/cards/empty content (the earlier
+            // background-only gesture missed taps that land on the content itself).
+            .dismissesKeyboardOnTap()
         }
         .scrollDismissesKeyboard(.interactively)
         // A tap anywhere outside the keyboard dismisses it. The gesture lives on

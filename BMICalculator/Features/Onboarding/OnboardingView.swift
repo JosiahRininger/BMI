@@ -150,6 +150,10 @@ struct OnboardingView: View {
                 .disabled(!input.isComplete(for: unitSystem))
             }
             .padding(.vertical, DSSpacing.lg)
+            .frame(maxWidth: .infinity)
+            // Tap a label / card / empty space to put the keyboard away (the
+            // weight field keeps its own taps). Matches the Calculator.
+            .dismissesKeyboardOnTap()
         }
         .scrollDismissesKeyboard(.interactively)
     }

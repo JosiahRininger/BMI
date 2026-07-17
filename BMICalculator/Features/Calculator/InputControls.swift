@@ -12,6 +12,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Brand Palette (feature-local mirror of DesignSystem)
 //
@@ -332,6 +333,21 @@ extension View {
     /// Applies the Calculator's input-row glass treatment with a pre-iOS-26
     /// material fallback.
     func calcGlassRow() -> some View { modifier(CalcGlassRow()) }
+
+    /// Dismisses the keyboard when a **non-interactive** part of this view is
+    /// tapped (labels, cards, empty space). Interactive controls — text fields,
+    /// buttons, steppers, pickers — keep their own taps because SwiftUI gives the
+    /// innermost gesture priority, so this fires only for "outside" taps.
+    /// `contentShape(Rectangle())` makes the whole area (incl. padding) tappable.
+    /// Shared by the Calculator and onboarding so both dismiss consistently.
+    func dismissesKeyboardOnTap() -> some View {
+        contentShape(Rectangle())
+            .onTapGesture {
+                UIApplication.shared.sendAction(
+                    #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                )
+            }
+    }
 }
 
 // MARK: - Previews
