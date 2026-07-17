@@ -69,6 +69,11 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"        # iPhone + iPad
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
+        # Portrait-only — the app has no landscape layout, so lock orientation.
+        # General key covers iPhone (portrait); the ~ipad override adds upside-down
+        # portrait for iPad. No landscape on any device.
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown"
         INFOPLIST_KEY_NSHealthShareUsageDescription: "BMI Calculator reads your height and weight from Health to prefill the calculator. Health data never leaves your device and is never used for ads."
         INFOPLIST_KEY_NSHealthUpdateUsageDescription: "BMI Calculator can save your weight and BMI to Health after a calculation, if you choose."
         # HealthKit capability — required for the Apple Health prefill to work
