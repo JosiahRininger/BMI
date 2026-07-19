@@ -64,7 +64,7 @@ targets:
         # as an INFOPLIST_KEY scalar). Xcode merges the generated keys + the
         # INFOPLIST_KEY_* values below on top of this file.
         INFOPLIST_FILE: Info.plist
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         MARKETING_VERSION: "2.0"
         TARGETED_DEVICE_FAMILY: "1,2"        # iPhone + iPad
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
@@ -123,7 +123,7 @@ targets:
         # App Group so the widget reads the snapshot/SwiftData the app shares.
         CODE_SIGN_ENTITLEMENTS: BMIWidget/BMIWidget.entitlements
         MARKETING_VERSION: "2.0"
-        CURRENT_PROJECT_VERSION: "1"
+        CURRENT_PROJECT_VERSION: "2"
         TARGETED_DEVICE_FAMILY: "1,2"
         SKIP_INSTALL: "YES"
 
