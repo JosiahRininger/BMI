@@ -4,11 +4,14 @@
 //
 //  The extension's `@main` entry point. Bundles the home/lock-screen widget
 //  and the Control Center control, and defines the widget's AppIntent-based
-//  configuration (the per-widget health-standard picker).
+//  configuration.
 //
-//  This configuration intent is widget-UI only and is intentionally separate
-//  from the Intents module's `CalculateBMIIntent`, which performs the actual
-//  calculation. The Control widget consumes that calculation intent directly.
+//  The widget has no user-facing options: it always mirrors the BMI-cutoff
+//  standard chosen in the app's Settings (baked into each entry by WidgetSync),
+//  so History and the widget can never disagree. The configuration intent is
+//  widget-UI only and is intentionally separate from the Intents module's
+//  `CalculateBMIIntent`, which performs the actual calculation. The Control
+//  widget consumes that calculation intent directly.
 //
 
 import WidgetKit
@@ -26,57 +29,20 @@ struct BMIWidgetBundle: WidgetBundle {
     }
 }
 
-// MARK: - Configurable Health Standard
-
-/// AppIntents-facing mirror of `Core.HealthStandard` so it can appear in the
-/// widget's edit sheet. Kept in lockstep with the Core enum's raw values.
-enum HealthStandardAppEnum: String, AppEnum {
-    case standard
-    case asian
-
-    static var typeDisplayRepresentation: TypeDisplayRepresentation {
-        "BMI standard"
-    }
-
-    static var caseDisplayRepresentations: [HealthStandardAppEnum: DisplayRepresentation] {
-        [
-            .standard: DisplayRepresentation(
-                title: "Universal (WHO/CDC)",
-                subtitle: "18.5 / 25 / 30 cutoffs"
-            ),
-            .asian: DisplayRepresentation(
-                title: "Asian action points (WHO)",
-                subtitle: "18.5 / 23 / 27.5 cutoffs"
-            )
-        ]
-    }
-
-    /// Bridge to the Core engine type.
-    var core: HealthStandard {
-        HealthStandard(rawValue: rawValue) ?? .standard
-    }
-}
-
 // MARK: - Widget Configuration Intent
 
-/// Per-widget configuration: lets the person choose which BMI cutoffs the
-/// widget uses when labelling their category. Does not perform any calculation.
+/// The widget's AppIntent configuration. It intentionally exposes no options:
+/// the widget always reflects the BMI-cutoff standard chosen in the app's
+/// Settings (baked into each entry by `WidgetSync`), so a per-widget override
+/// can't drift out of sync with History. Kept as an `AppIntentConfiguration`
+/// intent (rather than a static one) so the provider stays an
+/// `AppIntentTimelineProvider`.
 struct BMIWidgetConfigurationIntent: WidgetConfigurationIntent {
 
     static var title: LocalizedStringResource { "BMI Widget" }
     static var description: IntentDescription {
-        IntentDescription("Choose which BMI standard the widget uses to label your category.")
+        IntentDescription("Shows your latest BMI, its category, and your recent trend.")
     }
-
-    @Parameter(title: "BMI standard", default: .standard)
-    var standard: HealthStandardAppEnum
 
     init() {}
-
-    init(standard: HealthStandardAppEnum) {
-        self.standard = standard
-    }
-
-    /// Convenience accessor mapping the configured choice to the Core type.
-    var healthStandard: HealthStandard { standard.core }
 }

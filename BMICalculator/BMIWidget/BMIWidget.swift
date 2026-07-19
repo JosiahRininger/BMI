@@ -157,19 +157,37 @@ private struct CategoryChip: View {
 private struct BMIScaleBar: View {
     let bmi: Double
     let category: BMICategory
+    let standard: HealthStandard
 
     private let lo = 15.0
     private let hi = 40.0
 
     /// (BMI span, color) segments proportional to the fixed 15–40 domain.
+    ///
+    /// The zone boundaries follow the SAME cutoffs the category uses, so the
+    /// marker's ring color (derived from `category`, itself computed under this
+    /// standard) always matches the band it sits over. Under the Asian action
+    /// points the healthy band ends at 23 and overweight at 27.5 (no classes
+    /// II/III), so the colored zones must shift too — otherwise an Asian-standard
+    /// "Overweight" marker at BMI 24 would sit over a green (universal) zone.
     private var segments: [(span: Double, color: Color)] {
-        [
-            (18.5 - 15,  BMICategory.underweight.bandColor),
-            (25 - 18.5,  BMICategory.healthy.bandColor),
-            (30 - 25,    BMICategory.overweight.bandColor),
-            (35 - 30,    BMICategory.obesityI.bandColor),
-            (40 - 35,    BMICategory.obesityII.bandColor)
-        ]
+        switch standard {
+        case .standard:
+            return [
+                (18.5 - lo,  BMICategory.underweight.bandColor),
+                (25 - 18.5,  BMICategory.healthy.bandColor),
+                (30 - 25,    BMICategory.overweight.bandColor),
+                (35 - 30,    BMICategory.obesityI.bandColor),
+                (hi - 35,    BMICategory.obesityII.bandColor)
+            ]
+        case .asian:
+            return [
+                (18.5 - lo,  BMICategory.underweight.bandColor),
+                (23 - 18.5,  BMICategory.healthy.bandColor),
+                (27.5 - 23,  BMICategory.overweight.bandColor),
+                (hi - 27.5,  BMICategory.obesityI.bandColor)
+            ]
+        }
     }
 
     private var fraction: Double { min(max((bmi - lo) / (hi - lo), 0), 1) }
@@ -263,7 +281,7 @@ private struct BMISmallView: View {
                 CategoryChip(category: latest.category)
                     .padding(.top, 3)
                 Spacer(minLength: 8)
-                BMIScaleBar(bmi: latest.rounded, category: latest.category)
+                BMIScaleBar(bmi: latest.rounded, category: latest.category, standard: latest.standard)
             } else {
                 Spacer(minLength: 0)
                 Image(systemName: "plus.circle.fill")
@@ -314,7 +332,7 @@ private struct BMIMediumView: View {
                     }
                 }
                 Spacer(minLength: 0)
-                BMIScaleBar(bmi: latest.rounded, category: latest.category)
+                BMIScaleBar(bmi: latest.rounded, category: latest.category, standard: latest.standard)
             } else {
                 HStack(spacing: 12) {
                     Image(systemName: "plus.circle.fill")
@@ -474,7 +492,10 @@ struct BMIWidget: Widget {
         .configurationDisplayName("BMI")
         .description("See your latest BMI, its category, and your recent trend at a glance.")
         .supportedFamilies([.systemSmall, .systemMedium, .accessoryRectangular])
-        .contentMarginsDisabled()
+        // Keep the system's default content margins: the tinted glass
+        // `containerBackground` already fills edge-to-edge (margins never clip a
+        // container background), while the readout, chip, date, and scale bar stay
+        // safely inset instead of touching the widget's rounded corners.
     }
 }
 

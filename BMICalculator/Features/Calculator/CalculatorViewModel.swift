@@ -366,6 +366,13 @@ public final class CalculatorViewModel {
     /// - Parameter context: the SwiftData context to persist the record into.
     ///   Pass `nil` (e.g. in previews/tests) to skip persistence.
     public func calculate(persistingInto context: ModelContext?) {
+        // Normalize the typed weight into range before computing OR persisting.
+        // The weight field only clamps on blur, so tapping Calculate while still
+        // editing would otherwise compute — and save a history/widget record —
+        // from a raw, out-of-range value (e.g. a fat-fingered "1850" lb). Clamp
+        // here, in the single source of truth, so no bad record can ever land.
+        weight = clampToWeight(weight)
+
         let computed = BMICalculator.result(
             weightKilograms: weightKilograms,
             heightMeters: heightMeters,

@@ -15,6 +15,7 @@
 
 import SwiftUI
 import SwiftData
+import UIKit
 
 // MARK: - Onboarding Flow
 
@@ -86,7 +87,12 @@ struct OnboardingView: View {
                 // Reaching the result page by swipe (not just the button) must
                 // still compute the result, or it shows an endless spinner.
                 .onChange(of: page) { _, newPage in
-                    if newPage == .result { ensureResultComputed() }
+                    if newPage == .result {
+                        // Reaching the result by swipe must also put the keyboard
+                        // away, so it can't cover the result hero card.
+                        dismissKeyboard()
+                        ensureResultComputed()
+                    }
                 }
 
                 pageControl
@@ -255,8 +261,19 @@ struct OnboardingView: View {
 
     /// Computes the BMI from the current input and advances to the result page.
     private func computeResult() {
+        // Put the keyboard away first (mirrors the Calculator's Calculate action)
+        // so it never covers the result card the person is about to see.
+        dismissKeyboard()
         ensureResultComputed()
         withAnimation(pageAnimation) { page = .result }
+    }
+
+    /// Resigns the first responder to dismiss the keyboard. Sent to `nil` so it
+    /// walks the responder chain to whatever weight field is focused.
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+        )
     }
 
     /// Computes (or recomputes) the result from the current inputs. Idempotent and
@@ -342,17 +359,25 @@ struct OnboardingInput {
 
     /// Converts the active-unit input into metric (kg, m). Returns nil if the
     /// values are non-positive / nonsensical.
+    ///
+    /// The typed weight is clamped to the same range the entry field enforces
+    /// (metric 20…400 kg, imperial 44…880 lb): the field only clamps on blur, so
+    /// advancing to the result while still editing would otherwise persist a raw,
+    /// out-of-range day-one record. Height comes from bounded wheels, so it needs
+    /// no clamp.
     func metricValues(for unitSystem: UnitSystem) -> (weightKilograms: Double, heightMeters: Double)? {
         switch unitSystem {
         case .metric:
+            let kg = min(max(weightKilograms, 20), 400)
             let meters = heightCentimeters / 100.0
-            guard weightKilograms > 0, meters > 0 else { return nil }
-            return (weightKilograms, meters)
+            guard kg > 0, meters > 0 else { return nil }
+            return (kg, meters)
         case .imperial, .stone:
             // Onboarding never selects stone (its default is metric/imperial only);
             // grouped here for exhaustiveness, using the imperial entry fields.
+            let pounds = min(max(weightPounds, 44), 880)
             let meters = BMICalculator.meters(fromFeet: heightFeet, inches: heightInches)
-            let kg = BMICalculator.kilograms(fromPounds: weightPounds)
+            let kg = BMICalculator.kilograms(fromPounds: pounds)
             guard kg > 0, meters > 0 else { return nil }
             return (kg, meters)
         }

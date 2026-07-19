@@ -107,6 +107,10 @@ public struct HistoryView: View {
             }
         }
         .listStyle(.insetGrouped)
+        // Constrain to a readable, centered column so History doesn't stretch
+        // edge-to-edge on iPad. No effect on iPhone (already narrower than 640).
+        .frame(maxWidth: 640)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: Range picker

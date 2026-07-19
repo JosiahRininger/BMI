@@ -181,6 +181,30 @@ struct CalculatorViewModelCalculateTests {
         vm.calculate(persistingInto: nil)
         #expect(vm.result != nil)   // result still computed, just not saved
     }
+
+    @Test("Clamps an out-of-range typed weight before computing and persisting")
+    func clampsOutOfRangeWeightOnCalculate() throws {
+        let container = PersistenceController.inMemory()
+        let context = container.mainContext
+
+        // Simulate a fat-fingered imperial entry that is typed but not yet
+        // blurred: the field's blur-clamp hasn't run, so `weight` is far above
+        // the 880 lb ceiling when Calculate is tapped.
+        let vm = CalculatorViewModel(unitSystem: .imperial)
+        vm.weight = 1850
+        vm.calculate(persistingInto: context)
+
+        // The model normalizes to the range ceiling before doing anything else…
+        #expect(vm.weight == 880)
+
+        // …so the persisted record reflects the clamped body (880 lb ≈ 399 kg),
+        // never the raw 1850 lb (≈ 839 kg) that the pre-fix code would have saved.
+        let records = try context.fetch(FetchDescriptor<BMIRecord>())
+        #expect(records.count == 1)
+        let kg = records.first?.weightKilograms ?? 0
+        #expect(abs(kg - BMICalculator.kilograms(fromPounds: 880)) < 0.001)
+        #expect(kg < 500)
+    }
 }
 
 // MARK: - Onboarding → Calculator alignment (seedBody / last-body)
@@ -218,5 +242,29 @@ struct BodySeedTests {
         vm.seedBody(weightKilograms: 70, heightMeters: .nan)   // ignored
         #expect(vm.weight == 70)
         #expect(vm.heightCentimeters == 170)
+    }
+}
+
+// MARK: - Onboarding input clamping (day-one record integrity)
+
+@Suite("Onboarding input clamping")
+struct OnboardingInputClampTests {
+
+    @Test("A typed weight above the field ceiling is clamped before it becomes a record")
+    func clampsHighImperialWeight() throws {
+        // 2000 lb typed but not blurred → the shared metricValues funnel clamps
+        // to the 880 lb ceiling, so the day-one record can't be out of range.
+        var input = OnboardingInput()
+        input.weightPounds = 2000
+        let metric = try #require(input.metricValues(for: .imperial))
+        #expect(abs(metric.weightKilograms - BMICalculator.kilograms(fromPounds: 880)) < 0.001)
+    }
+
+    @Test("A typed metric weight above the ceiling is clamped to 400 kg")
+    func clampsHighMetricWeight() throws {
+        var input = OnboardingInput()
+        input.weightKilograms = 900
+        let metric = try #require(input.metricValues(for: .metric))
+        #expect(metric.weightKilograms == 400)
     }
 }

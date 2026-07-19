@@ -214,9 +214,10 @@ struct ImperialHeightField: View {
         Array(feetRange.lowerBound...feetRange.upperBound)
     }
 
-    /// Inches in half-inch increments from 0 up to (but not including) 12.
+    /// Inches in half-inch increments across the supplied range (0 up to, but not
+    /// including, 12 — i.e. `0...11.5`).
     private var inchOptions: [Double] {
-        stride(from: 0.0, through: 11.5, by: 0.5).map { $0 }
+        stride(from: inchesRange.lowerBound, through: inchesRange.upperBound, by: 0.5).map { $0 }
     }
 
     private var feetSelection: Binding<Int> {

@@ -67,6 +67,10 @@ struct SettingsView: View {
                 disclaimerSection
             }
             .scrollContentBackground(.hidden)
+            // Constrain to a readable, centered column so Settings doesn't
+            // stretch edge-to-edge on iPad. No effect on iPhone (narrower than 640).
+            .frame(maxWidth: 640)
+            .frame(maxWidth: .infinity)
             .background(DSColor.background.ignoresSafeArea())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
@@ -446,8 +450,9 @@ private struct SafariView: UIViewControllerRepresentable {
 
 // MARK: - App Links
 
-/// External URLs surfaced from Settings. Replace placeholders with the live
-/// destinations before shipping; App Store id is the published BMI Calculator.
+/// External URLs surfaced from Settings. Both are live: the privacy policy is
+/// hosted at josiahrininger.com/bmi/privacy and the review link targets the
+/// published BMI Calculator (App Store id 1467544257).
 enum AppLinks {
     /// Hosted privacy policy (josiahrininger.com-hosted or App Store Connect link).
     static let privacyPolicy = URL(string: "https://josiahrininger.com/bmi/privacy")!
