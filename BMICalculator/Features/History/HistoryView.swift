@@ -109,8 +109,14 @@ public struct HistoryView: View {
         .listStyle(.insetGrouped)
         // Constrain to a readable, centered column so History doesn't stretch
         // edge-to-edge on iPad. No effect on iPhone (already narrower than 640).
+        // The list's own gray is hidden and repainted full-width behind the
+        // column, so wide windows (iPad, iPhone Duo inner display) show one even
+        // background instead of white bands beside a gray column. Same color the
+        // inset-grouped list paints, so iPhone is unchanged.
+        .scrollContentBackground(.hidden)
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity)
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 
     // MARK: Range picker

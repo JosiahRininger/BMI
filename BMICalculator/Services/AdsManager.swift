@@ -289,12 +289,12 @@ extension AdsManager: FullScreenContentDelegate {
 // MARK: - Banner view (SwiftUI)
 
 /// A SwiftUI banner that renders the AdMob banner on the free tier and nothing
-/// when Pro. Drop it into a layout with a fixed height (50pt standard banner).
+/// when Pro. It sizes itself to the standard 320x50 banner; the host centers it.
 ///
 /// Usage:
 /// ```swift
 /// if !storeState.isPro {
-///     AdBannerView().frame(height: 50)
+///     AdBannerView()
 /// }
 /// ```
 public struct AdBannerView: View {
@@ -311,7 +311,11 @@ public struct AdBannerView: View {
         } else {
             #if canImport(GoogleMobileAds)
             BannerRepresentable()
-                .frame(height: 50)
+                // Pin to the ad's own 320x50 size. A container-width frame makes
+                // the SDK re-request a custom-sized ad on every width change
+                // (iPhone Duo open/close, iPad rotation / Split View) and the
+                // banner never shrinks back, overflowing the narrower window.
+                .frame(width: AdSizeBanner.size.width, height: AdSizeBanner.size.height)
                 .accessibilityLabel("Advertisement")
             #else
             // SDK not linked (e.g. previews / unit-test target): render nothing.
