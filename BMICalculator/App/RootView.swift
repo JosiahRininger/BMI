@@ -15,6 +15,7 @@
 //
 
 import SwiftUI
+import StoreKit   // RequestReviewAction (the `requestReview` environment value)
 
 // MARK: - Root Tab
 

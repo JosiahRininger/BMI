@@ -213,7 +213,7 @@ public final class StoreService {
         Task(priority: .background) { [weak self] in
             for await update in Transaction.updates {
                 guard let self else { continue }
-                guard let transaction = try? await self.checkVerified(update) else { continue }
+                guard let transaction = try? self.checkVerified(update) else { continue }
                 await transaction.finish()
                 // A refund/revocation makes `currentEntitlements` EMPTY for our
                 // sole product — indistinguishable from the iOS 26.x empty-read
