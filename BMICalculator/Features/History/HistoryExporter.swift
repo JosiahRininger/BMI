@@ -229,7 +229,7 @@ enum SummaryRange: String, CaseIterable, Identifiable {
 }
 
 /// Everything the PDF shows, computed once (pure, unit-tested).
-struct DoctorSummary: Equatable {
+struct DoctorSummary: Equatable, Sendable {
     let entries: [ExportEntry]          // oldest first, within the range
     let interval: DateInterval
     let unitSystem: UnitSystem
@@ -277,7 +277,7 @@ struct DoctorSummary: Equatable {
         case .standard:
             cutoffs = "Adult categories (WHO/CDC): underweight below 18.5, healthy weight 18.5 to under 25, overweight 25 to under 30, obesity 30 and above (class 1: 30 to under 35, class 2: 35 to under 40, class 3: 40 and above)."
         case .asian:
-            cutoffs = "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, higher risk 27.5 and above."
+            cutoffs = "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, obesity 27.5 and above (listed as Obesity (class 1), since these action points don't define higher classes)."
         }
         return "BMI = weight (kg) ÷ height (m)². \(cutoffs) Entries were recorded in BMI Calculator. Categories apply to adults only."
     }
@@ -326,8 +326,10 @@ enum DoctorSummaryPDF {
 
     /// Renders the summary to PDF data. Pages are SwiftUI views drawn as
     /// vector content, so text stays sharp and selectable.
+    /// - Parameter pageLimit: render only the first pages (for a quick
+    ///   preview); page numbers still count the full document.
     @MainActor
-    static func render(_ summary: DoctorSummary) -> Data {
+    static func render(_ summary: DoctorSummary, pageLimit: Int? = nil) -> Data {
         let data = NSMutableData()
         var mediaBox = CGRect(origin: .zero, size: pageSize)
         guard let consumer = CGDataConsumer(data: data as CFMutableData),
@@ -340,6 +342,7 @@ enum DoctorSummaryPDF {
 
         let pages = DoctorSummaryLayout.pages(rowCount: summary.entries.count)
         for (index, rows) in pages.enumerated() {
+            if let pageLimit, index >= pageLimit { break }
             let page = DoctorSummaryPageView(
                 summary: summary,
                 rows: rows,
@@ -370,6 +373,28 @@ enum DoctorSummaryPDF {
             return url
         } catch {
             return nil
+        }
+    }
+
+    /// The shareable summary, or `nil` without Pro (or with no entries). The
+    /// one place the Pro gate for the PDF lives.
+    static func shareable(_ summary: DoctorSummary, hasPro: Bool) -> DoctorSummaryExport? {
+        guard hasPro, !summary.isEmpty else { return nil }
+        return DoctorSummaryExport(summary: summary)
+    }
+}
+
+/// The doctor summary as a share-sheet item. The full PDF is only rendered
+/// when the person actually shares it, not on every range change.
+struct DoctorSummaryExport: Transferable {
+    let summary: DoctorSummary
+
+    static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .pdf) { export in
+            guard let url = await DoctorSummaryPDF.fileURL(for: export.summary) else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+            return SentTransferredFile(url)
         }
     }
 }

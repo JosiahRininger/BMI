@@ -52,8 +52,9 @@ struct BMIWidgetEntry: TimelineEntry {
         configuration: BMIWidgetConfigurationIntent = BMIWidgetConfigurationIntent()
     ) -> BMIWidgetEntry {
         let now = Date()
-        let values: [Double] = [27.4, 26.9, 26.2, 25.5, 24.8, 24.3, 23.9]
-        let sample = BMIWidgetEntryData(date: now, bmi: values.last ?? 23.9)
+        // A gentle, directionless sample (no implied goal).
+        let values: [Double] = [23.2, 23.4, 23.1, 23.3, 23.5, 23.2, 23.4]
+        let sample = BMIWidgetEntryData(date: now, bmi: values.last ?? 23.4)
         return BMIWidgetEntry(date: now, latest: sample, trend: values, configuration: configuration)
     }
 

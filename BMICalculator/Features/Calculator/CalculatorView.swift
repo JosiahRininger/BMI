@@ -68,13 +68,19 @@ struct BannerSlot: View {
     var body: some View {
         if showsBanner {
             #if canImport(GoogleMobileAds)
-            VStack(spacing: 4) {
+            VStack(spacing: 10) {
                 Button(action: onGoAdFree) {
                     Label("Go ad-free", systemImage: "sparkles")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 5)
+                        // A material capsule so scrolled content never shows
+                        // through the link.
+                        .background(.regularMaterial, in: Capsule())
+                        // A full 44pt target, kept clear of the ad below it by
+                        // the stack spacing, so a tap never lands on the ad.
+                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)

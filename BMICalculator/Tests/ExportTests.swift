@@ -177,6 +177,14 @@ struct DoctorSummaryTests {
         #expect(standard.methodNote.contains("adults only"))
     }
 
+    @Test("The Asian method note matches the label rows use at 27.5 and above")
+    func asianNoteMatchesRows() {
+        let interval = DateInterval(start: base, duration: 86_400)
+        let asian = DoctorSummary(allEntries: [], interval: interval, unitSystem: .metric, standard: .asian)
+        #expect(asian.methodNote.contains("Obesity (class 1)"))
+        #expect(BMICalculator.category(forBMI: 30, standard: .asian).title == "Obesity (class 1)")
+    }
+
     @Test("Titled as a history, never as a medical report")
     func wording() {
         #expect(DoctorSummary.title == "BMI and Weight History")
@@ -254,6 +262,22 @@ struct DoctorSummaryPDFTests {
         let document = try #require(PDFDocument(data: data))
         #expect(document.pageCount == 1)
         #expect(document.page(at: 0)?.string?.contains("No entries in this date range") == true)
+    }
+
+    @Test("The PDF file is only shareable with Pro, and never for an empty range")
+    func proGate() {
+        #expect(DoctorSummaryPDF.shareable(summary(count: 3), hasPro: false) == nil)
+        #expect(DoctorSummaryPDF.shareable(summary(count: 0), hasPro: true) == nil)
+        #expect(DoctorSummaryPDF.shareable(summary(count: 3), hasPro: true)?.summary == summary(count: 3))
+    }
+
+    @Test("The preview renders only the first pages but numbers them against the full document")
+    func pageLimit() throws {
+        let data = DoctorSummaryPDF.render(summary(count: 120), pageLimit: 3)
+        let document = try #require(PDFDocument(data: data))
+        #expect(document.pageCount == 3)
+        let total = DoctorSummaryLayout.pages(rowCount: 120).count
+        #expect(document.page(at: 2)?.string?.contains("Page 3 of \(total)") == true)
     }
 
     @Test("The PDF is US Letter and the file name is dated")

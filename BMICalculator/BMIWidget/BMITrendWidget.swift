@@ -47,7 +47,9 @@ struct BMITrendEntry: TimelineEntry {
 
     static func sample(showsNumbers: Bool = true) -> BMITrendEntry {
         let now = Date()
-        let values: [Double] = [26.1, 25.9, 25.9, 25.6, 25.4, 25.5, 25.2, 25.0, 24.9, 24.8, 24.6]
+        // A gentle, directionless sample within one range, so the gallery shows
+        // the feature without implying a goal.
+        let values: [Double] = [23.2, 23.4, 23.1, 23.3, 23.5, 23.2, 23.4, 23.3, 23.1, 23.4, 23.3]
         let points = values.enumerated().map { index, value in
             BMIWidgetEntryData(
                 date: Calendar.current.date(byAdding: .day, value: (index - values.count + 1) * 8, to: now) ?? now,

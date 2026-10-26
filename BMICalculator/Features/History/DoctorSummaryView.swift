@@ -25,7 +25,7 @@ struct DoctorSummaryView: View {
     @State private var customStart: Date
     @State private var customEnd: Date
     @State private var pageImages: [UIImage] = []
-    @State private var fileURL: URL?
+    @State private var totalPages = 0
     @State private var isRendering = false
     @State private var showsPro = false
 
@@ -77,9 +77,10 @@ struct DoctorSummaryView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
-                if store.hasPro, let fileURL, !summary.isEmpty {
+                if let export = DoctorSummaryPDF.shareable(summary, hasPro: store.hasPro) {
                     ToolbarItem(placement: .confirmationAction) {
-                        ShareLink(item: fileURL) {
+                        ShareLink(item: export,
+                                  preview: SharePreview(DoctorSummary.title, image: Image(systemName: "doc.text"))) {
                             Label("Share", systemImage: "square.and.arrow.up")
                         }
                     }
@@ -134,7 +135,13 @@ struct DoctorSummaryView: View {
                         .aspectRatio(DoctorSummaryPDF.pageSize, contentMode: .fit)
                         .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
                         .shadow(color: .black.opacity(0.12), radius: 6, y: 3)
-                        .accessibilityLabel("Summary page \(index + 1) of \(pageImages.count)")
+                        .accessibilityLabel("Summary page \(index + 1) of \(totalPages)")
+                }
+                if totalPages > pageImages.count {
+                    let more = totalPages - pageImages.count
+                    Text("Plus \(more) more \(more == 1 ? "page" : "pages") in the full summary.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -169,29 +176,30 @@ struct DoctorSummaryView: View {
 
     // MARK: Rendering
 
+    /// Pages shown in the preview. The rest are counted, not drawn.
+    static let previewPageLimit = 3
+
     @MainActor
     private func renderPreview() async {
+        // Debounce: changing the custom dates restarts this task; wait for the
+        // picking to settle before drawing.
+        try? await Task.sleep(for: .milliseconds(250))
+        guard !Task.isCancelled else { return }
         isRendering = true
         defer { isRendering = false }
         let summary = self.summary
-        let data = DoctorSummaryPDF.render(summary)
+        totalPages = DoctorSummaryLayout.pages(rowCount: summary.entries.count).count
+        let data = DoctorSummaryPDF.render(summary, pageLimit: Self.previewPageLimit)
         guard let document = PDFDocument(data: data) else {
             pageImages = []
-            fileURL = nil
             return
         }
         var images: [UIImage] = []
         for index in 0..<document.pageCount {
             guard let page = document.page(at: index) else { continue }
-            images.append(page.thumbnail(of: CGSize(width: 1224, height: 1584), for: .mediaBox))
+            // Display size (2x of the on-screen width), not print size.
+            images.append(page.thumbnail(of: CGSize(width: 612, height: 792), for: .mediaBox))
         }
         pageImages = images
-        // Only Pro gets a shareable file.
-        if store.hasPro {
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(summary.fileName)
-            fileURL = (try? data.write(to: url, options: .atomic)) != nil ? url : nil
-        } else {
-            fileURL = nil
-        }
     }
 }

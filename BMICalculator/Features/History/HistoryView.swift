@@ -119,7 +119,8 @@ public struct HistoryView: View {
     /// after "Not now", and never for Pro owners (`UpsellPolicy`).
     private var showsHistoryCard: Bool {
         guard let store, let upsellStore else { return false }
-        return upsellStore.showsHistoryCard(hasOffer: store.hasUpsellOffer, savedEntryCount: records.count)
+        let days = Set(records.map { Calendar.current.startOfDay(for: $0.date) }).count
+        return upsellStore.showsHistoryCard(hasOffer: store.hasUpsellOffer, distinctEntryDays: days)
     }
 
     private var content: some View {
@@ -146,6 +147,7 @@ public struct HistoryView: View {
                         onTakeALook: { router?.presentedSheet = .pro },
                         onNotNow: { upsellStore?.dismissHistoryCard() }
                     )
+                    .onAppear { upsellStore?.noteHistoryCardShown() }
                 }
             }
 

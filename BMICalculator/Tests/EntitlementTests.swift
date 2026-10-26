@@ -199,6 +199,16 @@ struct EntitlementReconcilerTests {
         #expect(merged.isEmpty)
     }
 
+    @Test("StoreKit's real (late) date replaces a 2.0.x placeholder and takes the provisional Pro away")
+    func placeholderReplaced() {
+        let merged = EntitlementReconciler.reconcile(cached: [removeAds(.distantPast)], fresh: [removeAds(after)],
+                                                     sequenceWasEmpty: false)
+        #expect(merged == [removeAds(after)])
+        let e = resolveEntitlements(merged, proLaunchCutoff: cutoff)
+        #expect(e.pro == false)
+        #expect(e.adsRemoved)
+    }
+
     @Test("A revocation removes just that product")
     func removing() {
         let merged = EntitlementReconciler.removing(ProductID.pro, from: [removeAds(before), pro()])
@@ -266,6 +276,34 @@ struct EntitlementCacheTests {
         // The widget reads the same key through the shared store.
         #expect(EntitlementCache.proUnlockedKey == BMISharedStore.proUnlockedKey)
         #expect(BMISharedStore.isProUnlocked(in: defaults))
+    }
+
+    @Test("A late Remove Ads owner is cached as ad-free but not Pro (the trend widget stays locked)")
+    func lateOwnerFlags() {
+        let defaults = freshDefaults()
+        let cache = EntitlementCache(defaults: defaults)
+        let purchases = [removeAds(after)]
+        let e = resolveEntitlements(purchases, proLaunchCutoff: cutoff)
+        #expect(e == Entitlements(adsRemoved: true, pro: false, earlySupporter: false))
+        cache.save(purchases, entitlements: e)
+        #expect(defaults.bool(forKey: EntitlementCache.legacyAdsRemovedKey))
+        #expect(defaults.bool(forKey: EntitlementCache.proUnlockedKey) == false)
+        #expect(BMISharedStore.isProUnlocked(in: defaults) == false)
+    }
+
+    @Test("A provisional 2.0.x placeholder is never written as a 2.1 purchase")
+    func placeholderNotPersisted() {
+        let defaults = freshDefaults()
+        defaults.set(true, forKey: EntitlementCache.legacyAdsRemovedKey)
+        let cache = EntitlementCache(defaults: defaults)
+        let loaded = cache.load()!
+        #expect(loaded.allSatisfy { $0.isUnconfirmed })
+        cache.save(loaded, entitlements: resolveEntitlements(loaded, proLaunchCutoff: cutoff))
+        #expect(defaults.data(forKey: EntitlementCache.purchasesKey) == nil)   // still re-read from 2.0.x next launch
+        #expect(cache.load() == loaded)
+        // Once StoreKit supplies the real date, the real purchase is written.
+        cache.save([removeAds(after)], entitlements: resolveEntitlements([removeAds(after)], proLaunchCutoff: cutoff))
+        #expect(cache.load() == [removeAds(after)])
     }
 
     @Test("The 2.1 cache takes precedence over the 2.0.x flag")

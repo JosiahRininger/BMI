@@ -65,6 +65,14 @@ struct OwnedPurchase: Codable, Equatable, Hashable, Sendable {
     let productID: String
     let originalPurchaseDate: Date
     var isRevoked: Bool = false
+
+    /// The stand-in date for a 2.0.x cached purchase whose real date is unknown
+    /// until StoreKit is read. It sorts before the cutoff, so the customer keeps
+    /// ad-free (and provisional Pro) on a cold or offline launch.
+    static let unconfirmedDate = Date.distantPast
+
+    /// `true` for a 2.0.x placeholder that StoreKit hasn't confirmed yet.
+    var isUnconfirmed: Bool { originalPurchaseDate == Self.unconfirmedDate }
 }
 
 /// What the customer is entitled to right now.
@@ -206,9 +214,11 @@ struct EntitlementCache {
 
     /// The cached purchases, or `nil` if this device has never resolved them.
     ///
-    /// A 2.0.x cache only stored "Remove Ads owned". Any such purchase predates
-    /// Pro, so it is read back as an early Remove Ads purchase until StoreKit
-    /// supplies the real date.
+    /// A 2.0.x cache only stored "Remove Ads owned", with no date. It's read
+    /// back as a Remove Ads purchase dated `OwnedPurchase.unconfirmedDate` so a
+    /// paying customer never sees an ad flash. That placeholder is provisional:
+    /// it is never written to the 2.1 cache, and nothing one-time (the early
+    /// supporter thank-you) runs until StoreKit supplies the real date.
     func load() -> [OwnedPurchase]? {
         if let data = defaults.data(forKey: Self.purchasesKey),
            let purchases = try? JSONDecoder().decode([OwnedPurchase].self, from: data) {
@@ -216,15 +226,17 @@ struct EntitlementCache {
         }
         if defaults.object(forKey: Self.legacyAdsRemovedKey) != nil {
             return defaults.bool(forKey: Self.legacyAdsRemovedKey)
-                ? [OwnedPurchase(productID: ProductID.removeAds, originalPurchaseDate: .distantPast)]
+                ? [OwnedPurchase(productID: ProductID.removeAds, originalPurchaseDate: OwnedPurchase.unconfirmedDate)]
                 : []
         }
         return nil
     }
 
-    /// Persists the purchases and the flags derived from them.
+    /// Persists the purchases and the flags derived from them. A provisional
+    /// 2.0.x placeholder is never written as a purchase (only the flags), so the
+    /// next launch re-reads the 2.0.x value until StoreKit confirms a real date.
     func save(_ purchases: [OwnedPurchase], entitlements: Entitlements) {
-        if let data = try? JSONEncoder().encode(purchases) {
+        if !purchases.contains(where: \.isUnconfirmed), let data = try? JSONEncoder().encode(purchases) {
             defaults.set(data, forKey: Self.purchasesKey)
         }
         defaults.set(entitlements.adsRemoved, forKey: Self.legacyAdsRemovedKey)

@@ -101,6 +101,9 @@ struct RootView: View {
         .onChange(of: storeState.isEarlySupporter) { _, _ in
             offerEarlySupporterThanksIfNeeded()
         }
+        .onChange(of: storeState.isConfirmedByStoreKit) { _, _ in
+            offerEarlySupporterThanksIfNeeded()
+        }
         .sheet(item: $router.presentedSheet) { sheet in
             switch sheet {
             case .pro:
@@ -112,9 +115,11 @@ struct RootView: View {
     }
 
     /// Shows the one-time thank-you to early Remove Ads buyers, never over
-    /// another sheet.
+    /// another sheet, and only once StoreKit has confirmed the purchase date
+    /// (a 2.0.x cache alone can't tell early from late).
     private func offerEarlySupporterThanksIfNeeded() {
         guard router.presentedSheet == nil,
+              storeState.isConfirmedByStoreKit,
               upsellStore.needsEarlySupporterThanks(storeState.entitlements) else { return }
         router.presentedSheet = .earlySupporterThanks
     }

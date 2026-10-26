@@ -363,10 +363,10 @@ public struct TrendChart: View {
             AxisMarks(values: .stride(by: .day, count: range.axisStrideDays(spanDays: spanDays))) { _ in
                 AxisGridLine()
                 AxisTick()
-                // Spans longer than ~10 months show month + year, so a
-                // multi-year "All" view doesn't repeat ambiguous "Jan 3" labels.
-                if spanDays > 300 {
-                    AxisValueLabel(format: .dateTime.month(.abbreviated).year(.twoDigits),
+                // A long "All" view labels month and full year ("Dec 2025"), so
+                // ticks can't be read as days. Fixed ranges keep month and day.
+                if range == .all && spanDays > 300 {
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).year(),
                                    centered: false)
                 } else {
                     AxisValueLabel(format: .dateTime.month(.abbreviated).day(),

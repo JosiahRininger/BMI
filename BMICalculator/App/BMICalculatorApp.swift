@@ -276,12 +276,16 @@ final class AppServices {
     // Upsell bookkeeping (dismissals, the one-time thank-you)
     let upsellStore: UpsellStore
 
+    // The shared SwiftData container (for the launch-time widget snapshot)
+    let modelContainer: ModelContainer
+
     // Calculator-contract adapters
     let interstitialAdapter: InterstitialAdapter
     let reviewRequester: ReviewRequesterAdapter
     let logRecorder: LogRecorderAdapter
 
     init(modelContainer: ModelContainer) {
+        self.modelContainer = modelContainer
         let storeState = StoreState()
         self.storeState = storeState
         self.storeService = StoreService(state: storeState, listensForUpdates: !AppConfig.isHostingTests)
@@ -334,6 +338,11 @@ final class AppServices {
             let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard) ?? HealthStandard.standard.rawValue
             group.set(raw, forKey: AppStorageKey.healthStandard)
         }
+
+        // Refresh the widget snapshots once per launch, so the trend widget has
+        // the person's history the moment Pro unlocks (people updating from 2.0.x
+        // have no trend snapshot until this runs).
+        WidgetSync.update(from: modelContainer)
 
         // Products need the network; nothing above waits on them.
         await storeService.loadProducts()

@@ -39,6 +39,12 @@ public final class StoreState {
     public internal(set) var proProduct: Product?
     public internal(set) var removeAdsProduct: Product?
 
+    /// `true` once StoreKit itself (a non-empty entitlements read, a purchase,
+    /// or a transaction update) has confirmed the purchases this launch. One-time
+    /// moments like the early supporter thank-you wait for it, so a provisional
+    /// 2.0.x cache can't trigger them.
+    public internal(set) var isConfirmedByStoreKit = false
+
     /// Whether a purchase or restore is in flight (drives spinners).
     public internal(set) var isProcessing = false
 
@@ -183,13 +189,12 @@ public final class StoreService {
     /// Starts the purchase flow for one product.
     @discardableResult
     public func purchase(_ productID: String) async -> PurchaseOutcome {
-        let product: Product?
-        switch productID {
-        case ProductID.pro: product = state.proProduct
-        case ProductID.removeAds: product = state.removeAdsProduct
-        default: product = nil
+        // Products load once at launch; if that failed (offline, a store
+        // hiccup), try again now rather than failing until the next launch.
+        if ProductID.all.contains(productID), loadedProduct(productID) == nil {
+            await loadProducts()
         }
-        guard let product else {
+        guard let product = loadedProduct(productID) else {
             state.lastErrorMessage = StoreError.productUnavailable.errorDescription
             return .failed
         }
@@ -204,7 +209,7 @@ public final class StoreService {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
                 await transaction.finish()
-                apply(EntitlementReconciler.adding(OwnedPurchase(transaction), to: purchases))
+                apply(EntitlementReconciler.adding(OwnedPurchase(transaction), to: purchases), confirmed: true)
                 await refreshEntitlements()
                 return ownsAfterPurchase(productID) ? .purchased : .failed
             case .pending:
@@ -257,11 +262,15 @@ public final class StoreService {
             fresh.append(OwnedPurchase(transaction))
         }
         let cached: [OwnedPurchase]? = state.isResolved ? purchases : cache.load()
-        apply(EntitlementReconciler.reconcile(cached: cached, fresh: fresh, sequenceWasEmpty: sequenceWasEmpty))
+        apply(EntitlementReconciler.reconcile(cached: cached, fresh: fresh, sequenceWasEmpty: sequenceWasEmpty),
+              confirmed: !sequenceWasEmpty)
     }
 
     /// Publishes a set of purchases: resolves, caches, and notifies.
-    func apply(_ newPurchases: [OwnedPurchase]) {
+    /// - Parameter confirmed: StoreKit itself produced these purchases (not just
+    ///   the cache surviving an empty read).
+    func apply(_ newPurchases: [OwnedPurchase], confirmed: Bool = false) {
+        if confirmed { state.isConfirmedByStoreKit = true }
         purchases = newPurchases
         let resolved = resolveEntitlements(newPurchases, proLaunchCutoff: state.proLaunchCutoff)
         let changed = resolved != state.entitlements || !state.isResolved
@@ -289,10 +298,19 @@ public final class StoreService {
     func handle(update transaction: Transaction) async {
         guard ProductID.all.contains(transaction.productID) else { return }
         if transaction.revocationDate != nil {
-            apply(EntitlementReconciler.removing(transaction.productID, from: purchases))
+            apply(EntitlementReconciler.removing(transaction.productID, from: purchases), confirmed: true)
         } else {
-            apply(EntitlementReconciler.adding(OwnedPurchase(transaction), to: purchases))
+            apply(EntitlementReconciler.adding(OwnedPurchase(transaction), to: purchases), confirmed: true)
             await refreshEntitlements()
+        }
+    }
+
+    /// The loaded product for an ID; `nil` for unknown IDs or before loading.
+    private func loadedProduct(_ productID: String) -> Product? {
+        switch productID {
+        case ProductID.pro: return state.proProduct
+        case ProductID.removeAds: return state.removeAdsProduct
+        default: return nil
         }
     }
 

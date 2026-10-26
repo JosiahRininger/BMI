@@ -8,8 +8,9 @@
 //   • Pro owners and early supporters never see an upsell.
 //   • Nothing is shown at launch, and nothing depends on the BMI category.
 //   • The result-card row can be dismissed; it then stays quiet for 30 days.
-//   • The History card appears only after a few saved entries, stays quiet for
-//     30 days after "Not now", and stops after 3 dismissals in a year.
+//   • The History card appears only after entries on a few different days, at
+//     most once every 30 days and 3 times a year, stays quiet for 30 days
+//     after "Not now", and stops after 3 dismissals in a year.
 //   • No upsell card appears in a session where the app asked for a rating.
 //
 //  The "Go ad-free" link by the banner and the Settings row are always
@@ -27,6 +28,8 @@ struct UpsellRecord: Codable, Equatable, Sendable {
     var resultCardDismissedAt: Date?
     /// Every History card dismissal (pruned to the last year).
     var historyCardDismissals: [Date] = []
+    /// When the History card was shown (once per session, pruned to a year).
+    var historyCardImpressions: [Date] = []
     /// Whether the one-time early supporter thank-you has been shown.
     var earlySupporterThanked = false
 }
@@ -38,11 +41,15 @@ enum UpsellPolicy {
     /// Quiet period after a dismissal.
     static let quietPeriod: TimeInterval = 30 * 24 * 60 * 60
 
-    /// Saved entries needed before the History card can appear.
-    static let historyCardMinimumEntries = 3
+    /// Days with at least one saved entry needed before the History card can
+    /// appear (three quick entries on day one don't count as three).
+    static let historyCardMinimumEntryDays = 3
 
     /// Most History card dismissals honored per rolling year before it stops.
     static let historyCardMaxDismissalsPerYear = 3
+
+    /// Most sessions per rolling year in which the History card is shown.
+    static let historyCardMaxImpressionsPerYear = 3
 
     private static let year: TimeInterval = 365 * 24 * 60 * 60
 
@@ -61,19 +68,34 @@ enum UpsellPolicy {
     }
 
     /// Whether History may show its Pro card.
+    /// - Parameter shownThisSession: the card was already shown this session,
+    ///   so it stays put rather than flickering away between History visits.
     static func showsHistoryCard(
         hasOffer: Bool,
-        savedEntryCount: Int,
+        distinctEntryDays: Int,
         record: UpsellRecord,
         now: Date,
-        reviewPromptedThisSession: Bool
+        reviewPromptedThisSession: Bool,
+        shownThisSession: Bool = false
     ) -> Bool {
         guard hasOffer, !reviewPromptedThisSession,
-              savedEntryCount >= historyCardMinimumEntries else { return false }
-        let recent = record.historyCardDismissals.filter { now.timeIntervalSince($0) < year }
-        if recent.count >= historyCardMaxDismissalsPerYear { return false }
-        if let last = recent.max(), now.timeIntervalSince(last) < quietPeriod { return false }
+              distinctEntryDays >= historyCardMinimumEntryDays else { return false }
+        let dismissals = record.historyCardDismissals.filter { now.timeIntervalSince($0) < year }
+        if dismissals.count >= historyCardMaxDismissalsPerYear { return false }
+        if let last = dismissals.max(), now.timeIntervalSince(last) < quietPeriod { return false }
+        if shownThisSession { return true }
+        let impressions = record.historyCardImpressions.filter { now.timeIntervalSince($0) < year }
+        if impressions.count >= historyCardMaxImpressionsPerYear { return false }
+        if let last = impressions.max(), now.timeIntervalSince(last) < quietPeriod { return false }
         return true
+    }
+
+    /// Records a History card impression, keeping only the last year.
+    static func recordingHistoryImpression(_ record: UpsellRecord, now: Date) -> UpsellRecord {
+        var copy = record
+        copy.historyCardImpressions = (record.historyCardImpressions + [now])
+            .filter { now.timeIntervalSince($0) < year }
+        return copy
     }
 
     /// Whether the small "Go ad-free" link by the banner shows. It's only there
@@ -111,6 +133,9 @@ final class UpsellStore {
     /// Set when the app presented the App Store rating prompt this session.
     private(set) var reviewPromptedThisSession = false
 
+    /// Set once the History card has been shown this session.
+    private(set) var historyCardShownThisSession = false
+
     @ObservationIgnored private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -128,9 +153,18 @@ final class UpsellStore {
                                      reviewPromptedThisSession: reviewPromptedThisSession)
     }
 
-    func showsHistoryCard(hasOffer: Bool, savedEntryCount: Int, now: Date = .now) -> Bool {
-        UpsellPolicy.showsHistoryCard(hasOffer: hasOffer, savedEntryCount: savedEntryCount, record: record,
-                                      now: now, reviewPromptedThisSession: reviewPromptedThisSession)
+    func showsHistoryCard(hasOffer: Bool, distinctEntryDays: Int, now: Date = .now) -> Bool {
+        UpsellPolicy.showsHistoryCard(hasOffer: hasOffer, distinctEntryDays: distinctEntryDays, record: record,
+                                      now: now, reviewPromptedThisSession: reviewPromptedThisSession,
+                                      shownThisSession: historyCardShownThisSession)
+    }
+
+    /// Records that the History card appeared (once per session).
+    func noteHistoryCardShown(now: Date = .now) {
+        guard !historyCardShownThisSession else { return }
+        historyCardShownThisSession = true
+        record = UpsellPolicy.recordingHistoryImpression(record, now: now)
+        save()
     }
 
     func needsEarlySupporterThanks(_ entitlements: Entitlements) -> Bool {

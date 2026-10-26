@@ -76,7 +76,8 @@ struct ProSheet: View {
     /// What the sheet is showing.
     enum Phase: Equatable {
         case offer
-        case pending
+        /// Waiting for approval (Ask to Buy) of this product.
+        case pending(productID: String)
         case thanks(String)
     }
 
@@ -92,8 +93,8 @@ struct ProSheet: View {
                         unlocked(message: unlockedMessage)
                     case .offer:
                         offerContent
-                    case .pending:
-                        pendingContent
+                    case .pending(let productID):
+                        pendingContent(productID)
                     case .thanks(let message):
                         unlocked(message: message)
                     }
@@ -132,10 +133,21 @@ struct ProSheet: View {
             // An Ask to Buy approval (or a purchase on another device) arrives
             // through Transaction.updates; reflect it if the sheet is still open.
             .onChange(of: store.hasPro) { _, hasPro in
-                if hasPro, phase == .pending { phase = .thanks(Self.proThanks) }
+                if hasPro, case .pending = phase { phase = .thanks(Self.proThanks) }
+            }
+            .onChange(of: store.adsRemoved) { _, removed in
+                if removed, case .pending(ProductID.removeAds) = phase { phase = .thanks(Self.removeAdsThanks) }
+            }
+            // Products load at launch; if that failed, load them now so the
+            // buttons show prices and work.
+            .task {
+                if store.proProduct == nil || store.removeAdsProduct == nil {
+                    await storeService.loadProducts()
+                }
             }
         }
-        .presentationDetents([.medium, .large])
+        // Full height, so the whole feature list is visible before any price.
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
     }
 
@@ -163,7 +175,7 @@ struct ProSheet: View {
             .frame(maxWidth: .infinity)
     }
 
-    private var pendingContent: some View {
+    private func pendingContent(_ productID: String) -> some View {
         VStack(spacing: 12) {
             Image(systemName: "hourglass")
                 .font(.system(size: 40, weight: .semibold))
@@ -171,7 +183,9 @@ struct ProSheet: View {
                 .accessibilityHidden(true)
             Text("Waiting for approval")
                 .font(.title2.bold())
-            Text("Your purchase needs approval. Pro unlocks as soon as it's approved, even if you close this.")
+            Text(productID == ProductID.removeAds
+                 ? "Your purchase needs approval. Ads go away as soon as it's approved, even if you close this."
+                 : "Your purchase needs approval. Pro unlocks as soon as it's approved, even if you close this.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -319,7 +333,7 @@ struct ProSheet: View {
             case .purchased:
                 phase = .thanks(productID == ProductID.pro || store.hasPro ? Self.proThanks : Self.removeAdsThanks)
             case .pending:
-                phase = .pending
+                phase = .pending(productID: productID)
             case .cancelled:
                 break
             case .failed:
@@ -364,36 +378,41 @@ struct EarlySupporterSheet: View {
     var onAppearOnce: () -> Void = {}
 
     var body: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "gift.fill")
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundStyle(Theme.brandGradient)
-                .accessibilityHidden(true)
-            Text("A thank-you for you")
-                .font(.title2.bold())
-            Text("You removed ads early on, so Pro is now yours at no cost. That includes the doctor summary, the trend widget, and themes.")
-                .font(.body)
-                .multilineTextAlignment(.center)
-            Text("Thank you for supporting BMI Calculator.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-            Button {
-                dismiss()
-            } label: {
-                Text("Got it")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 4)
+        ScrollView {
+            VStack(spacing: 18) {
+                Image(systemName: "gift.fill")
+                    .font(.system(size: 44, weight: .semibold))
+                    .foregroundStyle(Theme.brandGradient)
+                    .accessibilityHidden(true)
+                Text("A thank-you for you")
+                    .font(.title2.bold())
+                    .multilineTextAlignment(.center)
+                Text("You removed ads early on, so Pro is now yours at no cost. That includes the doctor summary, the trend widget, and themes.")
+                    .font(.body)
+                    .multilineTextAlignment(.center)
+                Text("Thank you for supporting BMI Calculator.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button {
+                    dismiss()
+                } label: {
+                    Text("Got it")
+                        .font(.headline)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(Theme.brand)
+                .padding(.top, 6)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Theme.brand)
-            .padding(.top, 6)
+            .padding(28)
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity)
         }
-        .padding(28)
-        .frame(maxWidth: 520)
         .onAppear(perform: onAppearOnce)
-        .presentationDetents([.medium])
+        // Medium by default; large text sizes can expand it, and it scrolls.
+        .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }

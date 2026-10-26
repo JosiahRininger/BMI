@@ -173,7 +173,10 @@ public final class CalculatorViewModel {
     // and as `var` so the screen can late-bind environment-provided singletons
     // after `init` (the environment is unavailable at construction time).
 
-    @ObservationIgnored private var store: (any ProState)?
+    /// Observed (unlike the other collaborators) so the late bind from the
+    /// environment redraws the screen: the banner and upsell depend on it, and
+    /// on a cold launch the store arrives after the first render.
+    private var store: (any ProState)?
     @ObservationIgnored private var ads: (any InterstitialPresenting)?
     @ObservationIgnored private var reviewPrompter: (any ReviewRequesting)?
     @ObservationIgnored private var logRecorder: (any LogRecording)?

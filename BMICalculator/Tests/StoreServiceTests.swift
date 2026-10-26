@@ -142,14 +142,85 @@ struct StoreServiceTests {
         #expect(service.state.isEarlySupporter == false)
     }
 
-    @Test("Buying a product that hasn't loaded fails gracefully with a message")
-    func purchaseWithoutProducts() async throws {
+    @Test("Buying before products loaded (an offline launch) loads them and succeeds")
+    func purchaseLoadsProductsOnDemand() async throws {
         let session = try makeSession()
         defer { session.clearTransactions() }
         let service = makeService(earlyPurchases: false)
-        #expect(await service.purchase(ProductID.pro) == .failed)
+        #expect(service.state.proProduct == nil)
+        #expect(await service.purchase(ProductID.pro) == .purchased)
+        #expect(service.state.proProduct?.id == ProductID.pro)
+        #expect(service.state.hasPro)
+        #expect(service.state.isProcessing == false)
+    }
+
+    @Test("An unknown product fails gracefully with a message")
+    func purchaseUnknownProduct() async throws {
+        let session = try makeSession()
+        defer { session.clearTransactions() }
+        let service = makeService(earlyPurchases: false)
+        #expect(await service.purchase("com.example.nope") == .failed)
         #expect(service.state.lastErrorMessage != nil)
         #expect(service.state.isProcessing == false)
+    }
+
+    @Test("6c. Refunding an early Remove Ads purchase removes ad-free and Pro, and it sticks after relaunch")
+    func refundEarlyRemoveAds() async throws {
+        let session = try makeSession()
+        defer { session.clearTransactions() }
+        let cache = makeCache()
+        let service = makeService(earlyPurchases: true, cache: cache, listens: true)
+        await service.loadProducts()
+        #expect(await service.purchase(ProductID.removeAds) == .purchased)
+        #expect(service.state.isEarlySupporter)
+        let transaction = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.removeAds })
+        try session.refundTransaction(identifier: transaction.identifier)
+        let cleared = await waitUntil { !service.state.adsRemoved && !service.state.hasPro }
+        #expect(cleared)
+        // A relaunch with the same cache stays refunded (no ad-free flash back).
+        let relaunched = makeService(earlyPurchases: true, cache: cache)
+        #expect(relaunched.state.isResolved)
+        #expect(relaunched.state.adsRemoved == false)
+        #expect(relaunched.state.hasPro == false)
+    }
+
+    @Test("Restore: nothing to restore returns false with a message; an owner restores")
+    func restore() async throws {
+        let session = try makeSession()
+        defer { session.clearTransactions() }
+        let empty = makeService(earlyPurchases: true)
+        #expect(await empty.restore() == false)
+        #expect(empty.state.lastErrorMessage == "No earlier purchase was found for this Apple Account.")
+        #expect(empty.state.isProcessing == false)
+
+        let buyer = makeService(earlyPurchases: false)
+        _ = await buyer.purchase(ProductID.removeAds)
+        let restorer = makeService(earlyPurchases: false)
+        #expect(await restorer.restore())
+        #expect(restorer.state.adsRemoved)
+        #expect(restorer.state.lastErrorMessage == nil)
+    }
+
+    @Test("Only a real StoreKit read confirms purchases; a cache surviving an empty read does not")
+    func confirmation() async throws {
+        let session = try makeSession()
+        defer { session.clearTransactions() }
+        let cache = makeCache()
+        cache.save([OwnedPurchase(productID: ProductID.removeAds, originalPurchaseDate: .distantPast)],
+                   entitlements: Entitlements(adsRemoved: true, pro: true, earlySupporter: true))
+        let fromCache = makeService(earlyPurchases: true, cache: cache)
+        #expect(fromCache.state.isConfirmedByStoreKit == false)
+        await fromCache.refreshEntitlements()            // empty read: cache kept, still unconfirmed
+        #expect(fromCache.state.isConfirmedByStoreKit == false)
+        #expect(fromCache.state.adsRemoved)
+
+        let buyer = makeService(earlyPurchases: true)
+        _ = await buyer.purchase(ProductID.removeAds)
+        #expect(buyer.state.isConfirmedByStoreKit)
+        let reader = makeService(earlyPurchases: true)
+        await reader.refreshEntitlements()               // non-empty read
+        #expect(reader.state.isConfirmedByStoreKit)
+        #expect(reader.state.isEarlySupporter)
     }
 
     // MARK: Refunds

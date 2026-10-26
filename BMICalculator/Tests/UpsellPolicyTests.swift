@@ -50,31 +50,31 @@ struct UpsellPolicyTests {
 
     // MARK: History card
 
-    @Test("History card: needs at least 3 saved entries")
+    @Test("History card: needs entries on at least 3 different days")
     func historyMinimumEntries() {
-        for count in 0..<UpsellPolicy.historyCardMinimumEntries {
-            #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: count, record: UpsellRecord(),
+        for count in 0..<UpsellPolicy.historyCardMinimumEntryDays {
+            #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: count, record: UpsellRecord(),
                                                    now: now, reviewPromptedThisSession: false))
         }
-        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: 3, record: UpsellRecord(),
+        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 3, record: UpsellRecord(),
                                               now: now, reviewPromptedThisSession: false))
     }
 
     @Test("History card: never for owners or in a rating-prompt session")
     func historyOwnersAndReview() {
-        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: false, savedEntryCount: 10, record: UpsellRecord(),
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: false, distinctEntryDays: 10, record: UpsellRecord(),
                                                now: now, reviewPromptedThisSession: false))
-        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: 10, record: UpsellRecord(),
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 10, record: UpsellRecord(),
                                                now: now, reviewPromptedThisSession: true))
     }
 
     @Test("History card: quiet for 30 days after Not now")
     func historyQuietPeriod() {
         let record = UpsellPolicy.recordingHistoryDismissal(UpsellRecord(), now: daysAgo(5))
-        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: 10, record: record,
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 10, record: record,
                                                now: now, reviewPromptedThisSession: false))
         let later = UpsellPolicy.recordingHistoryDismissal(UpsellRecord(), now: daysAgo(31))
-        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: 10, record: later,
+        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 10, record: later,
                                               now: now, reviewPromptedThisSession: false))
     }
 
@@ -82,10 +82,10 @@ struct UpsellPolicyTests {
     func historyYearlyCap() {
         var record = UpsellRecord()
         record.historyCardDismissals = [daysAgo(300), daysAgo(200), daysAgo(100)]
-        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: 10, record: record,
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 10, record: record,
                                                now: now, reviewPromptedThisSession: false))
         record.historyCardDismissals = [daysAgo(400), daysAgo(200), daysAgo(100)]
-        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, savedEntryCount: 10, record: record,
+        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 10, record: record,
                                               now: now, reviewPromptedThisSession: false))
     }
 
@@ -95,6 +95,37 @@ struct UpsellPolicyTests {
         record.historyCardDismissals = [daysAgo(500), daysAgo(40)]
         let updated = UpsellPolicy.recordingHistoryDismissal(record, now: now)
         #expect(updated.historyCardDismissals == [daysAgo(40), now])
+    }
+
+    @Test("History card: at most once every 30 days and 3 times a year, even if never dismissed")
+    func historyImpressionCap() {
+        var record = UpsellPolicy.recordingHistoryImpression(UpsellRecord(), now: daysAgo(10))
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 9, record: record,
+                                               now: now, reviewPromptedThisSession: false))
+        record = UpsellRecord()
+        record.historyCardImpressions = [daysAgo(200), daysAgo(120), daysAgo(40)]
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 9, record: record,
+                                               now: now, reviewPromptedThisSession: false))
+        record.historyCardImpressions = [daysAgo(400), daysAgo(120), daysAgo(40)]
+        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 9, record: record,
+                                              now: now, reviewPromptedThisSession: false))
+    }
+
+    @Test("History card: once shown this session it stays, unless dismissed")
+    func historyStableWithinSession() {
+        let shown = UpsellPolicy.recordingHistoryImpression(UpsellRecord(), now: now)
+        #expect(UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 4, record: shown, now: now,
+                                              reviewPromptedThisSession: false, shownThisSession: true))
+        let dismissed = UpsellPolicy.recordingHistoryDismissal(shown, now: now)
+        #expect(!UpsellPolicy.showsHistoryCard(hasOffer: true, distinctEntryDays: 4, record: dismissed, now: now,
+                                               reviewPromptedThisSession: false, shownThisSession: true))
+    }
+
+    @Test("Recording an impression prunes entries older than a year")
+    func impressionPrunes() {
+        var record = UpsellRecord()
+        record.historyCardImpressions = [daysAgo(500)]
+        #expect(UpsellPolicy.recordingHistoryImpression(record, now: now).historyCardImpressions == [now])
     }
 
     // MARK: Banner link and thank-you
@@ -151,9 +182,23 @@ struct UpsellStoreTests {
         #expect(store.showsResultCard(hasOffer: true, now: now))
         store.noteReviewPrompted()
         #expect(!store.showsResultCard(hasOffer: true, now: now))
-        #expect(!store.showsHistoryCard(hasOffer: true, savedEntryCount: 5, now: now))
+        #expect(!store.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now))
         // A new session (relaunch) starts clean.
         #expect(UpsellStore(defaults: suite).showsResultCard(hasOffer: true, now: now))
+    }
+
+    @Test("A History card impression is recorded once per session and persists")
+    func impressionOncePerSession() {
+        let suite = defaults()
+        let store = UpsellStore(defaults: suite)
+        #expect(store.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now))
+        store.noteHistoryCardShown(now: now)
+        store.noteHistoryCardShown(now: now.addingTimeInterval(60))     // same session: not counted again
+        #expect(store.record.historyCardImpressions == [now])
+        #expect(store.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now))   // stays this session
+        let relaunched = UpsellStore(defaults: suite)
+        #expect(!relaunched.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now.addingTimeInterval(86_400)))
+        #expect(relaunched.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now.addingTimeInterval(31 * 86_400)))
     }
 
     @Test("The review adapter flags the session only when a prompt was shown")
