@@ -17,8 +17,17 @@ import SwiftData
 
 @MainActor
 private final class FakeProState: ProState {
-    var isPro: Bool
-    init(_ isPro: Bool) { self.isPro = isPro }
+    var adsRemoved: Bool
+    var hasPro: Bool
+    var isResolved: Bool
+    var hasUpsellOffer: Bool
+    /// `true` = an owner of Pro (ads removed, nothing to offer); `false` = free.
+    init(_ isPro: Bool, isResolved: Bool = true) {
+        self.adsRemoved = isPro
+        self.hasPro = isPro
+        self.isResolved = isResolved
+        self.hasUpsellOffer = !isPro
+    }
 }
 
 @MainActor
@@ -99,17 +108,49 @@ struct CalculatorViewModelConversionTests {
 @MainActor
 struct CalculatorViewModelProTests {
 
-    @Test("isPro mirrors the injected store; upsell only shows to non-Pro after a result")
+    @Test("Pro state mirrors the injected store; upsell only shows with an offer after a result")
     func upsell() {
         let proVM = CalculatorViewModel(store: FakeProState(true))
-        #expect(proVM.isPro)
+        #expect(proVM.hasPro)
+        #expect(proVM.adsRemoved)
         #expect(proVM.showsUpsell == false)   // no result yet
+        proVM.calculate(persistingInto: nil)
+        #expect(proVM.showsUpsell == false)   // Pro: nothing to offer
 
         let freeVM = CalculatorViewModel(store: FakeProState(false))
-        #expect(freeVM.isPro == false)
+        #expect(freeVM.hasPro == false)
         #expect(freeVM.showsUpsell == false)  // still no result
         freeVM.calculate(persistingInto: nil)
-        #expect(freeVM.showsUpsell)           // non-Pro + result → upsell
+        #expect(freeVM.showsUpsell)           // offer + result → upsell
+    }
+
+    @Test("A Remove Ads owner without Pro still gets the upgrade row, but no banner")
+    func removeAdsOwner() {
+        let store = FakeProState(false)
+        store.adsRemoved = true
+        store.hasUpsellOffer = true            // the Pro upgrade is still on offer
+        let vm = CalculatorViewModel(store: store)
+        #expect(vm.showsBanner == false)
+        vm.calculate(persistingInto: nil)
+        #expect(vm.showsUpsell)
+    }
+
+    @Test("The banner waits until entitlements are resolved")
+    func bannerWaitsForResolution() {
+        let store = FakeProState(false, isResolved: false)
+        let vm = CalculatorViewModel(store: store)
+        #expect(vm.showsBanner == false)       // fresh install: StoreKit not read yet
+        store.isResolved = true
+        #expect(vm.showsBanner)                // free customer, resolved
+        store.adsRemoved = true
+        #expect(vm.showsBanner == false)       // purchase mid-session: banner goes
+    }
+
+    @Test("No store (previews/tests) never shows an ad")
+    func noStoreNoBanner() {
+        let vm = CalculatorViewModel()
+        #expect(vm.showsBanner == false)
+        #expect(vm.showsUpsell == false)
     }
 }
 

@@ -2,12 +2,18 @@
 //  StoreService.swift
 //  BMICalculator
 //
-//  StoreKit 2 wrapper for the single one-time, non-consumable
-//  "Remove Ads / Pro" purchase. NO subscription.
+//  StoreKit 2 wrapper for the two one-time, non-consumable purchases: Pro and
+//  Remove Ads. NO subscription.
 //
-//  Unlocking Pro removes the banner + interstitial (see `AdsManager`, which
-//  short-circuits on `StoreState.isPro`). Entitlements are observed live via
-//  `Transaction.updates` and verified against `Transaction.currentEntitlements`.
+//  `Transaction.currentEntitlements` is read at launch and after every purchase
+//  or restore, and `Transaction.updates` is observed for the app's lifetime, so
+//  purchases on other devices, Ask to Buy approvals, and refunds all apply
+//  without a relaunch. Only `.verified` transactions count. The rules for what
+//  a set of purchases unlocks live in `Entitlements.swift`; this file only
+//  gathers purchases from StoreKit and publishes the result.
+//
+//  StoreKit 2 also returns purchases made through the original StoreKit API, so
+//  every Remove Ads buyer is covered.
 //
 
 import Foundation
@@ -16,27 +22,58 @@ import StoreKit
 // MARK: - StoreState
 
 /// Observable purchase state the rest of the app binds to.
-///
-/// `isPro` is the single source of truth for whether ads should be suppressed.
 @MainActor
 @Observable
 public final class StoreState {
-    /// `true` once the non-consumable "Remove Ads / Pro" entitlement is owned.
-    public internal(set) var isPro = false
 
-    /// The loaded product, once `StoreService` fetches it from the App Store.
+    /// What the customer is entitled to. The single source of truth for ads
+    /// and Pro gating.
+    var entitlements: Entitlements = .none
+
+    /// `true` once entitlements are known for this launch: either restored from
+    /// the on-device cache or read from StoreKit. Until then nothing requests an
+    /// ad, so a paying customer on a fresh install never sees one.
+    public internal(set) var isResolved = false
+
+    /// The loaded products, once fetched from the App Store.
+    public internal(set) var proProduct: Product?
     public internal(set) var removeAdsProduct: Product?
 
-    /// Localized price string for UI (e.g. "$1.99"); `nil` until product loads.
-    public var displayPrice: String? { removeAdsProduct?.displayPrice }
-
-    /// Whether a purchase / restore is currently in flight (drive a spinner).
+    /// Whether a purchase or restore is in flight (drives spinners).
     public internal(set) var isProcessing = false
 
     /// Last user-facing error, if any (cleared on the next action).
     public internal(set) var lastErrorMessage: String?
 
-    public init() {}
+    /// The Pro launch cutoff (injectable for tests).
+    let proLaunchCutoff: Date
+
+    init(proLaunchCutoff: Date = ProLaunch.cutoff) {
+        self.proLaunchCutoff = proLaunchCutoff
+    }
+
+    // MARK: Derived
+
+    /// No ads anywhere.
+    public var adsRemoved: Bool { entitlements.adsRemoved }
+
+    /// The Pro features are unlocked.
+    public var hasPro: Bool { entitlements.pro }
+
+    /// Pro comes from an early Remove Ads purchase.
+    public var isEarlySupporter: Bool { entitlements.earlySupporter }
+
+    /// What the purchase surfaces should offer right now.
+    var offer: PurchaseOffer {
+        PurchaseOffer.make(for: entitlements, now: .now, cutoff: proLaunchCutoff)
+    }
+
+    /// `true` while there is still something to offer (Pro, or the upgrade).
+    public var hasUpsellOffer: Bool { offer.hasOffer }
+
+    /// Localized prices for UI (e.g. "$4.99"); `nil` until products load.
+    public var proPrice: String? { proProduct?.displayPrice }
+    public var removeAdsPrice: String? { removeAdsProduct?.displayPrice }
 }
 
 // MARK: - StoreError
@@ -44,56 +81,71 @@ public final class StoreState {
 public enum StoreError: LocalizedError {
     case productUnavailable
     case verificationFailed
-    case pending
     case unknown
 
     public var errorDescription: String? {
         switch self {
         case .productUnavailable:
-            return "The upgrade isn't available right now. Please try again later."
+            return "This purchase isn't available right now. Please try again later."
         case .verificationFailed:
             return "We couldn't verify the purchase with the App Store."
-        case .pending:
-            return "Your purchase is pending approval."
         case .unknown:
             return "Something went wrong. Please try again."
         }
     }
 }
 
+/// The outcome of a purchase attempt, so the UI can react precisely.
+public enum PurchaseOutcome: Equatable, Sendable {
+    /// The purchase completed and the entitlement is now owned.
+    case purchased
+    /// Waiting for approval (Ask to Buy or a payment issue). Nothing unlocks
+    /// until the approval arrives through `Transaction.updates`.
+    case pending
+    /// The person closed the purchase sheet.
+    case cancelled
+    /// The purchase failed; `StoreState.lastErrorMessage` explains why.
+    case failed
+}
+
 // MARK: - StoreService
 
-/// Loads the product, handles purchase / restore, and keeps `StoreState.isPro`
-/// in sync with the customer's entitlements for the lifetime of the app.
+/// Loads products, handles purchase and restore, and keeps `StoreState` in sync
+/// with the customer's entitlements for the lifetime of the app.
 @MainActor
 @Observable
 public final class StoreService {
 
-    /// The single non-consumable product identifier (must match App Store Connect).
-    public static let removeAdsProductID = "com.bmi.removeads"
-
     /// The shared, observable state object injected throughout the UI.
     public let state: StoreState
 
-    /// Background task listening for `Transaction.updates` ( to react to
-    /// purchases made on other devices, Ask-to-Buy approvals, refunds, etc.).
+    /// The App Group cache (injectable for tests).
+    @ObservationIgnored private let cache: EntitlementCache
+
+    /// The last known purchases (what `state.entitlements` was resolved from).
+    @ObservationIgnored private(set) var purchases: [OwnedPurchase] = []
+
+    /// Background task listening for `Transaction.updates`.
     // `nonisolated(unsafe)` so `deinit` (nonisolated) can cancel it; the value is
     // only ever assigned on the main actor and Task.cancel() is thread-safe.
     @ObservationIgnored nonisolated(unsafe) private var updatesTask: Task<Void, Never>?
 
-    /// Soft local cache of the last known entitlement. StoreKit remains the
-    /// source of truth, but this (a) prevents an ad "flash" before the async
-    /// entitlement check completes at launch, and (b) is a graceful fallback for
-    /// the reported iOS 26.x `currentEntitlements`-returns-empty regression.
-    private static let proCacheKey = "store.isPro.cache"
-    private var cacheDefaults: UserDefaults { UserDefaults(suiteName: "group.com.jdr.BMI") ?? .standard }
+    /// Called on the main actor whenever entitlements change (widgets, ads).
+    @ObservationIgnored var onEntitlementsChanged: ((Entitlements) -> Void)?
 
-    public init(state: StoreState) {
+    init(state: StoreState, cache: EntitlementCache = .appGroup, listensForUpdates: Bool = true) {
         self.state = state
-        // Optimistically reflect the last known entitlement so the UI doesn't
-        // briefly show ads to a paying user before `start()` reconciles.
-        if cacheDefaults.bool(forKey: Self.proCacheKey) { state.isPro = true }
-        self.updatesTask = listenForTransactions()
+        self.cache = cache
+        // Reflect the last known purchases immediately, so a paying customer
+        // never sees an ad flash before the StoreKit read completes.
+        if let cached = cache.load() {
+            purchases = cached
+            state.entitlements = resolveEntitlements(cached, proLaunchCutoff: state.proLaunchCutoff)
+            state.isResolved = true
+        }
+        if listensForUpdates {
+            updatesTask = listenForTransactions()
+        }
     }
 
     deinit {
@@ -102,31 +154,44 @@ public final class StoreService {
 
     // MARK: Lifecycle
 
-    /// Call once at launch: loads the product and syncs current entitlements.
+    /// Call once at launch. Entitlements come first: they're read locally (no
+    /// network), and ads wait on them. Products need the network.
     public func start() async {
-        await loadProduct()
         await refreshEntitlements()
+        await loadProducts()
     }
 
-    /// Fetches the "Remove Ads / Pro" product from the App Store.
-    public func loadProduct() async {
+    /// Fetches both products from the App Store.
+    public func loadProducts() async {
         do {
-            let products = try await Product.products(for: [Self.removeAdsProductID])
-            state.removeAdsProduct = products.first
+            let products = try await Product.products(for: ProductID.all)
+            for product in products {
+                switch product.id {
+                case ProductID.pro: state.proProduct = product
+                case ProductID.removeAds: state.removeAdsProduct = product
+                default: break
+                }
+            }
         } catch {
-            state.lastErrorMessage = StoreError.productUnavailable.errorDescription
+            // Quiet: the purchase buttons show a fallback label and the error
+            // surfaces only if the person actually tries to buy.
         }
     }
 
     // MARK: Purchase / Restore
 
-    /// Initiates the purchase flow for the Remove Ads / Pro product.
-    /// - Returns: `true` if the entitlement is now owned.
+    /// Starts the purchase flow for one product.
     @discardableResult
-    public func purchase() async -> Bool {
-        guard let product = state.removeAdsProduct else {
+    public func purchase(_ productID: String) async -> PurchaseOutcome {
+        let product: Product?
+        switch productID {
+        case ProductID.pro: product = state.proProduct
+        case ProductID.removeAds: product = state.removeAdsProduct
+        default: product = nil
+        }
+        guard let product else {
             state.lastErrorMessage = StoreError.productUnavailable.errorDescription
-            return false
+            return .failed
         }
 
         state.isProcessing = true
@@ -139,27 +204,27 @@ public final class StoreService {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
                 await transaction.finish()
+                apply(EntitlementReconciler.adding(OwnedPurchase(transaction), to: purchases))
                 await refreshEntitlements()
-                return state.isPro
+                return ownsAfterPurchase(productID) ? .purchased : .failed
             case .pending:
-                state.lastErrorMessage = StoreError.pending.errorDescription
-                return false
+                return .pending
             case .userCancelled:
-                return false
+                return .cancelled
             @unknown default:
                 state.lastErrorMessage = StoreError.unknown.errorDescription
-                return false
+                return .failed
             }
         } catch {
             state.lastErrorMessage = (error as? StoreError)?.errorDescription
                 ?? StoreError.unknown.errorDescription
-            return false
+            return .failed
         }
     }
 
-    /// Restores previous purchases. With StoreKit 2 this re-syncs the App Store
-    /// account; `AppStore.sync()` may present a sign-in sheet.
-    /// - Returns: `true` if Pro is owned after restoring.
+    /// Restores earlier purchases. `AppStore.sync()` may show a sign-in sheet,
+    /// so it runs only when the person taps Restore.
+    /// - Returns: `true` if anything is owned after restoring.
     @discardableResult
     public func restore() async -> Bool {
         state.isProcessing = true
@@ -169,65 +234,70 @@ public final class StoreService {
         do {
             try await AppStore.sync()
         } catch {
-            // Sync can fail (e.g. user cancels sign-in); still re-check entitlements.
+            // Sync can fail (e.g. the person cancels sign-in); still re-check.
         }
         await refreshEntitlements()
-        if !state.isPro {
-            state.lastErrorMessage = "No previous purchase was found to restore."
+        if !state.adsRemoved {
+            state.lastErrorMessage = "No earlier purchase was found for this Apple Account."
         }
-        return state.isPro
+        return state.adsRemoved
     }
 
     // MARK: Entitlements
 
-    /// Recomputes `isPro` from `Transaction.currentEntitlements`.
+    /// Re-reads `Transaction.currentEntitlements` and publishes the result.
     public func refreshEntitlements() async {
-        var owned = false
-        var sawAnyEntitlement = false
+        var fresh: [OwnedPurchase] = []
+        var sequenceWasEmpty = true
         for await result in Transaction.currentEntitlements {
-            sawAnyEntitlement = true
-            guard let transaction = try? checkVerified(result) else { continue }
-            if transaction.productID == Self.removeAdsProductID,
-               transaction.revocationDate == nil {
-                owned = true
-            }
+            sequenceWasEmpty = false
+            guard let transaction = try? checkVerified(result),
+                  transaction.revocationDate == nil,
+                  ProductID.all.contains(transaction.productID) else { continue }
+            fresh.append(OwnedPurchase(transaction))
         }
-        // The documented iOS 26.x regression yields an EMPTY currentEntitlements
-        // sequence — indistinguishable from a genuine not-owned read. Never flip a
-        // paying user back to the ad tier on an empty read; keep the cached value.
-        // A real refund is handled in listenForTransactions() by reading the
-        // revocationDate directly, so legitimate refunds still clear Pro there.
-        if owned {
-            state.isPro = true
-            cacheDefaults.set(true, forKey: Self.proCacheKey)
-        } else if sawAnyEntitlement {
-            state.isPro = false
-            cacheDefaults.set(false, forKey: Self.proCacheKey)
-        }
-        // else: empty result → leave the cached optimistic value intact.
+        let cached: [OwnedPurchase]? = state.isResolved ? purchases : cache.load()
+        apply(EntitlementReconciler.reconcile(cached: cached, fresh: fresh, sequenceWasEmpty: sequenceWasEmpty))
     }
 
-    /// Streams `Transaction.updates` for the app's lifetime, finishing and
-    /// re-syncing on each verified transaction.
+    /// Publishes a set of purchases: resolves, caches, and notifies.
+    func apply(_ newPurchases: [OwnedPurchase]) {
+        purchases = newPurchases
+        let resolved = resolveEntitlements(newPurchases, proLaunchCutoff: state.proLaunchCutoff)
+        let changed = resolved != state.entitlements || !state.isResolved
+        state.entitlements = resolved
+        state.isResolved = true
+        cache.save(newPurchases, entitlements: resolved)
+        if changed { onEntitlementsChanged?(resolved) }
+    }
+
+    /// Streams `Transaction.updates` for the app's lifetime.
     private func listenForTransactions() -> Task<Void, Never> {
         Task(priority: .background) { [weak self] in
             for await update in Transaction.updates {
                 guard let self else { continue }
                 guard let transaction = try? self.checkVerified(update) else { continue }
                 await transaction.finish()
-                // A refund/revocation makes `currentEntitlements` EMPTY for our
-                // sole product — indistinguishable from the iOS 26.x empty-read
-                // regression — so refreshEntitlements() can't clear Pro on its
-                // own. Honor the revocation directly here (the only reliable
-                // refund signal), then reconcile normally for non-revocations.
-                if transaction.productID == Self.removeAdsProductID, transaction.revocationDate != nil {
-                    self.state.isPro = false
-                    self.cacheDefaults.set(false, forKey: Self.proCacheKey)
-                } else {
-                    await self.refreshEntitlements()
-                }
+                await self.handle(update: transaction)
             }
         }
+    }
+
+    /// Applies one transaction update. A revocation (refund) is the only
+    /// reliable refund signal, because the next `currentEntitlements` read can
+    /// be empty (see `EntitlementReconciler`), so it's honored directly.
+    func handle(update transaction: Transaction) async {
+        guard ProductID.all.contains(transaction.productID) else { return }
+        if transaction.revocationDate != nil {
+            apply(EntitlementReconciler.removing(transaction.productID, from: purchases))
+        } else {
+            apply(EntitlementReconciler.adding(OwnedPurchase(transaction), to: purchases))
+            await refreshEntitlements()
+        }
+    }
+
+    private func ownsAfterPurchase(_ productID: String) -> Bool {
+        productID == ProductID.pro ? state.hasPro : state.adsRemoved
     }
 
     // MARK: Verification
@@ -240,5 +310,17 @@ public final class StoreService {
         case .verified(let safe):
             return safe
         }
+    }
+}
+
+// MARK: - Transaction → OwnedPurchase
+
+extension OwnedPurchase {
+    init(_ transaction: Transaction) {
+        self.init(
+            productID: transaction.productID,
+            originalPurchaseDate: transaction.originalPurchaseDate,
+            isRevoked: transaction.revocationDate != nil
+        )
     }
 }

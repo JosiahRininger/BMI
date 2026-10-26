@@ -25,6 +25,7 @@ import SwiftUI
 import SwiftData
 import StoreKit
 import CoreSpotlight
+import WidgetKit
 
 // MARK: - App Configuration
 
@@ -44,6 +45,11 @@ enum AppConfig {
     /// the app. INTEGRATION: register this scheme under
     /// *Info > URL Types > URL Schemes* for the app target.
     static let urlScheme = "bmicalculator"
+
+    /// `true` when the app is only hosting unit tests. The app then skips its
+    /// launch-time StoreKit work (product requests and the transaction
+    /// listener), which would otherwise race the tests' StoreKit sessions.
+    static let isHostingTests = ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
 }
 
 // MARK: - Shared @AppStorage Keys
@@ -87,6 +93,17 @@ enum AppRoute: Hashable {
 
     /// Open the History tab.
     case history
+
+    /// Open the Pro sheet (e.g. from the locked trend widget).
+    case pro
+}
+
+/// The app-level sheets `RootView` presents.
+enum AppSheet: String, Identifiable {
+    case pro
+    case earlySupporterThanks
+
+    var id: String { rawValue }
 }
 
 extension AppRoute {
@@ -107,6 +124,8 @@ extension AppRoute {
             self = .newEntry
         case "history", "trends", "trend":
             self = .history
+        case "pro", "upgrade":
+            self = .pro
         default:
             return nil
         }
@@ -127,6 +146,9 @@ final class DeepLinkRouter {
     /// `RootView` once it has switched tabs. Modeled as a one-shot signal so the
     /// same route can be requested twice in a row.
     var pendingRoute: AppRoute?
+
+    /// The app-level sheet on screen, if any (bound by `RootView`).
+    var presentedSheet: AppSheet?
 
     /// Requests navigation to `route`. Safe to call from any deep-link source.
     func handle(_ route: AppRoute) {
@@ -151,8 +173,9 @@ final class DeepLinkRouter {
 //  conformances. Keeping them here means the services stay decoupled and the
 //  wiring is reviewable in one place.
 
-/// `StoreState` already exposes `isPro`; conforming it to `ProState` lets the
-/// Calculator read Pro status without importing the Store module.
+/// `StoreState` already exposes `adsRemoved`, `hasPro`, `isResolved`, and
+/// `hasUpsellOffer`; conforming it to `ProState` lets the Calculator read them
+/// without importing the Store module.
 extension StoreState: ProState {}
 
 /// `AdsManager.maybeShowInterstitial()` returns a `Bool` (whether an ad was
@@ -181,9 +204,13 @@ final class InterstitialAdapter: InterstitialPresenting {
 final class ReviewRequesterAdapter: ReviewRequesting {
 
     private let prompter: ReviewPrompter
+    private let upsellStore: UpsellStore?
     private var requestReview: RequestReviewAction?
 
-    init(_ prompter: ReviewPrompter) { self.prompter = prompter }
+    init(_ prompter: ReviewPrompter, upsellStore: UpsellStore? = nil) {
+        self.prompter = prompter
+        self.upsellStore = upsellStore
+    }
 
     /// Supplies the live `RequestReviewAction`; call from a view's `.task`/
     /// `.onAppear` where `@Environment(\.requestReview)` is available.
@@ -202,7 +229,10 @@ final class ReviewRequesterAdapter: ReviewRequesting {
     @discardableResult
     func maybePrompt() -> Bool {
         guard let requestReview else { return false }
-        return prompter.maybePrompt(using: requestReview)
+        let prompted = prompter.maybePrompt(using: requestReview)
+        // Never show an upsell card in the same session as a rating prompt.
+        if prompted { upsellStore?.noteReviewPrompted() }
+        return prompted
     }
 }
 
@@ -243,6 +273,9 @@ final class AppServices {
     let healthKit: HealthKitService
     let reviewPrompter: ReviewPrompter
 
+    // Upsell bookkeeping (dismissals, the one-time thank-you)
+    let upsellStore: UpsellStore
+
     // Calculator-contract adapters
     let interstitialAdapter: InterstitialAdapter
     let reviewRequester: ReviewRequesterAdapter
@@ -251,7 +284,7 @@ final class AppServices {
     init(modelContainer: ModelContainer) {
         let storeState = StoreState()
         self.storeState = storeState
-        self.storeService = StoreService(state: storeState)
+        self.storeService = StoreService(state: storeState, listensForUpdates: !AppConfig.isHostingTests)
 
         let adsManager = AdsManager()
         self.adsManager = adsManager
@@ -261,20 +294,36 @@ final class AppServices {
         let reviewPrompter = ReviewPrompter()
         self.reviewPrompter = reviewPrompter
 
+        let upsellStore = UpsellStore()
+        self.upsellStore = upsellStore
+
         self.interstitialAdapter = InterstitialAdapter(adsManager)
-        self.reviewRequester = ReviewRequesterAdapter(reviewPrompter)
+        self.reviewRequester = ReviewRequesterAdapter(reviewPrompter, upsellStore: upsellStore)
         self.logRecorder = LogRecorderAdapter(modelContainer: modelContainer)
+
+        // The cached entitlements (if any) are already applied by StoreService's
+        // init; draw the right theme and ad state from them before first render.
+        if storeState.isResolved {
+            applyEntitlements(storeState.entitlements)
+        }
+        storeService.onEntitlementsChanged = { [weak self] entitlements in
+            self?.applyEntitlements(entitlements)
+        }
     }
 
-    /// Starts purchase observation, loads the product, syncs entitlements, and
-    /// boots the ad SDK. Idempotent enough to call once at launch from `.task`.
+    /// Reads entitlements, boots the ad SDK only if ads aren't removed, then
+    /// loads products. Call once at launch from `.task`.
     func start() async {
-        // Reflect existing entitlement before anything renders an ad surface.
-        await storeService.start()
-        applyProStateToAds()
+        // Unit tests drive StoreKit themselves with a test session.
+        guard !AppConfig.isHostingTests else { return }
+
+        // Entitlements first: a local read (no network), and nothing requests an
+        // ad until it's done, so a paying customer never sees one.
+        await storeService.refreshEntitlements()
+        applyEntitlements(storeState.entitlements)
 
         // Boot ads only when ads aren't removed (the manager also guards this).
-        if !storeState.isPro {
+        if !storeState.adsRemoved {
             adsManager.start()
         }
 
@@ -285,12 +334,19 @@ final class AppServices {
             let raw = UserDefaults.standard.string(forKey: AppStorageKey.healthStandard) ?? HealthStandard.standard.rawValue
             group.set(raw, forKey: AppStorageKey.healthStandard)
         }
+
+        // Products need the network; nothing above waits on them.
+        await storeService.loadProducts()
     }
 
-    /// Pushes the current Pro flag into the ad manager so banners/interstitials
-    /// disappear immediately after a purchase or restore.
-    func applyProStateToAds() {
-        adsManager.setPro(storeState.isPro)
+    /// Applies entitlements everywhere they matter: ads vanish immediately after
+    /// a purchase or restore (no relaunch), the theme follows Pro, and the Pro
+    /// trend widget re-renders. Reloading a widget while the app is in the
+    /// foreground doesn't count against its refresh budget.
+    func applyEntitlements(_ entitlements: Entitlements) {
+        adsManager.setAdsRemoved(entitlements.adsRemoved)
+        AppearanceStore.shared.enforceEntitlement(hasPro: entitlements.pro)
+        WidgetCenter.shared.reloadTimelines(ofKind: BMISharedStore.trendWidgetKind)
     }
 }
 
@@ -330,6 +386,7 @@ struct BMICalculatorApp: App {
                 .environment(services.adsManager)
                 .environment(services.healthKit)
                 .environment(services.reviewPrompter)
+                .environment(services.upsellStore)
                 // The concrete review adapter is injected so a view with access
                 // to `@Environment(\.requestReview)` (RootView) can bind the
                 // live action into it — see `ReviewRequesterAdapter.bind`.
@@ -342,10 +399,6 @@ struct BMICalculatorApp: App {
                 .environment(\.interstitialPresenter, services.interstitialAdapter)
                 .environment(\.reviewRequester, services.reviewRequester)
                 .environment(\.logRecorder, services.logRecorder)
-                // Keep ads in sync the moment the Remove-Ads purchase flips.
-                .onChange(of: services.storeState.isPro) { _, _ in
-                    services.applyProStateToAds()
-                }
                 .task {
                     // Back the Spotlight/Siri "recent BMI results" query with SwiftData.
                     BMIResultStore.configure(with: SpotlightResultProvider(container: modelContainer))

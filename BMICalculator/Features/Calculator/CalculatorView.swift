@@ -57,23 +57,38 @@ extension EnvironmentValues {
 // this file compiles standalone, and the App swaps in the concrete view.
 
 /// The bottom banner slot. Renders the real non-personalized AdMob banner on the
-/// free tier when the ad SDK is linked, and nothing when the person is Pro (or in
-/// an ad-free build with no SDK). The banner is health-data-free by construction.
+/// free tier once entitlements are known, with a small "Go ad-free" link above
+/// it (never inside it). Renders nothing when ads are removed, while the purchase
+/// state is still unknown, or in an ad-free build with no SDK. The banner is
+/// health-data-free by construction.
 struct BannerSlot: View {
-    let isPro: Bool
+    let showsBanner: Bool
+    var onGoAdFree: () -> Void = {}
 
     var body: some View {
-        if isPro {
-            EmptyView()
-        } else {
+        if showsBanner {
             #if canImport(GoogleMobileAds)
-            // The Ads module's real (NPA) banner. It reserves the standard 50pt
-            // height itself, so layout doesn't jump when the ad loads.
-            AdBannerView(isPro: isPro)
+            VStack(spacing: 4) {
+                Button(action: onGoAdFree) {
+                    Label("Go ad-free", systemImage: "sparkles")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Shows the one-time purchase that removes ads")
+                // The Ads module's real (NPA) banner. It reserves the standard
+                // 50pt height itself, so layout doesn't jump when the ad loads.
+                AdBannerView(adsRemoved: false)
+            }
             #else
             // Ad-free build (no SDK, e.g. previews): show nothing.
             EmptyView()
             #endif
+        } else {
+            EmptyView()
         }
     }
 }
@@ -90,6 +105,7 @@ struct CalculatorView: View {
     @Environment(\.interstitialPresenter) private var interstitialPresenter
     @Environment(\.reviewRequester) private var reviewRequester
     @Environment(\.logRecorder) private var logRecorder
+    @Environment(UpsellStore.self) private var upsellStore: UpsellStore?
 
     // MARK: State
 
@@ -151,8 +167,10 @@ struct CalculatorView: View {
                     ResultCard(
                         result: result,
                         healthyWeightRange: model.healthyWeightRangeText,
-                        showsUpsell: model.showsUpsell,
-                        onUpsellTapped: onShowPaywall
+                        showsUpsell: showsResultUpsell,
+                        upsellIsUpgrade: model.adsRemoved,
+                        onUpsellTapped: onShowPaywall,
+                        onUpsellDismissed: { upsellStore?.dismissResultCard() }
                     )
                     .id(model.resultGeneration) // identity per real calc, not per re-categorize
                     .accessibilityFocused($resultFocused)
@@ -183,7 +201,7 @@ struct CalculatorView: View {
                 .onTapGesture { dismissKeyboard() }
         }
         .safeAreaInset(edge: .bottom) {
-            BannerSlot(isPro: model.isPro)
+            BannerSlot(showsBanner: model.showsBanner, onGoAdFree: onShowPaywall)
         }
         .navigationTitle("BMI Calculator")
         .navigationBarTitleDisplayMode(.inline)
@@ -224,6 +242,13 @@ struct CalculatorView: View {
         .onChange(of: model.resultGeneration) { _, generation in
             if generation > 0 { resultFocused = true }
         }
+    }
+
+    /// The result card's Pro row: an offer exists and the person hasn't
+    /// dismissed it recently (`UpsellPolicy`).
+    private var showsResultUpsell: Bool {
+        guard model.showsUpsell else { return false }
+        return upsellStore?.showsResultCard(hasOffer: true) ?? false
     }
 
     // MARK: Inputs

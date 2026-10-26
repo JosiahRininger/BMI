@@ -3,9 +3,9 @@
 //  BMICalculator
 //
 //  The app's Settings screen. It owns the durable preferences (default units,
-//  health standard), the Apple Health connection, the "Remove Ads" non-consumable
-//  purchase + Restore, and the legal / support rows (full disclaimer, privacy
-//  policy, rate us).
+//  health standard), the Apple Health connection, BMI Calculator Pro (the Pro
+//  sheet, Restore, and the theme picker), the "Report an ad" row, and the
+//  legal / support rows (full disclaimer, privacy policy, rate us).
 //
 //  Health/ad firewall: nothing on this screen passes any health value to an ad
 //  SDK. The only monetization surface here is the StoreKit 2 purchase flow,
@@ -37,6 +37,8 @@ struct SettingsView: View {
 
     @State private var healthState: HealthConnectState = .unknown
     @State private var purchaseError: String?
+    @State private var restoreMessage: String?
+    @State private var showsPro = false
     @State private var showFullDisclaimer = false
     @State private var showPrivacy = false
 
@@ -90,6 +92,14 @@ struct SettingsView: View {
                 Button("OK", role: .cancel) { purchaseError = nil }
             } message: {
                 Text(purchaseError ?? "")
+            }
+            .alert("Purchases restored", isPresented: Binding(
+                get: { restoreMessage != nil },
+                set: { if !$0 { restoreMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { restoreMessage = nil }
+            } message: {
+                Text(restoreMessage ?? "")
             }
         }
     }
@@ -192,15 +202,15 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: Pro / Remove Ads
+    // MARK: BMI Calculator Pro
 
     @ViewBuilder
     private var proSection: some View {
         Section {
-            if store.isPro {
+            if store.hasPro {
                 HStack {
                     Label {
-                        Text("Ads removed")
+                        Text("Pro: unlocked")
                             .foregroundStyle(DSColor.primaryText)
                     } icon: {
                         Image(systemName: "checkmark.seal.fill")
@@ -213,13 +223,33 @@ struct SettingsView: View {
                         .accessibilityHidden(true)
                 }
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel("Ads removed")
-                Text("Thank you for supporting the app.")
+                .accessibilityLabel("Pro unlocked")
+                Text(store.isEarlySupporter
+                     ? "Thank you for your early support."
+                     : "Thank you for supporting the app.")
                     .font(DSFont.caption)
                     .foregroundStyle(DSColor.secondaryText)
             } else {
+                if store.adsRemoved {
+                    HStack {
+                        Label {
+                            Text("Ads removed")
+                                .foregroundStyle(DSColor.primaryText)
+                        } icon: {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundStyle(DSColor.brand)
+                                .accessibilityHidden(true)
+                        }
+                        Spacer()
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(DSColor.category(.healthy))
+                            .accessibilityHidden(true)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Ads removed")
+                }
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text("Remove Ads")
+                    Text(store.adsRemoved ? "Upgrade to Pro" : ProCopy.name)
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
                     Text(proSubtitle)
@@ -227,14 +257,12 @@ struct SettingsView: View {
                         .foregroundStyle(DSColor.secondaryText)
 
                     PrimaryGlassButton(
-                        title: store.isProcessing ? "Purchasing…" : purchaseTitle,
+                        title: store.adsRemoved ? "Upgrade to Pro" : "See Pro",
                         systemImage: "sparkles"
                     ) {
-                        purchasePro()
+                        showsPro = true
                     }
-                    .disabled(store.isProcessing || store.displayPrice == nil)
-                    .accessibilityLabel(store.isProcessing ? "Purchasing" : purchaseTitle)
-                    .accessibilityHint("One-time purchase to remove ads")
+                    .accessibilityHint("Shows what Pro includes and its one-time price")
 
                     Button("Restore Purchases") { restore() }
                         .font(DSFont.subheadline)
@@ -243,26 +271,50 @@ struct SettingsView: View {
                         .contentShape(Rectangle())
                         .disabled(store.isProcessing)
                         .accessibilityLabel("Restore purchases")
-                        .accessibilityHint("Restores a previous purchase on this Apple ID")
+                        .accessibilityHint("Restores an earlier purchase on this Apple Account")
                 }
                 .padding(.vertical, DSSpacing.xs)
             }
+
+            NavigationLink {
+                ThemePickerView()
+            } label: {
+                HStack {
+                    Label {
+                        Text("Theme").foregroundStyle(DSColor.primaryText)
+                    } icon: {
+                        Image(systemName: "paintpalette.fill")
+                            .foregroundStyle(DSColor.brand)
+                            .accessibilityHidden(true)
+                    }
+                    Spacer()
+                    if !store.hasPro { ProBadge() }
+                }
+                .frame(minHeight: 44)
+            }
+
+            if store.isResolved && !store.adsRemoved {
+                Button {
+                    openURL(AppLinks.reportAd)
+                } label: {
+                    settingsRow(title: "Report an ad", systemImage: "flag.fill", showsChevron: true)
+                }
+                .accessibilityHint("Emails the developer about an inappropriate ad")
+            }
         } header: {
-            Text("Support the app")
+            Text(ProCopy.name)
         }
         .listRowBackground(DSColor.secondaryBackground)
-    }
-
-    private var purchaseTitle: String {
-        if let price = store.displayPrice {
-            return "Remove Ads (\(price))"
+        .sheet(isPresented: $showsPro) {
+            ProSheet()
         }
-        return "Remove Ads"
     }
 
-    /// Remove-Ads pitch copy. A single non-consumable unlock — no subscription.
+    /// The Pro pitch line for Settings.
     private var proSubtitle: String {
-        "One purchase removes all ads, forever. No subscription, ever."
+        store.adsRemoved
+            ? "Adds a doctor summary, a trend widget, and themes. One-time purchase."
+            : "A doctor summary, a trend widget, themes, and no ads. One-time purchase, no subscription."
     }
 
     // MARK: About / Legal
@@ -365,21 +417,14 @@ struct SettingsView: View {
         }
     }
 
-    private func purchasePro() {
-        Task {
-            let succeeded = await storeService.purchase()
-            if !succeeded, let message = store.lastErrorMessage {
-                purchaseError = message
-            }
-        }
-    }
-
     private func restore() {
         Task {
             let restored = await storeService.restore()
-            if !restored {
+            if restored {
+                restoreMessage = RestoreCopy.message(for: store.entitlements)
+            } else {
                 purchaseError = store.lastErrorMessage
-                    ?? "No previous purchase found to restore."
+                    ?? "No earlier purchase was found for this Apple Account."
             }
         }
     }
@@ -459,6 +504,10 @@ enum AppLinks {
 
     /// Deep link that opens the App Store review composer for app id 1467544257.
     static let writeReview = URL(string: "https://apps.apple.com/app/id1467544257?action=write-review")!
+
+    /// Emails the support address published on the support page, so anyone can
+    /// report an inappropriate ad (Guideline 2.5.18).
+    static let reportAd = URL(string: "mailto:josiahrininger@gmail.com?subject=BMI%20Calculator%3A%20report%20an%20ad&body=What%20did%20the%20ad%20show%2C%20and%20roughly%20when%3F")!
 }
 
 // MARK: - Disclaimer Copy

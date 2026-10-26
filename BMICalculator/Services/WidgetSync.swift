@@ -2,8 +2,9 @@
 //  WidgetSync.swift
 //  BMICalculator
 //
-//  Publishes the latest BMI history to the App Group so the widget can paint it,
-//  then asks WidgetKit to refresh. Called after every saved calculation.
+//  Publishes the latest BMI history to the App Group so the widgets can paint
+//  it, then asks WidgetKit to refresh. Called after every saved calculation,
+//  after History deletes, and when the cutoff standard changes.
 //
 //  HEALTH/AD FIREWALL: writes only to the App Group store the widget reads —
 //  nothing here touches the ad SDK.
@@ -34,6 +35,21 @@ enum WidgetSync {
             BMIWidgetEntryData(date: $0.date, bmi: $0.bmi, standardRaw: standard)
         }
         BMISharedStore.save(entries)
+
+        // The longer window for the Pro trend widget (written for everyone, so
+        // it's ready the moment Pro unlocks).
+        let start = Calendar.current.date(byAdding: .day, value: -(BMISharedStore.trendWindowDays - 1),
+                                          to: Calendar.current.startOfDay(for: .now)) ?? .now
+        let trendDescriptor = FetchDescriptor<BMIRecord>(
+            predicate: #Predicate { $0.date >= start },
+            sortBy: [SortDescriptor(\.date, order: .forward)]
+        )
+        let trendRecords = (try? context.fetch(trendDescriptor)) ?? []
+        let trend = BMISharedStore.trendSnapshot(from: trendRecords.map {
+            BMIWidgetEntryData(date: $0.date, bmi: $0.bmi, standardRaw: standard)
+        })
+        BMISharedStore.saveTrendEntries(trend)
+
         WidgetCenter.shared.reloadAllTimelines()
     }
 }

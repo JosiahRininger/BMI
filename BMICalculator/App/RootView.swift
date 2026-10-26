@@ -10,8 +10,9 @@
 //  RootView also owns two pieces of app-level navigation glue:
 //   • It observes the shared `DeepLinkRouter` and switches tabs when a widget,
 //     Control Center control, or App Intent deep-links into the app.
-//   • It hosts the Pro / "Remove Ads" paywall sheet that the Calculator screen
-//     asks to present via its `onShowPaywall` callback.
+//   • It hosts the app-level sheets: the Pro sheet (from the Calculator's
+//     upsells, the banner link, or a `bmicalculator://pro` deep link) and the
+//     one-time early supporter thank-you.
 //
 
 import SwiftUI
@@ -43,11 +44,11 @@ struct RootView: View {
     /// SwiftUI's review-prompt action, only available inside a view hierarchy.
     @Environment(\.requestReview) private var requestReview
 
-    /// Purchase state, used to hide the Remove-Ads upsell once ads are removed.
+    /// Purchase state, used for the early supporter thank-you.
     @Environment(StoreState.self) private var storeState
 
-    /// Controls the Remove-Ads sheet.
-    @State private var isPaywallPresented = false
+    /// Upsell bookkeeping (the thank-you is shown once).
+    @Environment(UpsellStore.self) private var upsellStore
 
     /// The BMI-cutoff standard chosen in Settings, observed so History re-colors
     /// its rows live when the person changes it (not just on a tab re-render).
@@ -59,7 +60,7 @@ struct RootView: View {
         TabView(selection: $router.selectedTab) {
 
             // MARK: Calculator
-            CalculatorView(onShowPaywall: { isPaywallPresented = true })
+            CalculatorView(onShowPaywall: { router.presentedSheet = .pro })
                 .tabItem {
                     Label("Calculator", systemImage: "function")
                 }
@@ -93,10 +94,29 @@ struct RootView: View {
             if let route = router.pendingRoute {
                 apply(route, router: router)
             }
+            offerEarlySupporterThanksIfNeeded()
         }
-        .sheet(isPresented: $isPaywallPresented) {
-            PaywallSheet()
+        // An early Remove Ads purchase can resolve after launch (StoreKit read,
+        // Restore, or a new device), so check again whenever it changes.
+        .onChange(of: storeState.isEarlySupporter) { _, _ in
+            offerEarlySupporterThanksIfNeeded()
         }
+        .sheet(item: $router.presentedSheet) { sheet in
+            switch sheet {
+            case .pro:
+                ProSheet()
+            case .earlySupporterThanks:
+                EarlySupporterSheet(onAppearOnce: { upsellStore.markEarlySupporterThanked() })
+            }
+        }
+    }
+
+    /// Shows the one-time thank-you to early Remove Ads buyers, never over
+    /// another sheet.
+    private func offerEarlySupporterThanksIfNeeded() {
+        guard router.presentedSheet == nil,
+              upsellStore.needsEarlySupporterThanks(storeState.entitlements) else { return }
+        router.presentedSheet = .earlySupporterThanks
     }
 
     // MARK: Routing
@@ -108,6 +128,8 @@ struct RootView: View {
             router.selectedTab = .calculator
         case .history:
             router.selectedTab = .history
+        case .pro:
+            router.presentedSheet = .pro
         }
         router.pendingRoute = nil
     }
@@ -120,211 +142,17 @@ struct RootView: View {
     }
 }
 
-// MARK: - Paywall Sheet
-
-/// A focused "Remove Ads / BMI Pro" sheet for the one-time, non-consumable IAP.
-///
-/// This is the App-shell's lightweight paywall used when the Calculator surfaces
-/// an upsell. The full purchase UI also lives in Settings; both drive the same
-/// `StoreService`, so buying here removes ads everywhere immediately. There is
-/// no subscription — a single non-consumable unlock.
-struct PaywallSheet: View {
-
-    @Environment(\.dismiss) private var dismiss
-    @Environment(StoreState.self) private var storeState
-    @Environment(StoreService.self) private var storeService
-
-    @State private var errorMessage: String?
-
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    header
-                    featureList
-                }
-                .padding(24)
-                .frame(maxWidth: .infinity)
-            }
-            // Pin the CTA + disclaimer so they're always reachable at the .medium
-            // detent (a sheet clips rather than scrolls, so a fixed VStack could
-            // hide the buy/restore/disclaimer below the fold).
-            .safeAreaInset(edge: .bottom) {
-                VStack(spacing: 12) {
-                    actions
-                    disclaimer
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 16)
-                .background(.bar)
-            }
-            .background(backgroundFill.ignoresSafeArea())
-            // No navigationTitle: the hero header already reads "BMI Pro", and an
-            // inline title here overlapped the sparkle at the medium detent.
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .alert(
-                "Purchase issue",
-                isPresented: Binding(
-                    get: { errorMessage != nil },
-                    set: { if !$0 { errorMessage = nil } }
-                )
-            ) {
-                Button("OK", role: .cancel) { errorMessage = nil }
-            } message: {
-                Text(errorMessage ?? "")
-            }
-            // Once Pro is owned, there's nothing left to sell — close the sheet.
-            .onChange(of: storeState.isPro) { _, isPro in
-                if isPro { dismiss() }
-            }
-        }
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-
-    // MARK: Sections
-
-    private var header: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 44, weight: .semibold))
-                .foregroundStyle(Theme.brandGradient)
-
-            Text("Remove Ads")
-                .font(.title.bold())
-
-            Text("A one-time purchase. No subscription, ever.")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-        }
-        .padding(.top, 8)
-    }
-
-    private var featureList: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            featureRow("rectangle.slash", "Remove all ads, forever")
-            featureRow("bolt.fill", "Keep the app fast and focused")
-            featureRow("heart.text.square", "Support ongoing updates")
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func featureRow(_ symbol: String, _ text: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: symbol)
-                .font(.headline)
-                .foregroundStyle(Theme.brand)
-                .frame(width: 28)
-            Text(text)
-                .font(.body)
-            Spacer(minLength: 0)
-        }
-    }
-
-    @ViewBuilder
-    private var actions: some View {
-        VStack(spacing: 12) {
-            buyButton
-                .disabled(storeState.isProcessing)
-
-            Button("Restore Purchases") { restore() }
-                .font(.subheadline)
-                .disabled(storeState.isProcessing)
-
-            if storeState.isProcessing {
-                ProgressView()
-                    .padding(.top, 2)
-            }
-        }
-    }
-
-    /// The primary purchase button. Forks on iOS 26 to use the Liquid Glass
-    /// prominent style, falling back to a brand-prominent bordered button on
-    /// iOS 18–25. Forking the modifier (rather than erasing the style type)
-    /// keeps the real press state intact.
-    @ViewBuilder
-    private var buyButton: some View {
-        let button = Button {
-            purchase()
-        } label: {
-            Text(buyButtonTitle)
-                .font(.headline)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 4)
-        }
-
-        if #available(iOS 26.0, *) {
-            button.buttonStyle(.glassProminent)
-        } else {
-            button
-                .buttonStyle(.borderedProminent)
-                .tint(Theme.brand)
-        }
-    }
-
-    private var disclaimer: some View {
-        // Single source of truth for the mandated wording (defined in Settings).
-        Text(Disclaimer.full)
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
-    }
-
-    // MARK: Derived
-
-    private var buyButtonTitle: String {
-        if storeState.isProcessing { return "Purchasing…" }
-        if let price = storeState.displayPrice { return "Remove Ads (\(price))" }
-        return "Remove Ads"
-    }
-
-    /// Subtle glass/material backdrop behind the sheet content.
-    @ViewBuilder
-    private var backgroundFill: some View {
-        if #available(iOS 26.0, *) {
-            Rectangle().fill(.clear)
-        } else {
-            Rectangle().fill(.regularMaterial)
-        }
-    }
-
-    // MARK: Actions
-
-    private func purchase() {
-        Task {
-            let succeeded = await storeService.purchase()
-            if !succeeded, let message = storeState.lastErrorMessage {
-                errorMessage = message
-            }
-        }
-    }
-
-    private func restore() {
-        Task {
-            let restored = await storeService.restore()
-            if !restored {
-                errorMessage = storeState.lastErrorMessage
-                    ?? "No previous purchase found to restore."
-            }
-        }
-    }
-}
-
 // MARK: - Preview
 
 #Preview("Root") {
     let storeState = StoreState()
     let container = PersistenceController.inMemory()
+    let upsell = UpsellStore()
     return RootView()
         .environment(DeepLinkRouter())
         .environment(storeState)
-        .environment(StoreService(state: storeState))
-        .environment(ReviewRequesterAdapter(ReviewPrompter()))
+        .environment(StoreService(state: storeState, listensForUpdates: false))
+        .environment(upsell)
+        .environment(ReviewRequesterAdapter(ReviewPrompter(), upsellStore: upsell))
         .modelContainer(container)
 }

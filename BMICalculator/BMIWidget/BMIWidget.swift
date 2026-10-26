@@ -23,6 +23,8 @@ enum BMIWidgetDeepLink {
     static let newEntry = URL(string: "bmicalculator://new-entry")!
     /// Opens the trend/history screen.
     static let history = URL(string: "bmicalculator://history")!
+    /// Opens the Pro sheet (the locked trend widget).
+    static let pro = URL(string: "bmicalculator://pro")!
 }
 
 // MARK: - Brand

@@ -25,7 +25,7 @@ enum CalcPalette {
     /// The app accent. Follows the chosen Pro theme via `Theme.brand` (defaults
     /// to brand blue #19BEF4) so the Calculator's tints recolor with everything
     /// else. Used only as an accent here — never as a category/band color.
-    static var brandBlue: Color { Theme.brand }
+    @MainActor static var brandBlue: Color { Theme.brand }
 }
 
 // MARK: - UnitSystemToggle
@@ -194,7 +194,7 @@ struct MetricHeightField: View {
 /// A subtle brand-tinted band behind a wheel's centered row, so the selected
 /// value reads as a live, scrollable selection (matches the weight field's active
 /// tint). Non-interactive so it never intercepts the wheel's scroll gesture.
-private var heightSelectionBand: some View {
+@MainActor private var heightSelectionBand: some View {
     RoundedRectangle(cornerRadius: 10, style: .continuous)
         .fill(CalcPalette.brandBlue.opacity(0.08))
         .frame(height: 38)

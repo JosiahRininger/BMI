@@ -2,9 +2,10 @@
 //  HistoryView.swift
 //  BMICalculator
 //
-//  The History tab: a trend chart over a selectable range, summary stats
-//  (average / high / low), and a list of saved measurements grouped by day
-//  with swipe-to-delete and an empty state.
+//  The History tab: a trend chart over a selectable range (including All),
+//  summary stats (average / high / low), the change since the first entry, a
+//  list of saved measurements grouped by day with swipe-to-delete, and Export
+//  (CSV for everyone, the doctor summary with Pro).
 //
 //  Person-first, non-judgmental copy throughout.
 //
@@ -27,8 +28,15 @@ public struct HistoryView: View {
     @Query(sort: \BMIRecord.date, order: .reverse) private var records: [BMIRecord]
 
     @Environment(\.modelContext) private var modelContext
+    @Environment(StoreState.self) private var store: StoreState?
+    @Environment(UpsellStore.self) private var upsellStore: UpsellStore?
+    @Environment(DeepLinkRouter.self) private var router: DeepLinkRouter?
+
+    /// The person's default units, used by the doctor summary.
+    @AppStorage(AppStorageKey.unitSystem) private var unitSystemRaw = UnitSystem.metric.rawValue
 
     @State private var range: ChartRange = .month
+    @State private var showsDoctorSummary = false
 
     public init(standard: HealthStandard = .standard) {
         self.standard = standard
@@ -68,7 +76,50 @@ public struct HistoryView: View {
                 }
             }
             .navigationTitle("History")
+            .toolbar {
+                if !records.isEmpty {
+                    ToolbarItem(placement: .primaryAction) { exportMenu }
+                }
+            }
+            .sheet(isPresented: $showsDoctorSummary) {
+                DoctorSummaryView(
+                    entries: records.map(ExportEntry.init),
+                    unitSystem: UnitSystem(rawValue: unitSystemRaw) ?? .metric,
+                    standard: standard
+                )
+            }
         }
+    }
+
+    // MARK: Export
+
+    /// CSV is free for everyone (your data is always yours); the doctor summary
+    /// is Pro, and without Pro it opens as a preview.
+    private var exportMenu: some View {
+        Menu {
+            Button {
+                showsDoctorSummary = true
+            } label: {
+                Label(store?.hasPro == true ? "Doctor summary (PDF)" : "Doctor summary (Pro)",
+                      systemImage: "doc.text")
+            }
+            ShareLink(
+                item: CSVExport(entries: records.map(ExportEntry.init), standard: standard),
+                preview: SharePreview("BMI history (CSV)")
+            ) {
+                Label("Spreadsheet (CSV)", systemImage: "tablecells")
+            }
+        } label: {
+            Label("Export", systemImage: "square.and.arrow.up")
+        }
+        .accessibilityHint("Share your history as a doctor summary or a spreadsheet")
+    }
+
+    /// The History Pro card: only after a few saved entries, quiet for 30 days
+    /// after "Not now", and never for Pro owners (`UpsellPolicy`).
+    private var showsHistoryCard: Bool {
+        guard let store, let upsellStore else { return false }
+        return upsellStore.showsHistoryCard(hasOffer: store.hasUpsellOffer, savedEntryCount: records.count)
     }
 
     private var content: some View {
@@ -81,8 +132,22 @@ public struct HistoryView: View {
                     .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 8, trailing: 8))
 
                 SummaryStatsRow(records: rangedRecords)
+
+                if let change = HistoryChange.make(from: records) {
+                    SinceFirstEntryRow(change: change)
+                }
             }
             .listRowSeparator(.hidden)
+
+            if showsHistoryCard {
+                Section {
+                    HistoryProCard(
+                        isUpgrade: store?.adsRemoved == true,
+                        onTakeALook: { router?.presentedSheet = .pro },
+                        onNotNow: { upsellStore?.dismissHistoryCard() }
+                    )
+                }
+            }
 
             // Grouped measurement rows.
             ForEach(groupedByDay, id: \.day) { group in
@@ -144,6 +209,8 @@ public struct HistoryView: View {
             modelContext.delete(dayRecords[index])
         }
         try? modelContext.save()
+        // Keep the widgets in step: a deleted entry must not linger on them.
+        WidgetSync.update(from: modelContext.container)
     }
 }
 
@@ -216,6 +283,63 @@ private struct StatTile: View {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.regularMaterial)
         }
+    }
+}
+
+// MARK: - Since first entry
+
+/// A neutral whole-history readout: when tracking started and how BMI has
+/// changed since. No "left to go", no judgment, just the numbers.
+private struct SinceFirstEntryRow: View {
+    let change: HistoryChange
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("Since your first entry")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text("\(change.firstDate.formatted(date: .abbreviated, time: .omitted)) · BMI \(String(format: "%.1f", change.firstBMI)) then, \(String(format: "%.1f", change.latestBMI)) now (\(change.formattedChange))")
+                .font(.subheadline)
+                .monospacedDigit()
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 2)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - History Pro card
+
+/// The rare History card that mentions Pro. Dismissible, never blocking.
+private struct HistoryProCard: View {
+    let isUpgrade: Bool
+    let onTakeALook: () -> Void
+    let onNotNow: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles")
+                    .foregroundStyle(Theme.brand)
+                    .accessibilityHidden(true)
+                Text(isUpgrade ? "Upgrade to Pro" : "Enjoying BMI Calculator?")
+                    .font(.subheadline.weight(.semibold))
+            }
+            Text("Pro adds a doctor summary, a trend widget, and themes. One purchase, no subscription.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 12) {
+                Button("Take a look", action: onTakeALook)
+                    .buttonStyle(.bordered)
+                    .tint(Theme.brand)
+                Button("Not now", action: onNotNow)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+            }
+            .font(.subheadline)
+        }
+        .padding(.vertical, 4)
     }
 }
 

@@ -25,6 +25,7 @@ import AppIntents
 struct BMIWidgetBundle: WidgetBundle {
     var body: some Widget {
         BMIWidget()
+        BMITrendWidget()
         BMIControl()
     }
 }

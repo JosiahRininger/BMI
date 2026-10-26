@@ -1,36 +1,45 @@
 {
-  "identifier" : "A1B2C3D4-0000-0000-0000-BM1CALC00001",
-  "nonRenewingSubscriptions" : [
-
-  ],
-  "products" : [
+  "identifier": "A1B2C3D4-0000-0000-0000-BM1CALC00001",
+  "nonRenewingSubscriptions": [],
+  "products": [
     {
-      "displayPrice" : "1.99",
-      "familyShareable" : false,
-      "internalID" : "BMI00000REMADS",
-      "localizations" : [
+      "displayPrice": "4.99",
+      "familyShareable": false,
+      "internalID": "BMI00000PROUNL",
+      "localizations": [
         {
-          "description" : "Remove the banner ad from BMI Calculator. One-time purchase, no subscription.",
-          "displayName" : "Remove Ads",
-          "locale" : "en_US"
+          "description": "No ads, doctor summary, trend widget, themes.",
+          "displayName": "BMI Calculator Pro",
+          "locale": "en_US"
         }
       ],
-      "productID" : "com.bmi.removeads",
-      "referenceName" : "Remove Ads",
-      "type" : "NonConsumable"
+      "productID": "com.bmi.pro",
+      "referenceName": "BMI Calculator Pro",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "1.99",
+      "familyShareable": false,
+      "internalID": "BMI00000REMADS",
+      "localizations": [
+        {
+          "description": "Remove the banner ad from BMI Calculator. One-time purchase, no subscription.",
+          "displayName": "Remove Ads",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.bmi.removeads",
+      "referenceName": "Remove Ads",
+      "type": "NonConsumable"
     }
   ],
-  "settings" : {
-    "_failTransactionsEnabled" : false,
-    "_storeKitErrors" : [
-
-    ]
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_storeKitErrors": []
   },
-  "subscriptionGroups" : [
-
-  ],
-  "version" : {
-    "major" : 3,
-    "minor" : 0
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
   }
 }

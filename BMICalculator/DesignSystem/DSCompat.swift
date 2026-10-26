@@ -38,7 +38,7 @@ enum DSColor {
     static var secondaryBackground: Color { Theme.surfaceSecondary }
 
     /// Primary brand accent. → `Theme.brand`.
-    static var brand: Color { Theme.brand }
+    @MainActor static var brand: Color { Theme.brand }
 
     /// Primary text color. → `Theme.textPrimary`.
     static var primaryText: Color { Theme.textPrimary }

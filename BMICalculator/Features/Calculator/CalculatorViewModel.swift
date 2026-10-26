@@ -27,15 +27,25 @@ import SwiftData
 // conformances live in their own modules and are injected from the environment
 // or provided as shared singletons.
 
-/// Read-only purchase state the Calculator needs to decide whether to show the
-/// "Remove Ads / Pro" upsell and whether ads may run.
+/// Read-only purchase state the Calculator needs to decide whether ads may run
+/// and whether the Pro upsell should appear.
 ///
 /// Implemented by the Store module's `StoreState` (`@Observable`, in the
-/// environment). The Calculator only reads `isPro`.
+/// environment).
 @MainActor
 public protocol ProState: AnyObject {
-    /// `true` once the one-time non-consumable "Remove Ads / Pro" IAP is owned.
-    var isPro: Bool { get }
+    /// `true` when ads are removed (Remove Ads, Pro, or an early supporter).
+    var adsRemoved: Bool { get }
+
+    /// `true` when the Pro features are unlocked.
+    var hasPro: Bool { get }
+
+    /// `true` once this launch knows the customer's entitlements (from the
+    /// on-device cache or StoreKit). No ad is requested before then.
+    var isResolved: Bool { get }
+
+    /// `true` when there is still something to offer (Pro, or the Pro upgrade).
+    var hasUpsellOffer: Bool { get }
 }
 
 /// Interstitial / banner ad coordinator. Implemented by the Ads module's
@@ -306,12 +316,24 @@ public final class CalculatorViewModel {
 
     // MARK: Derived Display Helpers
 
-    /// `true` when the person has bought Pro; drives whether the upsell shows.
-    public var isPro: Bool { store?.isPro ?? false }
+    /// `true` when ads are removed (Remove Ads, Pro, or an early supporter).
+    public var adsRemoved: Bool { store?.adsRemoved ?? false }
 
-    /// Whether the inline "Remove Ads / Pro" upsell should appear on the result
-    /// card. Only shown to non-Pro people, and only once a result exists.
-    public var showsUpsell: Bool { !isPro && result != nil }
+    /// `true` when the Pro features are unlocked.
+    public var hasPro: Bool { store?.hasPro ?? false }
+
+    /// Whether the banner slot may load an ad: only once entitlements are known
+    /// for this launch and ads aren't removed. Without a store (previews, tests)
+    /// nothing is shown, so an unknown state never shows an ad.
+    public var showsBanner: Bool {
+        guard let store else { return false }
+        return store.isResolved && !store.adsRemoved
+    }
+
+    /// Whether the result card may show its Pro row: only when there is still
+    /// something to offer and a result exists. The card's own dismissal and
+    /// cadence rules (`UpsellPolicy`) apply on top of this.
+    public var showsUpsell: Bool { (store?.hasUpsellOffer ?? false) && result != nil }
 
     /// The canonical metric weight (kg) for the current inputs.
     public var weightKilograms: Double {

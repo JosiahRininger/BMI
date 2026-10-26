@@ -19,7 +19,7 @@
 //   • Exactly ONE interstitial, only AFTER a completed calc.
 //   • Capped (≈ once per 3 calcs) + time cooldown.
 //   • Large, obvious system close button (provided by the SDK).
-//   • `isPro` short-circuits everything → no ad objects are even created.
+//   • `adsRemoved` short-circuits everything → no ad objects are even created.
 //
 //  Test ad unit IDs are used in DEBUG; real IDs in release.
 //
@@ -96,8 +96,9 @@ public final class AdsManager: NSObject {
     /// Whether an interstitial is loaded and ready to present.
     public private(set) var isInterstitialReady = false
 
-    /// Drives the banner: when Pro, the banner view renders nothing.
-    public private(set) var isPro = false
+    /// Drives the banner: when ads are removed (Remove Ads or Pro), the banner
+    /// view renders nothing.
+    public private(set) var adsRemoved = false
 
     /// Whether the SDK has been started (prevents double init).
     private var didStart = false
@@ -114,13 +115,13 @@ public final class AdsManager: NSObject {
         super.init()
     }
 
-    // MARK: Pro state
+    // MARK: Ads-removed state
 
-    /// Updates Pro status. When Pro becomes active, all ad objects are released
-    /// and no further ads are requested or shown.
-    public func setPro(_ pro: Bool) {
-        isPro = pro
-        if pro {
+    /// Updates whether ads are removed. When they are, all ad objects are
+    /// released and no further ads are requested or shown.
+    public func setAdsRemoved(_ removed: Bool) {
+        adsRemoved = removed
+        if removed {
             #if canImport(GoogleMobileAds)
             interstitial = nil
             #endif
@@ -129,7 +130,7 @@ public final class AdsManager: NSObject {
             // Returned to free tier (e.g. refund) — repopulate.
             loadInterstitial()
         } else {
-            // Launched Pro, then reverted to free (refund/expired Family Sharing)
+            // Launched ad-free, then reverted to free (refund/expired Family Sharing)
             // before the SDK was ever started — boot it now so ads resume.
             // `start()` initializes the SDK and loads the first interstitial.
             start()
@@ -139,9 +140,9 @@ public final class AdsManager: NSObject {
     // MARK: SDK lifecycle
 
     /// Starts the Mobile Ads SDK once and preloads the first interstitial.
-    /// No-op when Pro. Safe to call multiple times.
+    /// No-op when ads are removed. Safe to call multiple times.
     public func start() {
-        guard !isPro, !didStart else { return }
+        guard !adsRemoved, !didStart else { return }
         didStart = true
 
         #if canImport(GoogleMobileAds)
@@ -178,10 +179,10 @@ public final class AdsManager: NSObject {
 
     // MARK: Interstitial loading
 
-    /// Loads (or reloads) the single interstitial. No-op when Pro, or when no
-    /// interstitial unit is configured (banner-only build).
+    /// Loads (or reloads) the single interstitial. No-op when ads are removed, or
+    /// when no interstitial unit is configured (banner-only build).
     public func loadInterstitial() {
-        guard !isPro else { return }
+        guard !adsRemoved else { return }
         #if canImport(GoogleMobileAds)
         guard let interstitialUnitID = AdUnit.interstitial else { return }
         Task { @MainActor in
@@ -209,8 +210,8 @@ public final class AdsManager: NSObject {
     /// Returns `true` if an ad was presented.
     @discardableResult
     public func maybeShowInterstitial() -> Bool {
-        // Pro users never see interstitials.
-        guard !isPro else { return false }
+        // Ad-free customers never see interstitials.
+        guard !adsRemoved else { return false }
 
         calcsSinceLastInterstitial += 1
 
@@ -289,24 +290,18 @@ extension AdsManager: FullScreenContentDelegate {
 // MARK: - Banner view (SwiftUI)
 
 /// A SwiftUI banner that renders the AdMob banner on the free tier and nothing
-/// when Pro. It sizes itself to the standard 320x50 banner; the host centers it.
-///
-/// Usage:
-/// ```swift
-/// if !storeState.isPro {
-///     AdBannerView()
-/// }
-/// ```
+/// once ads are removed. It sizes itself to the standard 320x50 banner; the host
+/// centers it.
 public struct AdBannerView: View {
-    /// When `true`, the banner renders nothing (Pro tier).
-    public var isPro: Bool
+    /// When `true`, the banner renders nothing (Remove Ads or Pro).
+    public var adsRemoved: Bool
 
-    public init(isPro: Bool = false) {
-        self.isPro = isPro
+    public init(adsRemoved: Bool = false) {
+        self.adsRemoved = adsRemoved
     }
 
     public var body: some View {
-        if isPro {
+        if adsRemoved {
             EmptyView()
         } else {
             #if canImport(GoogleMobileAds)

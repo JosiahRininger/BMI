@@ -83,12 +83,20 @@ struct ResultCard: View {
     /// view model, which owns the height + unit context the engine value lacks.
     var healthyWeightRange: String? = nil
 
-    /// Whether to show the inline Pro upsell (non-Pro people only).
+    /// Whether to show the inline Pro row (only while there's something to
+    /// offer and the person hasn't dismissed it recently).
     let showsUpsell: Bool
 
-    /// Invoked when the person taps the upsell. The parent presents the IAP /
-    /// paywall — this view never touches StoreKit directly.
+    /// `true` when the person already removed ads, so the row offers the Pro
+    /// upgrade rather than Pro.
+    var upsellIsUpgrade: Bool = false
+
+    /// Invoked when the person taps the row. The parent presents the Pro sheet;
+    /// this view never touches StoreKit directly.
     var onUpsellTapped: () -> Void = {}
+
+    /// Invoked when the person dismisses the row ("Not now").
+    var onUpsellDismissed: () -> Void = {}
 
     /// When Reduce Motion is on, the card crossfades in instead of sliding up.
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -289,35 +297,51 @@ struct ResultCard: View {
 
     // MARK: Upsell
 
+    /// A quiet Pro row: what Pro adds, one-time price framing, and an "x" that
+    /// hides it for a while. It never depends on the BMI category.
     private var upsell: some View {
-        Button(action: onUpsellTapped) {
-            HStack(spacing: 10) {
-                Image(systemName: "sparkles")
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Remove Ads with Pro")
-                        .font(.subheadline.weight(.semibold))
-                    Text("One-time purchase. No subscription.")
-                        .font(.caption2)
+        HStack(spacing: 4) {
+            Button(action: onUpsellTapped) {
+                HStack(spacing: 10) {
+                    Image(systemName: "sparkles")
+                        .accessibilityHidden(true)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(upsellIsUpgrade ? "Upgrade to Pro" : ProCopy.name)
+                            .font(.subheadline.weight(.semibold))
+                        Text(upsellIsUpgrade
+                             ? "Adds a doctor summary, a trend widget, and themes."
+                             : "A doctor summary, a trend widget, themes, and no ads. One-time purchase.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                 }
-                Spacer(minLength: 0)
-                Image(systemName: "chevron.right")
+                .padding(.vertical, 10)
+                .padding(.leading, 12)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(upsellIsUpgrade ? "Upgrade to Pro" : ProCopy.name)
+            .accessibilityHint("Shows what Pro includes and its one-time price.")
+
+            Button(action: onUpsellDismissed) {
+                Image(systemName: "xmark")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.secondary)
-                    .accessibilityHidden(true)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .buttonStyle(.plain)
+            .accessibilityLabel("Not now")
+            .accessibilityHint("Hides this for a while.")
         }
-        .buttonStyle(.plain)
         .calcUpsellChrome()
-        // A Button is already one accessible element; wrapping it in
-        // `.accessibilityElement` can drop the button trait/activation. The
-        // label + hint on the Button (with the icons hidden above) are enough.
-        .accessibilityLabel("Remove ads with Pro")
-        .accessibilityHint("Opens the one-time purchase to remove ads.")
     }
 }
 

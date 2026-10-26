@@ -4,7 +4,7 @@
 //
 //  A Swift Charts line chart of BMI over time, with color-coded category
 //  bands behind the line and color-coded data points. Supports a selectable
-//  time range (7 / 30 / 90 / 365 days).
+//  time range (7 / 30 / 90 / 365 days, or all entries).
 //
 
 import SwiftUI
@@ -12,12 +12,14 @@ import Charts
 
 // MARK: - ChartRange
 
-/// The selectable look-back window for the trend chart.
+/// The selectable look-back window for the trend chart. `.all` shows every
+/// saved entry (free for everyone: the whole history is never paywalled).
 public enum ChartRange: Int, CaseIterable, Identifiable, Sendable {
     case week = 7
     case month = 30
     case quarter = 90
     case year = 365
+    case all = 0
 
     public var id: Int { rawValue }
 
@@ -28,6 +30,7 @@ public enum ChartRange: Int, CaseIterable, Identifiable, Sendable {
         case .month:   return "30D"
         case .quarter: return "90D"
         case .year:    return "1Y"
+        case .all:     return "All"
         }
     }
 
@@ -38,26 +41,60 @@ public enum ChartRange: Int, CaseIterable, Identifiable, Sendable {
         case .month:   return "Last 30 days"
         case .quarter: return "Last 90 days"
         case .year:    return "Last year"
+        case .all:     return "All entries"
         }
     }
 
     /// The earliest date included by this range, relative to `now`. Anchored to
     /// the start of the day `rawValue - 1` days ago so e.g. "7D" spans exactly 7
     /// calendar days (today + 6 prior), rather than a 7×24h window off the current
-    /// instant that bleeds into an 8th day.
+    /// instant that bleeds into an 8th day. `.all` has no lower bound.
     public func startDate(relativeTo now: Date = Date()) -> Date {
+        if self == .all { return .distantPast }
         let calendar = Calendar.current
         return calendar.date(byAdding: .day, value: -(rawValue - 1), to: calendar.startOfDay(for: now)) ?? now
     }
 
-    /// A reasonable axis stride (in days) for tick marks in this range.
-    var axisStrideDays: Int {
+    /// A reasonable axis stride (in days) for tick marks. Fixed ranges use a
+    /// fixed stride; `.all` aims for about five ticks across the actual span.
+    func axisStrideDays(spanDays: Int) -> Int {
         switch self {
         case .week:    return 1
         case .month:   return 7
         case .quarter: return 14
         case .year:    return 60
+        case .all:
+            let target = max(1, spanDays / 5)
+            // Snap to friendly steps so labels land on sensible dates.
+            return [1, 2, 7, 14, 30, 60, 90, 180, 365].first { $0 >= target } ?? 365
         }
+    }
+}
+
+// MARK: - Whole-history change
+
+/// The neutral "since your first entry" summary for History: first and latest
+/// BMI and the change between them. Pure so it's unit-tested.
+struct HistoryChange: Equatable {
+    let firstDate: Date
+    let firstBMI: Double
+    let latestBMI: Double
+
+    /// Latest minus first, rounded to one decimal.
+    var change: Double { ((latestBMI - firstBMI) * 10).rounded() / 10 }
+
+    /// Needs at least two finite entries on different instants.
+    static func make(from records: [BMIRecord]) -> HistoryChange? {
+        let sorted = records.filter { $0.bmi.isFinite }.sorted { $0.date < $1.date }
+        guard let first = sorted.first, let latest = sorted.last, sorted.count >= 2,
+              first.date != latest.date else { return nil }
+        return HistoryChange(firstDate: first.date, firstBMI: first.bmi, latestBMI: latest.bmi)
+    }
+
+    /// e.g. "+0.4", "-1.2", "0.0" (a plain hyphen-minus is fine for numbers).
+    var formattedChange: String {
+        if change == 0 { return "0.0" }
+        return String(format: "%+.1f", change)
     }
 }
 
@@ -71,8 +108,8 @@ public enum ChartRange: Int, CaseIterable, Identifiable, Sendable {
 /// All colors adapt to light/dark via system semantic blends.
 enum BMIBandPalette {
 
-    /// The brand accent blue (#19BEF4) used for the underweight band/line.
-    static let brandBlue = Color(red: 0x19 / 255, green: 0xBE / 255, blue: 0xF4 / 255)
+    /// The trend line color: the brand accent, so it follows the chosen theme.
+    @MainActor static var brandBlue: Color { Theme.brand }
 
     /// Solid representative color for a category (used for points and the
     /// history-row dot). Routes through the design system's appearance-aware
@@ -206,12 +243,23 @@ public struct TrendChart: View {
 
     /// The X-axis domain spanning the selected range up to now — extended to the
     /// newest record if the device clock puts a saved reading in the future, so
-    /// that point stays visible instead of clipping off the right edge.
+    /// that point stays visible instead of clipping off the right edge. `.all`
+    /// starts at the first entry (with a day of padding).
     private var xDomain: ClosedRange<Date> {
         let now = Date()
-        let start = visibleRecords.first?.date ?? range.startDate(relativeTo: now)
         let end = max(now, visibleRecords.last?.date ?? now)
+        if range == .all {
+            let first = visibleRecords.first?.date ?? now
+            let start = Calendar.current.date(byAdding: .day, value: -1, to: first) ?? first
+            return min(start, end)...end
+        }
+        let start = visibleRecords.first?.date ?? range.startDate(relativeTo: now)
         return min(start, range.startDate(relativeTo: now))...end
+    }
+
+    /// Days covered by the x domain (for `.all` tick spacing).
+    private var spanDays: Int {
+        max(1, Int(xDomain.upperBound.timeIntervalSince(xDomain.lowerBound) / 86_400))
     }
 
     // MARK: Body
@@ -312,11 +360,18 @@ public struct TrendChart: View {
             }
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .day, count: range.axisStrideDays)) { _ in
+            AxisMarks(values: .stride(by: .day, count: range.axisStrideDays(spanDays: spanDays))) { _ in
                 AxisGridLine()
                 AxisTick()
-                AxisValueLabel(format: .dateTime.month(.abbreviated).day(),
-                               centered: false)
+                // Spans longer than ~10 months show month + year, so a
+                // multi-year "All" view doesn't repeat ambiguous "Jan 3" labels.
+                if spanDays > 300 {
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).year(.twoDigits),
+                                   centered: false)
+                } else {
+                    AxisValueLabel(format: .dateTime.month(.abbreviated).day(),
+                                   centered: false)
+                }
             }
         }
         .frame(height: 220)

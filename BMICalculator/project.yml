@@ -90,6 +90,10 @@ targets:
     platform: iOS
     sources:
       - path: Tests
+      # The StoreKit test configuration, so SKTestSession can simulate Pro and
+      # Remove Ads purchases, refunds, and Ask to Buy in unit tests.
+      - path: Products.storekit
+        buildPhase: resources
     dependencies:
       - target: BMICalculator
     settings:
