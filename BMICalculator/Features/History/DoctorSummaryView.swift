@@ -14,6 +14,7 @@ import PDFKit
 struct DoctorSummaryView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.displayScale) private var displayScale
     @Environment(StoreState.self) private var store
 
     /// A snapshot of the saved entries (plain values).
@@ -181,12 +182,15 @@ struct DoctorSummaryView: View {
 
     @MainActor
     private func renderPreview() async {
-        // Debounce: changing the custom dates restarts this task; wait for the
-        // picking to settle before drawing.
-        try? await Task.sleep(for: .milliseconds(250))
-        guard !Task.isCancelled else { return }
         isRendering = true
         defer { isRendering = false }
+        // Debounce later changes (picking custom dates restarts this task); the
+        // first preview draws right away.
+        if !pageImages.isEmpty {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+        }
+        await Task.yield()   // let the spinner draw before the synchronous render
         let summary = self.summary
         totalPages = DoctorSummaryLayout.pages(rowCount: summary.entries.count).count
         let data = DoctorSummaryPDF.render(summary, pageLimit: Self.previewPageLimit)
@@ -197,8 +201,9 @@ struct DoctorSummaryView: View {
         var images: [UIImage] = []
         for index in 0..<document.pageCount {
             guard let page = document.page(at: index) else { continue }
-            // Display size (2x of the on-screen width), not print size.
-            images.append(page.thumbnail(of: CGSize(width: 612, height: 792), for: .mediaBox))
+            // Sharp at the screen's scale: the preview is at most ~600pt wide.
+            let scale = min(max(displayScale, 1), 3)
+            images.append(page.thumbnail(of: CGSize(width: 612 * scale, height: 792 * scale), for: .mediaBox))
         }
         pageImages = images
     }

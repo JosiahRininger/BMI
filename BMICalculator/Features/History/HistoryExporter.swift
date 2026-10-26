@@ -277,7 +277,7 @@ struct DoctorSummary: Equatable, Sendable {
         case .standard:
             cutoffs = "Adult categories (WHO/CDC): underweight below 18.5, healthy weight 18.5 to under 25, overweight 25 to under 30, obesity 30 and above (class 1: 30 to under 35, class 2: 35 to under 40, class 3: 40 and above)."
         case .asian:
-            cutoffs = "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, obesity 27.5 and above (listed as Obesity (class 1), since these action points don't define higher classes)."
+            cutoffs = "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, obesity 27.5 and above (this app lists all of these as Obesity (class 1) and does not split higher classes)."
         }
         return "BMI = weight (kg) ÷ height (m)². \(cutoffs) Entries were recorded in BMI Calculator. Categories apply to adults only."
     }

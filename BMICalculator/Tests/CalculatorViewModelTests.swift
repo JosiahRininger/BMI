@@ -11,6 +11,7 @@
 import Testing
 import Foundation
 import SwiftData
+import Observation
 @testable import BMICalculator
 
 // MARK: - Fakes
@@ -144,6 +145,20 @@ struct CalculatorViewModelProTests {
         #expect(vm.showsBanner)                // free customer, resolved
         store.adsRemoved = true
         #expect(vm.showsBanner == false)       // purchase mid-session: banner goes
+    }
+
+    @Test("Late-binding the store redraws the screen (the cold-launch banner)")
+    func lateBindIsObserved() {
+        let vm = CalculatorViewModel()
+        var fired = false
+        withObservationTracking {
+            _ = vm.showsBanner
+        } onChange: {
+            fired = true
+        }
+        vm.lateBind(store: FakeProState(false), ads: nil, reviewPrompter: nil)
+        #expect(fired)
+        #expect(vm.showsBanner)
     }
 
     @Test("No store (previews/tests) never shows an ad")

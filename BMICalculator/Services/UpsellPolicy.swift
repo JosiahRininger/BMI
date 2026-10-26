@@ -32,6 +32,22 @@ struct UpsellRecord: Codable, Equatable, Sendable {
     var historyCardImpressions: [Date] = []
     /// Whether the one-time early supporter thank-you has been shown.
     var earlySupporterThanked = false
+
+    init() {}
+
+    // Decoding tolerates missing fields, so adding one later never resets the
+    // record (and never re-shows the one-time thank-you).
+    private enum CodingKeys: String, CodingKey {
+        case resultCardDismissedAt, historyCardDismissals, historyCardImpressions, earlySupporterThanked
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        resultCardDismissedAt = try c.decodeIfPresent(Date.self, forKey: .resultCardDismissedAt)
+        historyCardDismissals = try c.decodeIfPresent([Date].self, forKey: .historyCardDismissals) ?? []
+        historyCardImpressions = try c.decodeIfPresent([Date].self, forKey: .historyCardImpressions) ?? []
+        earlySupporterThanked = try c.decodeIfPresent(Bool.self, forKey: .earlySupporterThanked) ?? false
+    }
 }
 
 // MARK: - Policy
@@ -133,8 +149,16 @@ final class UpsellStore {
     /// Set when the app presented the App Store rating prompt this session.
     private(set) var reviewPromptedThisSession = false
 
-    /// Set once the History card has been shown this session.
-    private(set) var historyCardShownThisSession = false
+    /// When the History card was first shown in this session. A "session" is
+    /// this process for up to `sessionLength`, so an app left running for days
+    /// doesn't keep the card up indefinitely.
+    private var historyCardSessionStart: Date?
+    static let sessionLength: TimeInterval = 6 * 60 * 60
+
+    private func historyCardShownThisSession(now: Date) -> Bool {
+        guard let start = historyCardSessionStart else { return false }
+        return now.timeIntervalSince(start) < Self.sessionLength
+    }
 
     @ObservationIgnored private let defaults: UserDefaults
 
@@ -156,13 +180,13 @@ final class UpsellStore {
     func showsHistoryCard(hasOffer: Bool, distinctEntryDays: Int, now: Date = .now) -> Bool {
         UpsellPolicy.showsHistoryCard(hasOffer: hasOffer, distinctEntryDays: distinctEntryDays, record: record,
                                       now: now, reviewPromptedThisSession: reviewPromptedThisSession,
-                                      shownThisSession: historyCardShownThisSession)
+                                      shownThisSession: historyCardShownThisSession(now: now))
     }
 
     /// Records that the History card appeared (once per session).
     func noteHistoryCardShown(now: Date = .now) {
-        guard !historyCardShownThisSession else { return }
-        historyCardShownThisSession = true
+        guard !historyCardShownThisSession(now: now) else { return }
+        historyCardSessionStart = now
         record = UpsellPolicy.recordingHistoryImpression(record, now: now)
         save()
     }

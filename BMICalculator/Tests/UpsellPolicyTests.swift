@@ -201,6 +201,23 @@ struct UpsellStoreTests {
         #expect(relaunched.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now.addingTimeInterval(31 * 86_400)))
     }
 
+    @Test("A record saved before a field existed still decodes, keeping the thank-you flag")
+    func tolerantDecoding() throws {
+        let json = #"{"historyCardDismissals":[],"earlySupporterThanked":true}"#
+        let record = try JSONDecoder().decode(UpsellRecord.self, from: Data(json.utf8))
+        #expect(record.earlySupporterThanked)
+        #expect(record.historyCardImpressions.isEmpty)
+        #expect(record.resultCardDismissedAt == nil)
+    }
+
+    @Test("A History 'session' ends after six hours even if the app stays running")
+    func sessionExpires() {
+        let store = UpsellStore(defaults: defaults())
+        store.noteHistoryCardShown(now: now)
+        #expect(store.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now.addingTimeInterval(3_600)))
+        #expect(!store.showsHistoryCard(hasOffer: true, distinctEntryDays: 5, now: now.addingTimeInterval(7 * 3_600)))
+    }
+
     @Test("The review adapter flags the session only when a prompt was shown")
     func reviewAdapterFlags() {
         let store = UpsellStore(defaults: defaults())

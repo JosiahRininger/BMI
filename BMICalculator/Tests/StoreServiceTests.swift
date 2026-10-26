@@ -154,6 +154,42 @@ struct StoreServiceTests {
         #expect(service.state.isProcessing == false)
     }
 
+    @Test("A second purchase tap while one is in flight does nothing")
+    func noOverlappingPurchases() async throws {
+        let session = try makeSession()
+        defer { session.clearTransactions() }
+        let service = makeService(earlyPurchases: false)
+        async let first = service.purchase(ProductID.pro)
+        async let second = service.purchase(ProductID.pro)
+        let outcomes = await [first, second]
+        #expect(outcomes.filter { $0 == .purchased }.count == 1)
+        #expect(outcomes.contains(.cancelled))
+        #expect(session.allTransactions().filter { $0.productIdentifier == ProductID.pro }.count == 1)
+    }
+
+    @Test("StoreKit news about Pro doesn't confirm a 2.0.x placeholder's Remove Ads date")
+    func placeholderNotConfirmed() async throws {
+        let name = "test.placeholder.\(UUID().uuidString)"
+        let legacy = UserDefaults(suiteName: name)!
+        defer { legacy.removePersistentDomain(forName: name) }
+        legacy.set(true, forKey: EntitlementCache.legacyAdsRemovedKey)
+        let service = StoreService(state: StoreState(), cache: EntitlementCache(defaults: legacy), listensForUpdates: false)
+        #expect(service.state.isConfirmedByStoreKit == false)
+        #expect(service.state.isEarlySupporter)   // provisional, from the placeholder
+
+        // A Pro transaction update arrives while the placeholder is still there.
+        let placeholder = OwnedPurchase(productID: ProductID.removeAds,
+                                        originalPurchaseDate: OwnedPurchase.unconfirmedDate, isRevoked: false)
+        let pro = OwnedPurchase(productID: ProductID.pro, originalPurchaseDate: .now, isRevoked: false)
+        service.apply([placeholder, pro], confirmed: true)
+        #expect(service.state.isConfirmedByStoreKit == false)
+        #expect(service.state.hasPro)
+
+        // A real StoreKit read replaces the placeholder and confirms.
+        service.apply([pro], confirmed: true)
+        #expect(service.state.isConfirmedByStoreKit)
+    }
+
     @Test("An unknown product fails gracefully with a message")
     func purchaseUnknownProduct() async throws {
         let session = try makeSession()

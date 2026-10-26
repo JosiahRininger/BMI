@@ -189,6 +189,13 @@ public final class StoreService {
     /// Starts the purchase flow for one product.
     @discardableResult
     public func purchase(_ productID: String) async -> PurchaseOutcome {
+        // One purchase at a time: a second tap while one is in flight (including
+        // the product reload below) does nothing.
+        guard !state.isProcessing else { return .cancelled }
+        state.isProcessing = true
+        state.lastErrorMessage = nil
+        defer { state.isProcessing = false }
+
         // Products load once at launch; if that failed (offline, a store
         // hiccup), try again now rather than failing until the next launch.
         if ProductID.all.contains(productID), loadedProduct(productID) == nil {
@@ -198,10 +205,6 @@ public final class StoreService {
             state.lastErrorMessage = StoreError.productUnavailable.errorDescription
             return .failed
         }
-
-        state.isProcessing = true
-        state.lastErrorMessage = nil
-        defer { state.isProcessing = false }
 
         do {
             let result = try await product.purchase()
@@ -270,7 +273,11 @@ public final class StoreService {
     /// - Parameter confirmed: StoreKit itself produced these purchases (not just
     ///   the cache surviving an empty read).
     func apply(_ newPurchases: [OwnedPurchase], confirmed: Bool = false) {
-        if confirmed { state.isConfirmedByStoreKit = true }
+        // Confirmed only when StoreKit produced the data AND no 2.0.x
+        // placeholder (unknown date) is left in it.
+        if confirmed && !newPurchases.contains(where: { $0.isUnconfirmed }) {
+            state.isConfirmedByStoreKit = true
+        }
         purchases = newPurchases
         let resolved = resolveEntitlements(newPurchases, proLaunchCutoff: state.proLaunchCutoff)
         let changed = resolved != state.entitlements || !state.isResolved

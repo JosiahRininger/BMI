@@ -64,8 +64,8 @@ targets:
         # as an INFOPLIST_KEY scalar). Xcode merges the generated keys + the
         # INFOPLIST_KEY_* values below on top of this file.
         INFOPLIST_FILE: Info.plist
-        CURRENT_PROJECT_VERSION: "5"
-        MARKETING_VERSION: "2.0.2"
+        CURRENT_PROJECT_VERSION: "6"
+        MARKETING_VERSION: "2.1"
         TARGETED_DEVICE_FAMILY: "1,2"        # iPhone + iPad
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
@@ -94,12 +94,18 @@ targets:
       # Remove Ads purchases, refunds, and Ask to Buy in unit tests.
       - path: Products.storekit
         buildPhase: resources
+      # The Pro trend widget's view, compiled into the tests so they can render
+      # every state (the widget extension itself can't host unit tests).
+      - path: BMIWidget/BMITrendWidget.swift
     dependencies:
       - target: BMICalculator
     settings:
       base:
         GENERATE_INFOPLIST_FILE: "YES"
         PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI.Tests
+        # Lets BMIWidget/BMITrendWidget.swift import the app module when it's
+        # compiled into the tests (it's in-module inside the widget extension).
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) BMI_TESTS"
 
   # Widget + Control Center extension. Compiles the Foundation-only Core files
   # and the SwiftData-free intents directly (multi-target membership), so the
@@ -127,8 +133,8 @@ targets:
         GENERATE_INFOPLIST_FILE: "NO"
         # App Group so the widget reads the snapshot/SwiftData the app shares.
         CODE_SIGN_ENTITLEMENTS: BMIWidget/BMIWidget.entitlements
-        MARKETING_VERSION: "2.0.2"
-        CURRENT_PROJECT_VERSION: "5"
+        MARKETING_VERSION: "2.1"
+        CURRENT_PROJECT_VERSION: "6"
         TARGETED_DEVICE_FAMILY: "1,2"
         SKIP_INSTALL: "YES"
 

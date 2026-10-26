@@ -169,7 +169,8 @@ public final class CalculatorViewModel {
 
     // MARK: Injected Dependencies
     //
-    // Held as `@ObservationIgnored` so changing them never invalidates views,
+    // All but `store` are held as `@ObservationIgnored` so changing them never
+    // invalidates views,
     // and as `var` so the screen can late-bind environment-provided singletons
     // after `init` (the environment is unavailable at construction time).
 

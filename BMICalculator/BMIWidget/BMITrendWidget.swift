@@ -21,6 +21,9 @@ import SwiftUI
 import WidgetKit
 import AppIntents
 import Charts
+#if BMI_TESTS
+@testable import BMICalculator   // compiled into the unit tests for render checks
+#endif
 
 // MARK: - Configuration
 
