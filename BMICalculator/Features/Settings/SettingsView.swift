@@ -101,6 +101,22 @@ struct SettingsView: View {
             } message: {
                 Text(restoreMessage ?? "")
             }
+            // Sheets go here on the Form, never on a Section. Inside a Form a
+            // Section passes its modifiers to its header and to every row, so a
+            // `.sheet` on a Section becomes one presenter per row, all bound to
+            // the same Bool. On the first tap they race to present and SwiftUI
+            // dismisses the sheet that won (2.1 "See Pro" closed itself).
+            .sheet(isPresented: $showsPro) {
+                ProSheet()
+            }
+            .sheet(isPresented: $showFullDisclaimer) {
+                DisclaimerSheet()
+            }
+            .sheet(isPresented: $showPrivacy) {
+                // Open the policy in an in-app browser rather than leaving the app.
+                SafariView(url: AppLinks.privacyPolicy)
+                    .ignoresSafeArea()
+            }
         }
     }
 
@@ -305,9 +321,6 @@ struct SettingsView: View {
             Text(ProCopy.name)
         }
         .listRowBackground(DSColor.secondaryBackground)
-        .sheet(isPresented: $showsPro) {
-            ProSheet()
-        }
     }
 
     /// The Pro pitch line for Settings.
@@ -349,14 +362,6 @@ struct SettingsView: View {
             }
         }
         .listRowBackground(DSColor.secondaryBackground)
-        .sheet(isPresented: $showFullDisclaimer) {
-            DisclaimerSheet()
-        }
-        .sheet(isPresented: $showPrivacy) {
-            // Open the policy in an in-app browser rather than leaving the app.
-            SafariView(url: AppLinks.privacyPolicy)
-                .ignoresSafeArea()
-        }
     }
 
     // MARK: Disclaimer (always-visible short form)

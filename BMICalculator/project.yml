@@ -64,8 +64,8 @@ targets:
         # as an INFOPLIST_KEY scalar). Xcode merges the generated keys + the
         # INFOPLIST_KEY_* values below on top of this file.
         INFOPLIST_FILE: Info.plist
-        CURRENT_PROJECT_VERSION: "6"
-        MARKETING_VERSION: "2.1"
+        CURRENT_PROJECT_VERSION: "7"
+        MARKETING_VERSION: "2.1.1"
         TARGETED_DEVICE_FAMILY: "1,2"        # iPhone + iPad
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: "YES"
         INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
@@ -107,6 +107,22 @@ targets:
         # compiled into the tests (it's in-module inside the widget extension).
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) BMI_TESTS"
 
+  # UI tests for presentation bugs unit tests can't see (e.g. a sheet that
+  # closes itself on first tap). Slow, so run them on their own with
+  # -only-testing:BMICalculatorUITests.
+  BMICalculatorUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: UITests
+    dependencies:
+      - target: BMICalculator
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: "YES"
+        PRODUCT_BUNDLE_IDENTIFIER: com.jdr.BMI.UITests
+        TEST_TARGET_NAME: BMICalculator
+
   # Widget + Control Center extension. Compiles the Foundation-only Core files
   # and the SwiftData-free intents directly (multi-target membership), so the
   # widget files use Core types in-module (no `import Core`).
@@ -133,8 +149,8 @@ targets:
         GENERATE_INFOPLIST_FILE: "NO"
         # App Group so the widget reads the snapshot/SwiftData the app shares.
         CODE_SIGN_ENTITLEMENTS: BMIWidget/BMIWidget.entitlements
-        MARKETING_VERSION: "2.1"
-        CURRENT_PROJECT_VERSION: "6"
+        MARKETING_VERSION: "2.1.1"
+        CURRENT_PROJECT_VERSION: "7"
         TARGETED_DEVICE_FAMILY: "1,2"
         SKIP_INSTALL: "YES"
 
@@ -146,10 +162,12 @@ schemes:
       targets:
         BMICalculator: all
         BMICalculatorTests: [test]
+        BMICalculatorUITests: [test]
     test:
       config: Debug
       targets:
         - BMICalculatorTests
+        - BMICalculatorUITests
     run:
       config: Debug
       # Local StoreKit testing: the scheme loads this config so the "Remove Ads"
