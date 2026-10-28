@@ -9,6 +9,7 @@ The live app is `BMICalculator/` (SwiftUI, XcodeGen). `BMI-iOS/` is the retired 
 - Simulator builds need `CODE_SIGNING_ALLOWED=NO`.
 - Tests are Swift Testing (`BMICalculatorTests`). `StoreServiceTests` use `SKTestSession` with `Products.storekit`, which is bundled into the test target.
 - When the app hosts tests (`AppConfig.isHostingTests`), it skips its launch-time StoreKit work so it can't race the test sessions.
+- Tests that need an update delivered through `Transaction.updates` (refunds, Ask to Buy) use `letStoreKitSettle()` and `withStoreKitRetries` in `StoreServiceTests`: StoreKit's test daemon can drop or misroute an update when its own syncs overlap, mostly under heavy CPU load.
 
 ## Product rules
 - Local-first: no accounts, no backend, no new third-party SDKs without asking.
