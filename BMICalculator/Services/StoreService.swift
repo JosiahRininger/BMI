@@ -289,12 +289,17 @@ public final class StoreService {
 
     /// Streams `Transaction.updates` for the app's lifetime.
     private func listenForTransactions() -> Task<Void, Never> {
-        Task(priority: .background) { [weak self] in
+        // Not `.background`: under CPU contention that QoS can wait seconds for
+        // a core, delaying an Ask to Buy unlock or a refund. The task is idle
+        // between updates, so a normal priority costs nothing.
+        Task(priority: .medium) { [weak self] in
             for await update in Transaction.updates {
                 guard let self else { continue }
                 guard let transaction = try? self.checkVerified(update) else { continue }
-                await transaction.finish()
+                // Apply first, then finish (Apple's order): if the app dies in
+                // between, StoreKit delivers the unfinished transaction again.
                 await self.handle(update: transaction)
+                await transaction.finish()
             }
         }
     }

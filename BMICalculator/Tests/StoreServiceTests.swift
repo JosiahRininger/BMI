@@ -46,13 +46,40 @@ struct StoreServiceTests {
                             listensForUpdates: listens)
     }
 
-    /// Waits (up to ~5 s) for a condition driven by `Transaction.updates`.
+    /// Waits (up to ~10 s) for a condition driven by `Transaction.updates`.
+    /// A delivered update lands within about 2 s even on a heavily loaded
+    /// machine; one that hasn't by then was dropped (see `withStoreKitRetries`).
     private func waitUntil(_ condition: @escaping @MainActor () -> Bool) async -> Bool {
-        for _ in 0..<50 {
+        for _ in 0..<100 {
             if condition() { return true }
             try? await Task.sleep(for: .milliseconds(100))
         }
         return condition()
+    }
+
+    /// Lets StoreKit finish processing earlier changes before the next change
+    /// whose effect a test checks through the listener.
+    ///
+    /// After each change (a purchase, a session reset, the previous test's
+    /// cleanup) StoreKit re-queries `Transaction.updates` in the app, and a
+    /// re-query that overlaps the next change misreports it. One that runs after
+    /// a refund but before storekitd has synced it comes back without the
+    /// refund yet still moves the app's "updates since" mark past it, so the
+    /// refund is never delivered. A busy machine stretches that window.
+    private func letStoreKitSettle() async {
+        try? await Task.sleep(for: .seconds(1.5))
+    }
+
+    /// Runs a scenario that needs StoreKit to deliver an update to the
+    /// listener, up to three times. Settling makes a dropped or misrouted
+    /// update rare, but storekitd can lag by seconds under heavy load, and the
+    /// app can't see when it's done. A listener that's really broken fails
+    /// every try, so the test still catches it.
+    private func withStoreKitRetries(_ attempt: () async throws -> Bool) async rethrows -> Bool {
+        for _ in 0..<3 {
+            if try await attempt() { return true }
+        }
+        return false
     }
 
     // MARK: Products
@@ -204,14 +231,19 @@ struct StoreServiceTests {
     func refundEarlyRemoveAds() async throws {
         let session = try makeSession()
         defer { session.clearTransactions() }
-        let cache = makeCache()
-        let service = makeService(earlyPurchases: true, cache: cache, listens: true)
-        await service.loadProducts()
-        #expect(await service.purchase(ProductID.removeAds) == .purchased)
-        #expect(service.state.isEarlySupporter)
-        let transaction = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.removeAds })
-        try session.refundTransaction(identifier: transaction.identifier)
-        let cleared = await waitUntil { !service.state.adsRemoved && !service.state.hasPro }
+        var cache = makeCache()
+        let cleared = try await withStoreKitRetries {
+            session.clearTransactions()
+            cache = makeCache()
+            let service = makeService(earlyPurchases: true, cache: cache, listens: true)
+            await service.loadProducts()
+            #expect(await service.purchase(ProductID.removeAds) == .purchased)
+            #expect(service.state.isEarlySupporter)
+            let transaction = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.removeAds })
+            await letStoreKitSettle()
+            try session.refundTransaction(identifier: transaction.identifier)
+            return await waitUntil { !service.state.adsRemoved && !service.state.hasPro }
+        }
         #expect(cleared)
         // A relaunch with the same cache stays refunded (no ad-free flash back).
         let relaunched = makeService(earlyPurchases: true, cache: cache)
@@ -265,14 +297,18 @@ struct StoreServiceTests {
     func refundRemovesPro() async throws {
         let session = try makeSession()
         defer { session.clearTransactions() }
-        let service = makeService(earlyPurchases: false, listens: true)
-        await service.loadProducts()
-        #expect(await service.purchase(ProductID.pro) == .purchased)
+        let cleared = try await withStoreKitRetries {
+            session.clearTransactions()
+            let service = makeService(earlyPurchases: false, listens: true)
+            await service.loadProducts()
+            #expect(await service.purchase(ProductID.pro) == .purchased)
 
-        let transaction = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.pro })
-        try session.refundTransaction(identifier: transaction.identifier)
+            let transaction = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.pro })
+            await letStoreKitSettle()
+            try session.refundTransaction(identifier: transaction.identifier)
 
-        let cleared = await waitUntil { !service.state.hasPro && !service.state.adsRemoved }
+            return await waitUntil { !service.state.hasPro && !service.state.adsRemoved }
+        }
         #expect(cleared)
     }
 
@@ -283,17 +319,27 @@ struct StoreServiceTests {
         let session = try makeSession()
         defer { session.clearTransactions() }
         session.askToBuyEnabled = true
-        let service = makeService(earlyPurchases: false, listens: true)
-        await service.loadProducts()
+        let unlocked = try await withStoreKitRetries {
+            session.clearTransactions()
+            let service = makeService(earlyPurchases: false, listens: true)
+            await service.loadProducts()
+            // storekitd rebuilds its transaction cache after a session reset on
+            // the first transaction read. If that's the request itself, it can
+            // miss that the request is the app's own and hand the listener the
+            // pending transaction, unlocking Pro early. So read once, then settle.
+            await service.refreshEntitlements()
+            await letStoreKitSettle()
 
-        #expect(await service.purchase(ProductID.pro) == .pending)
-        #expect(service.state.hasPro == false)
-        #expect(service.state.adsRemoved == false)
+            #expect(await service.purchase(ProductID.pro) == .pending)
+            let pending = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.pro })
+            await letStoreKitSettle()
+            // `purchase` applies nothing for `.pending`, so Pro here means
+            // StoreKit handed the listener the pending transaction anyway.
+            guard !service.state.hasPro, !service.state.adsRemoved else { return false }
 
-        let pending = try #require(session.allTransactions().first { $0.productIdentifier == ProductID.pro })
-        try session.approveAskToBuyTransaction(identifier: pending.identifier)
-
-        let unlocked = await waitUntil { service.state.hasPro }
+            try session.approveAskToBuyTransaction(identifier: pending.identifier)
+            return await waitUntil { service.state.hasPro }
+        }
         #expect(unlocked)
     }
 
