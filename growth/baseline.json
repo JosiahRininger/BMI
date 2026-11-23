@@ -1,0 +1,36 @@
+{
+  "app": "BMI Calculator",
+  "appleId": "1467544257",
+  "capturedOn": "2026-11-23",
+  "window": {
+    "from": "2026-10-25",
+    "to": "2026-11-21",
+    "days": 28
+  },
+  "store": {
+    "liveVersion": "2.1.1",
+    "usAverageRating": 4.58,
+    "usRatingCount": 31,
+    "listingLocales": [
+      "en-US"
+    ],
+    "territoriesAvailable": 175
+  },
+  "reviews": {
+    "count": 0,
+    "byRating": {
+      "1": 0,
+      "2": 0,
+      "3": 0,
+      "4": 0,
+      "5": 0
+    }
+  },
+  "sales": {
+    "status": "skipped: no vendor number (App Store Connect, Payments and Financial Reports)"
+  },
+  "analytics": {
+    "status": "no Analytics Report request yet (creating one is a write; needs Josiah's OK)"
+  },
+  "notes": "Directional only. Apple hides small numbers, so gaps are expected."
+}
