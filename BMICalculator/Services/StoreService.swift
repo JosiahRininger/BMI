@@ -92,11 +92,11 @@ public enum StoreError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .productUnavailable:
-            return "This purchase isn't available right now. Please try again later."
+            return String(localized: "This purchase isn't available right now. Please try again later.", comment: "Purchase error.")
         case .verificationFailed:
-            return "We couldn't verify the purchase with the App Store."
+            return String(localized: "We couldn't verify the purchase with the App Store.", comment: "Purchase error.")
         case .unknown:
-            return "Something went wrong. Please try again."
+            return String(localized: "Something went wrong. Please try again.", comment: "Generic purchase error.")
         }
     }
 }
@@ -246,7 +246,7 @@ public final class StoreService {
         }
         await refreshEntitlements()
         if !state.adsRemoved {
-            state.lastErrorMessage = "No earlier purchase was found for this Apple Account."
+            state.lastErrorMessage = RestoreCopy.nothingFound
         }
         return state.adsRemoved
     }

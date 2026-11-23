@@ -113,7 +113,7 @@ struct BMIResultEntity: AppEntity, Identifiable {
     // MARK: Helpers
 
     var bmiText: String {
-        String(format: "%.1f", bmi)
+        DisplayNumber.decimal(bmi)
     }
 
     /// Reconstructs the Core category if the raw value still maps to a known case.
@@ -167,10 +167,20 @@ extension BMIResultEntity {
         date: Date
     ) -> CSSearchableItemAttributeSet {
         let attributes = CSSearchableItemAttributeSet(contentType: UTType.text)
-        attributes.title = "BMI \(bmiText), \(categoryTitle)"
-        attributes.contentDescription = "Recorded \(dateFormatter.string(from: date)). Range \(categoryRange). BMI is a screening tool, not a diagnosis."
+        let dateText = dateFormatter.string(from: date)
+        attributes.title = String(localized: "BMI \(bmiText), \(categoryTitle)", comment: "A saved result, e.g. BMI 24.1, Healthy weight. Arguments: BMI value, category name.")
+        attributes.contentDescription = String(localized: "Recorded \(dateText). Range \(categoryRange). BMI is a screening tool, not a diagnosis.", comment: "Spotlight description of a saved result. Arguments: date and time, the category's BMI range.")
         attributes.contentCreationDate = date
-        attributes.keywords = ["BMI", "Body Mass Index", "health", categoryTitle]
+        // English terms plus their translations, so search works either way.
+        let terms = [
+            "BMI", "Body Mass Index",
+            String(localized: "BMI"),
+            String(localized: "Body Mass Index", comment: "Spotlight search keyword."),
+            String(localized: "health", comment: "Spotlight search keyword."),
+            categoryTitle
+        ]
+        var seen = Set<String>()
+        attributes.keywords = terms.filter { seen.insert($0).inserted }
         return attributes
     }
 
@@ -195,7 +205,7 @@ extension BMIResultEntity {
 
         let items: [CSSearchableItem] = records.map { record in
             let attributes = makeAttributeSet(
-                bmiText: String(format: "%.1f", record.bmi),
+                bmiText: DisplayNumber.decimal(record.bmi),
                 categoryTitle: record.categoryTitle,
                 categoryRange: record.categoryRange,
                 date: record.date

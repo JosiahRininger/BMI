@@ -1,0 +1,43 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Internal bundle name (brand). Do not translate.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMICalculator"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "NSHealthShareUsageDescription" : {
+      "comment" : "Permission prompt for reading from Apple Health. BMI Calculator is the app name (not translated). Health is Apple's Health app: use its official name in your language.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI Calculator reads your height and weight from Health to prefill the calculator. Health data never leaves your device and is never used for ads."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription" : {
+      "comment" : "Permission prompt for writing to Apple Health. BMI Calculator is the app name (not translated). Health is Apple's Health app: use its official name in your language.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI Calculator can save your weight and BMI to Health after a calculation, if you choose."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

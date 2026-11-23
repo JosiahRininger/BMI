@@ -52,16 +52,20 @@ struct ExportEntry: Sendable, Equatable {
 
 // MARK: - Unit formatting
 
-/// Formats weight and height in the person's chosen units for exports.
+/// Formats weight and height in the person's chosen units for the doctor
+/// summary, with the locale's decimal separator ("72,4 kg" in es, pt-BR, fr).
+/// (The CSV keeps its own POSIX numbers.)
 enum ExportUnits {
 
     static func weight(_ kilograms: Double, in system: UnitSystem) -> String {
         guard kilograms.isFinite else { return "–" }
         switch system {
         case .metric:
-            return String(format: "%.1f kg", kilograms)
+            let value = DisplayNumber.decimal(kilograms)
+            return String(localized: "\(value) kg", comment: "A weight in kilograms, e.g. 72.4 kg.")
         case .imperial:
-            return String(format: "%.1f lb", BMICalculator.pounds(fromKilograms: kilograms))
+            let value = DisplayNumber.decimal(BMICalculator.pounds(fromKilograms: kilograms))
+            return String(localized: "\(value) lb", comment: "A weight in pounds, e.g. 154.3 lb.")
         case .stone:
             let pounds = BMICalculator.pounds(fromKilograms: kilograms)
             var stone = Int(pounds / BMICalculator.poundsPerStone)
@@ -70,7 +74,8 @@ enum ExportUnits {
                 stone += 1
                 remainder -= BMICalculator.poundsPerStone
             }
-            return String(format: "%d st %.1f lb", stone, remainder)
+            let pounds1 = DisplayNumber.decimal(remainder)
+            return String(localized: "\(stone) st \(pounds1) lb", comment: "A UK weight in stone and pounds, e.g. 11 st 0.3 lb.")
         }
     }
 
@@ -78,7 +83,8 @@ enum ExportUnits {
         guard meters.isFinite else { return "–" }
         switch system {
         case .metric:
-            return String(format: "%.0f cm", meters * 100)
+            let value = DisplayNumber.decimal(meters * 100, places: 0)
+            return String(localized: "\(value) cm", comment: "A height in centimeters, e.g. 175 cm.")
         case .imperial, .stone:
             let totalInches = meters * 100 / 2.54
             var feet = Int(totalInches / Double(BMICalculator.inchesPerFoot))
@@ -87,23 +93,22 @@ enum ExportUnits {
                 feet += 1
                 inches -= Double(BMICalculator.inchesPerFoot)
             }
-            return String(format: "%d ft %.0f in", feet, inches)
+            let wholeInches = Int(inches)
+            return String(localized: "\(feet) ft \(wholeInches) in", comment: "A height in feet and inches, e.g. 5 ft 9 in.")
         }
     }
 
     /// A signed weight change in the chosen units (e.g. "-1.4 kg", "+0.6 lb").
     static func weightChange(_ deltaKilograms: Double, in system: UnitSystem) -> String {
         guard deltaKilograms.isFinite else { return "–" }
-        let value: Double
-        let unit: String
         switch system {
         case .metric:
-            value = deltaKilograms; unit = "kg"
+            let value = DisplayNumber.signedDecimal(deltaKilograms)
+            return String(localized: "\(value) kg", comment: "A weight in kilograms, e.g. 72.4 kg.")
         case .imperial, .stone:
-            value = BMICalculator.pounds(fromKilograms: deltaKilograms); unit = "lb"
+            let value = DisplayNumber.signedDecimal(BMICalculator.pounds(fromKilograms: deltaKilograms))
+            return String(localized: "\(value) lb", comment: "A weight in pounds, e.g. 154.3 lb.")
         }
-        let rounded = (value * 10).rounded() / 10
-        return rounded == 0 ? "0.0 \(unit)" : String(format: "%+.1f %@", rounded, unit)
     }
 }
 
@@ -111,6 +116,8 @@ enum ExportUnits {
 
 enum HistoryCSV {
 
+    /// Column names stay English and numbers stay POSIX in every language, so
+    /// the file's format never changes with the phone's language.
     static let header = ["Date", "Time", "BMI", "Category", "Weight (kg)", "Weight (lb)",
                          "Height (cm)", "Height (in)", "Cutoffs"]
 
@@ -128,7 +135,7 @@ enum HistoryCSV {
                 dateFormatter.string(from: entry.date),
                 timeFormatter.string(from: entry.date),
                 number(entry.bmi, places: 1),
-                entry.category(standard).title,
+                entry.category(standard).englishTitle,
                 number(entry.weightKilograms, places: 1),
                 number(BMICalculator.pounds(fromKilograms: entry.weightKilograms), places: 1),
                 number(entry.heightMeters * 100, places: 1),
@@ -198,11 +205,11 @@ enum SummaryRange: String, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .month:   return "Last 30 days"
-        case .quarter: return "Last 90 days"
-        case .year:    return "Last year"
-        case .all:     return "All"
-        case .custom:  return "Custom"
+        case .month:   return String(localized: "Last 30 days")
+        case .quarter: return String(localized: "Last 90 days")
+        case .year:    return String(localized: "Last year")
+        case .all:     return String(localized: "All", comment: "Chart or summary range: every entry. Short (segmented control).")
+        case .custom:  return String(localized: "Custom", comment: "Doctor summary date range: dates the person picks.")
         }
     }
 
@@ -272,14 +279,16 @@ struct DoctorSummary: Equatable, Sendable {
 
     /// The method note printed on the first page.
     var methodNote: String {
+        let formula = String(localized: "BMI = weight (kg) ÷ height (m)².", comment: "Doctor summary PDF: the BMI formula. Translate BMI, weight, and height; keep the symbols.")
         let cutoffs: String
         switch standard {
         case .standard:
-            cutoffs = "Adult categories (WHO/CDC): underweight below 18.5, healthy weight 18.5 to under 25, overweight 25 to under 30, obesity 30 and above (class 1: 30 to under 35, class 2: 35 to under 40, class 3: 40 and above)."
+            cutoffs = String(localized: "Adult categories (WHO/CDC): underweight below 18.5, healthy weight 18.5 to under 25, overweight 25 to under 30, obesity 30 and above (class 1: 30 to under 35, class 2: 35 to under 40, class 3: 40 and above).", comment: "Doctor summary PDF method note. Use your language's decimal separator in the numbers. Category names must match the app's category names.")
         case .asian:
-            cutoffs = "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, obesity 27.5 and above (this app lists all of these as Obesity (class 1) and does not split higher classes)."
+            cutoffs = String(localized: "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, obesity 27.5 and above (this app lists all of these as Obesity (class 1) and does not split higher classes).", comment: "Doctor summary PDF method note. Use your language's decimal separator in the numbers. Obesity (class 1) must match the app's category name.")
         }
-        return "BMI = weight (kg) ÷ height (m)². \(cutoffs) Entries were recorded in BMI Calculator. Categories apply to adults only."
+        let source = String(localized: "Entries were recorded in BMI Calculator. Categories apply to adults only.", comment: "Doctor summary PDF method note. BMI Calculator is the app name (not translated).")
+        return "\(formula) \(cutoffs) \(source)"
     }
 
     /// A dated file name, e.g. "BMI-and-Weight-History-2026-10-26.pdf".
@@ -290,8 +299,12 @@ struct DoctorSummary: Equatable, Sendable {
         return "BMI-and-Weight-History-\(formatter.string(from: generatedAt)).pdf"
     }
 
-    static let title = "BMI and Weight History"
-    static let footer = "BMI is a screening measure, not a diagnosis. Please discuss these results with your doctor or care team."
+    static var title: String {
+        String(localized: "BMI and Weight History", comment: "Doctor summary PDF title (also the PDF's document title).")
+    }
+    static var footer: String {
+        String(localized: "BMI is a screening measure, not a diagnosis. Please discuss these results with your doctor or care team.", comment: "Doctor summary PDF footer on every page.")
+    }
 }
 
 // MARK: - PDF layout
@@ -478,14 +491,14 @@ private struct DoctorSummaryPageView: View {
     private var summaryGrid: some View {
         let units = summary.unitSystem
         let items: [(String, String)] = [
-            ("Entries", "\(summary.entries.count)"),
-            ("Latest BMI", summary.latest.map { String(format: "%.1f", $0.bmi) } ?? "–"),
-            ("Latest weight", summary.latest.map { ExportUnits.weight($0.weightKilograms, in: units) } ?? "–"),
-            ("Height", summary.latest.map { ExportUnits.height($0.heightMeters, in: units) } ?? "–"),
-            ("BMI change", summary.bmiChange.map { $0 == 0 ? "0.0" : String(format: "%+.1f", $0) } ?? "–"),
-            ("Weight change", summary.weightChangeKilograms.map { ExportUnits.weightChange($0, in: units) } ?? "–"),
-            ("Average BMI", summary.averageBMI.map { String(format: "%.1f", $0) } ?? "–"),
-            ("BMI range", rangeText),
+            (String(localized: "Entries", comment: "Doctor summary PDF: number of entries."), summary.entries.count.formatted()),
+            (String(localized: "Latest BMI"), summary.latest.map { DisplayNumber.decimal($0.bmi) } ?? "–"),
+            (String(localized: "Latest weight"), summary.latest.map { ExportUnits.weight($0.weightKilograms, in: units) } ?? "–"),
+            (String(localized: "Height"), summary.latest.map { ExportUnits.height($0.heightMeters, in: units) } ?? "–"),
+            (String(localized: "BMI change", comment: "Doctor summary PDF: latest BMI minus first BMI."), summary.bmiChange.map { DisplayNumber.signedDecimal($0) } ?? "–"),
+            (String(localized: "Weight change", comment: "Doctor summary PDF: latest weight minus first weight."), summary.weightChangeKilograms.map { ExportUnits.weightChange($0, in: units) } ?? "–"),
+            (String(localized: "Average BMI"), summary.averageBMI.map { DisplayNumber.decimal($0) } ?? "–"),
+            (String(localized: "BMI range", comment: "Doctor summary PDF: lowest to highest BMI in the dates shown."), rangeText),
         ]
         return LazyVGrid(columns: [GridItem(.flexible(), alignment: .leading),
                                    GridItem(.flexible(), alignment: .leading),
@@ -509,14 +522,23 @@ private struct DoctorSummaryPageView: View {
 
     private var rangeText: String {
         guard let low = summary.lowestBMI, let high = summary.highestBMI else { return "–" }
-        return String(format: "%.1f to %.1f", low, high)
+        let lowText = DisplayNumber.decimal(low)
+        let highText = DisplayNumber.decimal(high)
+        return String(localized: "\(lowText) to \(highText)", comment: "Doctor summary PDF: lowest to highest BMI, e.g. 22.1 to 24.8.")
     }
 
     // MARK: Table
 
     private var table: some View {
         VStack(alignment: .leading, spacing: 0) {
-            tableRow(["Date", "Time", "Weight", "Height", "BMI", "Category"], header: true)
+            tableRow([
+                String(localized: "Date", comment: "Doctor summary PDF table column."),
+                String(localized: "Time", comment: "Doctor summary PDF table column."),
+                String(localized: "Weight"),
+                String(localized: "Height"),
+                String(localized: "BMI"),
+                String(localized: "Category", comment: "Doctor summary PDF table column: BMI category.")
+            ], header: true)
             Rectangle().fill(rule).frame(height: 0.75)
             ForEach(Array(rows), id: \.self) { index in
                 let entry = summary.entries[index]
@@ -525,7 +547,7 @@ private struct DoctorSummaryPageView: View {
                     entry.date.formatted(date: .omitted, time: .shortened),
                     ExportUnits.weight(entry.weightKilograms, in: summary.unitSystem),
                     ExportUnits.height(entry.heightMeters, in: summary.unitSystem),
-                    String(format: "%.1f", entry.bmi),
+                    DisplayNumber.decimal(entry.bmi),
                     entry.category(summary.standard).title
                 ], header: false)
             }

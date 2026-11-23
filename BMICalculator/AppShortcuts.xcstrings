@@ -1,0 +1,25 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Calculate my BMI in ${applicationName}" : {
+      "comment" : "Siri and Spotlight phrases for the Calculate BMI shortcut. Translate each phrase naturally; every phrase must keep ${applicationName} exactly once. You can add or drop phrases.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Calculate my BMI in ${applicationName}",
+              "Calculate BMI in ${applicationName}",
+              "Check my BMI in ${applicationName}",
+              "What's my BMI in ${applicationName}",
+              "Work out my BMI with ${applicationName}",
+              "Body mass index in ${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

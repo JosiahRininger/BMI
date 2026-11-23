@@ -21,10 +21,11 @@ import SwiftUI
 
 /// The Pro copy, kept in one place so every surface says the same thing.
 enum ProCopy {
+    /// Product name: a brand, not localized.
     static let name = "BMI Calculator Pro"
-    static let tagline = "One purchase. No subscription. No ads."
-    static let footer = "One-time purchase. Restore anytime in Settings."
-    static let supporter = "Made by an independent developer. Thank you for helping keep it going."
+    static var tagline: String { String(localized: "One purchase. No subscription. No ads.", comment: "Pro sheet subtitle. Pro is a one-time purchase.") }
+    static var footer: String { String(localized: "One-time purchase. Restore anytime in Settings.", comment: "Pro sheet footer under the purchase buttons.") }
+    static var supporter: String { String(localized: "Made by an independent developer. Thank you for helping keep it going.", comment: "Pro sheet note.") }
 
     struct Feature: Identifiable {
         let symbol: String
@@ -33,26 +34,26 @@ enum ProCopy {
         var id: String { title }
     }
 
-    static let doctorSummary = Feature(
+    static var doctorSummary: Feature { Feature(
         symbol: "doc.text",
-        title: "Doctor summary",
-        detail: "A clean PDF of your history for your next appointment."
-    )
-    static let trendWidget = Feature(
+        title: String(localized: "Doctor summary", comment: "Pro feature name: a PDF of BMI and weight history to share with a doctor."),
+        detail: String(localized: "A clean PDF of your history for your next appointment.", comment: "Pro feature description.")
+    ) }
+    static var trendWidget: Feature { Feature(
         symbol: "chart.xyaxis.line",
-        title: "Trend widget",
-        detail: "Your recent entries, right on your Home Screen."
-    )
-    static let themes = Feature(
+        title: String(localized: "Trend widget", comment: "Pro feature name: a Home Screen widget with a BMI trend chart."),
+        detail: String(localized: "Your recent entries, right on your Home Screen.", comment: "Pro feature description.")
+    ) }
+    static var themes: Feature { Feature(
         symbol: "paintpalette",
-        title: "Themes",
-        detail: "Choose the colors that feel like yours."
-    )
-    static let noAds = Feature(
+        title: String(localized: "Themes", comment: "Pro feature name: app color themes."),
+        detail: String(localized: "Choose the colors that feel like yours.", comment: "Pro feature description.")
+    ) }
+    static var noAds: Feature { Feature(
         symbol: "rectangle.slash",
-        title: "No ads",
-        detail: "Anywhere in the app."
-    )
+        title: String(localized: "No ads", comment: "Pro feature name."),
+        detail: String(localized: "Anywhere in the app.", comment: "Pro feature description: no ads anywhere in the app.")
+    ) }
 
     /// What Pro adds on top of what the person already has.
     static func features(includingNoAds: Bool) -> [Feature] {
@@ -62,7 +63,7 @@ enum ProCopy {
     }
 
     /// The short list for small cards.
-    static let shortList = "a doctor summary, a trend widget, and themes"
+    static var shortList: String { String(localized: "a doctor summary, a trend widget, and themes", comment: "Short list of Pro features, used inside a sentence.") }
 }
 
 // MARK: - ProSheet
@@ -116,7 +117,11 @@ struct ProSheet: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(showsPurchaseActions ? "Not now" : "Done") { dismiss() }
+                    Button {
+                        dismiss()
+                    } label: {
+                        showsPurchaseActions ? Text("Not now") : Text("Done")
+                    }
                 }
             }
             .alert(
@@ -162,9 +167,9 @@ struct ProSheet: View {
     @ViewBuilder
     private var offerContent: some View {
         header(
-            title: offer == .upgradeToPro ? "Upgrade to Pro" : ProCopy.name,
+            title: offer == .upgradeToPro ? String(localized: "Upgrade to Pro") : ProCopy.name,
             subtitle: offer == .upgradeToPro
-                ? "You already have no ads. Pro adds the doctor summary, the trend widget, and themes."
+                ? String(localized: "You already have no ads. Pro adds the doctor summary, the trend widget, and themes.")
                 : ProCopy.tagline
         )
         featureList(ProCopy.features(includingNoAds: offer != .upgradeToPro))
@@ -183,9 +188,9 @@ struct ProSheet: View {
                 .accessibilityHidden(true)
             Text("Waiting for approval")
                 .font(.title2.bold())
-            Text(productID == ProductID.removeAds
-                 ? "Your purchase needs approval. Ads go away as soon as it's approved, even if you close this."
-                 : "Your purchase needs approval. Pro unlocks as soon as it's approved, even if you close this.")
+            (productID == ProductID.removeAds
+                 ? Text("Your purchase needs approval. Ads go away as soon as it's approved, even if you close this.", comment: "Ask to Buy: a parent must approve the Remove Ads purchase.")
+                 : Text("Your purchase needs approval. Pro unlocks as soon as it's approved, even if you close this.", comment: "Ask to Buy: a parent must approve the Pro purchase."))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -307,24 +312,32 @@ struct ProSheet: View {
     }
 
     private var proTitle: String {
-        if store.isProcessing { return "Purchasing…" }
-        if let price = store.proPrice { return "Get Pro for \(price)" }
-        return "Get Pro"
+        if store.isProcessing { return String(localized: "Purchasing…", comment: "Pro purchase button while the purchase is in progress.") }
+        if let price = store.proPrice {
+            return String(localized: "Get Pro for \(price)", comment: "Pro purchase button. Argument: the App Store price, already localized (e.g. $4.99).")
+        }
+        return String(localized: "Get Pro", comment: "Pro purchase button before the price loads.")
     }
 
     private var removeAdsTitle: String {
-        if let price = store.removeAdsPrice { return "Just remove ads for \(price)" }
-        return "Just remove ads"
+        if let price = store.removeAdsPrice {
+            return String(localized: "Just remove ads for \(price)", comment: "Remove Ads purchase button. Argument: the App Store price, already localized (e.g. $1.99).")
+        }
+        return String(localized: "Just remove ads", comment: "Remove Ads purchase button before the price loads.")
     }
 
     private var unlockedMessage: String {
         store.isEarlySupporter
-            ? "Pro is unlocked. Thank you for your early support."
-            : "Pro is unlocked. Thank you for supporting BMI Calculator."
+            ? String(localized: "Pro is unlocked. Thank you for your early support.")
+            : String(localized: "Pro is unlocked. Thank you for supporting BMI Calculator.", comment: "BMI Calculator is the app name (not translated).")
     }
 
-    static let proThanks = "Thank you! Pro is unlocked. Your doctor summary, trend widget, and themes are ready. Your purchase stays with your Apple Account, so it comes with you to a new phone."
-    static let removeAdsThanks = "Thank you! Ads are gone. Your purchase stays with your Apple Account, so it comes with you to a new phone."
+    static var proThanks: String {
+        String(localized: "Thank you! Pro is unlocked. Your doctor summary, trend widget, and themes are ready. Your purchase stays with your Apple Account, so it comes with you to a new phone.", comment: "Shown after buying Pro. Apple Account is Apple's term: use Apple's official name for it in your language.")
+    }
+    static var removeAdsThanks: String {
+        String(localized: "Thank you! Ads are gone. Your purchase stays with your Apple Account, so it comes with you to a new phone.", comment: "Shown after buying Remove Ads. Apple Account is Apple's term: use Apple's official name for it in your language.")
+    }
 
     private func buy(_ productID: String) {
         Task {
@@ -348,7 +361,7 @@ struct ProSheet: View {
             if restored {
                 phase = .thanks(RestoreCopy.message(for: store.entitlements))
             } else {
-                errorMessage = store.lastErrorMessage ?? "No earlier purchase was found for this Apple Account."
+                errorMessage = store.lastErrorMessage ?? RestoreCopy.nothingFound
             }
         }
     }
@@ -360,12 +373,17 @@ enum RestoreCopy {
     /// The "welcome back" line after a successful restore.
     static func message(for entitlements: Entitlements) -> String {
         if entitlements.earlySupporter {
-            return "Welcome back. Your earlier purchase includes Pro, so everything is unlocked."
+            return String(localized: "Welcome back. Your earlier purchase includes Pro, so everything is unlocked.", comment: "After restoring purchases, for early Remove Ads buyers who get Pro free.")
         }
         if entitlements.pro {
-            return "Welcome back. Pro is unlocked."
+            return String(localized: "Welcome back. Pro is unlocked.", comment: "After restoring purchases.")
         }
-        return "Welcome back. Your ads are removed."
+        return String(localized: "Welcome back. Your ads are removed.", comment: "After restoring purchases (Remove Ads only).")
+    }
+
+    /// Restore found nothing to restore.
+    static var nothingFound: String {
+        String(localized: "No earlier purchase was found for this Apple Account.", comment: "Restore Purchases found nothing. Apple Account is Apple's term: use Apple's official name for it in your language.")
     }
 }
 

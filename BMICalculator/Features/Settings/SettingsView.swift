@@ -169,7 +169,7 @@ struct SettingsView: View {
         .listRowBackground(DSColor.secondaryBackground)
     }
 
-    private var healthStandardNote: String {
+    private var healthStandardNote: LocalizedStringKey {
         switch healthStandard {
         case .standard:
             return "Universal WHO/CDC cutoffs: healthy weight is 18.5 to under 25."
@@ -240,9 +240,9 @@ struct SettingsView: View {
                 }
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel("Pro unlocked")
-                Text(store.isEarlySupporter
-                     ? "Thank you for your early support."
-                     : "Thank you for supporting the app.")
+                (store.isEarlySupporter
+                     ? Text("Thank you for your early support.")
+                     : Text("Thank you for supporting the app."))
                     .font(DSFont.caption)
                     .foregroundStyle(DSColor.secondaryText)
             } else {
@@ -265,7 +265,7 @@ struct SettingsView: View {
                     .accessibilityLabel("Ads removed")
                 }
                 VStack(alignment: .leading, spacing: DSSpacing.sm) {
-                    Text(store.adsRemoved ? "Upgrade to Pro" : ProCopy.name)
+                    (store.adsRemoved ? Text("Upgrade to Pro") : Text(verbatim: ProCopy.name))
                         .font(DSFont.headline)
                         .foregroundStyle(DSColor.primaryText)
                     Text(proSubtitle)
@@ -324,7 +324,7 @@ struct SettingsView: View {
     }
 
     /// The Pro pitch line for Settings.
-    private var proSubtitle: String {
+    private var proSubtitle: LocalizedStringKey {
         store.adsRemoved
             ? "Adds a doctor summary, a trend widget, and themes. One-time purchase."
             : "A doctor summary, a trend widget, themes, and no ads. One-time purchase, no subscription."
@@ -377,7 +377,7 @@ struct SettingsView: View {
 
     // MARK: Row Helper
 
-    private func settingsRow(title: String, systemImage: String, showsChevron: Bool) -> some View {
+    private func settingsRow(title: LocalizedStringKey, systemImage: String, showsChevron: Bool) -> some View {
         HStack {
             Label {
                 Text(title).foregroundStyle(DSColor.primaryText)
@@ -428,8 +428,7 @@ struct SettingsView: View {
             if restored {
                 restoreMessage = RestoreCopy.message(for: store.entitlements)
             } else {
-                purchaseError = store.lastErrorMessage
-                    ?? "No earlier purchase was found for this Apple Account."
+                purchaseError = store.lastErrorMessage ?? RestoreCopy.nothingFound
             }
         }
     }
@@ -520,7 +519,7 @@ enum AppLinks {
 /// Single source of truth for the mandated disclaimer text (shared with the
 /// result screen and onboarding so the wording never drifts).
 enum Disclaimer {
-    static let full = "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
+    static var full: String { BMIDisclaimer.text }
 }
 
 // MARK: - Preview

@@ -29,26 +29,29 @@ public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
     /// A short, person-facing label for the unit system.
     public var displayName: String {
         switch self {
-        case .metric:   return "Metric"
-        case .imperial: return "Imperial"
-        case .stone:    return "Stone"
+        case .metric:
+            return String(localized: "Metric", comment: "Unit system name (kg, cm). Shown in a 3-segment control: keep it short.")
+        case .imperial:
+            return String(localized: "Imperial", comment: "Unit system name (lb, ft/in). Shown in a 3-segment control: keep it short.")
+        case .stone:
+            return String(localized: "Stone", comment: "Unit system name: UK body weight in stone (st), height in ft/in. Shown in a 3-segment control: keep it short.")
         }
     }
 
     /// The label shown for weight entry in this system.
     public var weightUnitLabel: String {
         switch self {
-        case .metric:   return "kg"
-        case .imperial: return "lb"
-        case .stone:    return "st"
+        case .metric:   return String(localized: "kg", comment: "Unit symbol: kilograms.")
+        case .imperial: return String(localized: "lb", comment: "Unit symbol: pounds (weight).")
+        case .stone:    return String(localized: "st", comment: "Unit symbol: stone (UK body weight, 14 lb).")
         }
     }
 
     /// The label shown for height entry in this system.
     public var heightUnitLabel: String {
         switch self {
-        case .metric:   return "cm"
-        case .imperial, .stone: return "ft / in"
+        case .metric:   return String(localized: "cm", comment: "Unit symbol: centimeters.")
+        case .imperial, .stone: return String(localized: "ft / in", comment: "Unit symbols: feet / inches (height).")
         }
     }
 
@@ -98,11 +101,14 @@ public enum UnitSystem: String, CaseIterable, Codable, Identifiable, Sendable {
         // no representable in-band value at this resolution, so show nothing.
         guard lower <= upper else { return nil }
 
-        switch self {
-        case .metric, .imperial:
-            return "\(Int(lower.rounded()))–\(Int(upper.rounded())) \(weightUnitLabel)"
-        case .stone:
-            return String(format: "%.1f–%.1f %@", lower, upper, weightUnitLabel)
-        }
+        // Whole kg / lb, one-decimal stone; numbers follow the locale (decimal
+        // comma in es, pt-BR, fr).
+        let places = self == .stone ? 1 : 0
+        let lowerText = DisplayNumber.decimal(lower, places: places)
+        let upperText = DisplayNumber.decimal(upper, places: places)
+        return String(
+            localized: "\(lowerText)–\(upperText) \(weightUnitLabel)",
+            comment: "A weight range, e.g. 59–79 kg. Arguments: lowest weight, highest weight, unit symbol."
+        )
     }
 }

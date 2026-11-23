@@ -1,0 +1,1527 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ · %@" : {
+      "comment" : "Formatting only: a date, a separator dot, and a BMI range. Nothing to translate.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "%@ · BMI %@ then, %@ now (%@)" : {
+      "comment" : "History, since the first entry. Arguments: first entry date, first BMI, latest BMI, signed change (e.g. +0.4).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · BMI %2$@ then, %3$@ now (%4$@)"
+          }
+        }
+      }
+    },
+    "%@ cm" : {
+      "comment" : "A height in centimeters, e.g. 175 cm."
+    },
+    "%@ in" : {
+      "comment" : "Height in half inches, e.g. 7.5 in. Shown in a picker wheel."
+    },
+    "%@ kg" : {
+      "comment" : "A weight in kilograms, e.g. 72.4 kg."
+    },
+    "%@ lb" : {
+      "comment" : "A weight in pounds, e.g. 154.3 lb."
+    },
+    "%@ since %@" : {
+      "comment" : "Trend widget: BMI change since the first point, e.g. +0.4 since Jul 12. Small widget: keep it short.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ since %2$@"
+          }
+        }
+      }
+    },
+    "%@ to %@" : {
+      "comment" : "Doctor summary PDF: lowest to highest BMI, e.g. 22.1 to 24.8.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "%@–%@ %@" : {
+      "comment" : "A weight range, e.g. 59–79 kg. Arguments: lowest weight, highest weight, unit symbol.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@–%2$@ %3$@"
+          }
+        }
+      }
+    },
+    "%@, continued" : {
+      "comment" : "Doctor summary PDF heading on pages after the first. Argument: the PDF title."
+    },
+    "%lld BMI results" : {
+      "comment" : "Shortcuts app: a count of saved BMI results (plural variants).",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld BMI result"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld BMI results"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld centimeters" : {
+      "comment" : "VoiceOver height, e.g. 170 centimeters."
+    },
+    "%lld cm" : {
+      "comment" : "Height in centimeters, shown in a picker wheel, e.g. 170 cm."
+    },
+    "%lld entries, shown in imperial units." : {
+      "comment" : "Doctor summary. Argument: number of entries (plural variants). Imperial = lb and ft/in.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@count@, shown in imperial units."
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld entries, shown in metric units." : {
+      "comment" : "Doctor summary. Argument: number of entries (plural variants). Metric = kg and cm.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@count@, shown in metric units."
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld entries, shown in stone units." : {
+      "comment" : "Doctor summary. Argument: number of entries (plural variants). Stone = UK st and lb, height in ft/in.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%#@count@, shown in stone units."
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld feet %@" : {
+      "comment" : "VoiceOver height, e.g. 5 feet 7 in. Arguments: feet (plural variants), the inches label.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$#@count@ %2$@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg foot"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg feet"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld ft" : {
+      "comment" : "Height in whole feet, shown in a picker wheel, e.g. 5 ft."
+    },
+    "%lld ft %lld in" : {
+      "comment" : "A height in feet and inches, e.g. 5 ft 9 in.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld ft %2$lld in"
+          }
+        }
+      }
+    },
+    "%lld in" : {
+      "comment" : "Height in whole inches, e.g. 7 in. Shown in a picker wheel."
+    },
+    "%lld st %@ lb" : {
+      "comment" : "A UK weight in stone and pounds, e.g. 11 st 0.3 lb.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld st %2$@ lb"
+          }
+        }
+      }
+    },
+    "1Y" : {
+      "comment" : "Chart range segment: last year. 5-segment control: keep it 2 to 4 characters."
+    },
+    "7D" : {
+      "comment" : "Chart range segment: last 7 days. 5-segment control: keep it 2 to 4 characters."
+    },
+    "30D" : {
+      "comment" : "Chart range segment: last 30 days. 5-segment control: keep it 2 to 4 characters."
+    },
+    "90D" : {
+      "comment" : "Chart range segment: last 90 days. 5-segment control: keep it 2 to 4 characters."
+    },
+    "A clean PDF of your history for your next appointment." : {
+      "comment" : "Pro feature description."
+    },
+    "a doctor summary, a trend widget, and themes" : {
+      "comment" : "Short list of Pro features, used inside a sentence."
+    },
+    "A doctor summary, a trend widget, themes, and no ads. One-time purchase, no subscription." : {
+
+    },
+    "A doctor summary, a trend widget, themes, and no ads. One-time purchase." : {
+
+    },
+    "A required Health data type is unavailable." : {
+      "comment" : "Error. Health means Apple Health."
+    },
+    "A thank-you for you" : {
+
+    },
+    "About" : {
+
+    },
+    "About BMI" : {
+
+    },
+    "Access to Health data was not granted. You can enable it in Settings › Health › Data Access & Devices." : {
+      "comment" : "Error. The path names iOS screens: use the exact names iOS shows for Settings, Health, and Data Access & Devices in your language."
+    },
+    "Adds a doctor summary, a trend widget, and themes." : {
+
+    },
+    "Adds a doctor summary, a trend widget, and themes. One-time purchase." : {
+
+    },
+    "Adjust weight" : {
+
+    },
+    "Ads only. Pro already includes this." : {
+
+    },
+    "Ads removed" : {
+
+    },
+    "Adult categories (WHO Asian action points): underweight below 18.5, healthy weight 18.5 to under 23, overweight 23 to under 27.5, obesity 27.5 and above (this app lists all of these as Obesity (class 1) and does not split higher classes)." : {
+      "comment" : "Doctor summary PDF method note. Use your language's decimal separator in the numbers. Obesity (class 1) must match the app's category name."
+    },
+    "Adult categories (WHO/CDC): underweight below 18.5, healthy weight 18.5 to under 25, overweight 25 to under 30, obesity 30 and above (class 1: 30 to under 35, class 2: 35 to under 40, class 3: 40 and above)." : {
+      "comment" : "Doctor summary PDF method note. Use your language's decimal separator in the numbers. Category names must match the app's category names."
+    },
+    "Advertisement" : {
+
+    },
+    "All" : {
+      "comment" : "Chart or summary range: every entry. Short (segmented control)."
+    },
+    "All entries" : {
+
+    },
+    "Anywhere in the app." : {
+      "comment" : "Pro feature description: no ads anywhere in the app."
+    },
+    "Apple Health" : {
+      "comment" : "Apple's product name. Use Apple's official name for the Health app in your language."
+    },
+    "Apple Health connected" : {
+
+    },
+    "Asian" : {
+      "comment" : "BMI cutoff choice (WHO action points for some Asian populations). In a 2-segment control: keep it short."
+    },
+    "Asian (WHO action points)" : {
+      "comment" : "Name of the WHO BMI cutoff set for some Asian populations."
+    },
+    "Average" : {
+      "comment" : "Stat tile title above a BMI value; three tiles share one row, so keep it short."
+    },
+    "Average BMI" : {
+
+    },
+    "BMI" : {
+      "comment" : "Abbreviation of body mass index. Use your language's usual abbreviation (IMC in Spanish, Portuguese, and French)."
+    },
+    "BMI %@" : {
+      "comment" : "VoiceOver label for the BMI value, e.g. BMI 24.1."
+    },
+    "BMI %@ · %@" : {
+      "comment" : "Shortcuts and Spotlight: a saved result, e.g. BMI 24.1 · Healthy weight. Arguments: BMI value, category name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "BMI %@, %@" : {
+      "comment" : "A saved result, e.g. BMI 24.1, Healthy weight. Arguments: BMI value, category name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI %1$@, %2$@"
+          }
+        }
+      }
+    },
+    "BMI %@, %@, range %@" : {
+      "comment" : "VoiceOver summary of a result. Arguments: BMI value, category name, category BMI range.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI %1$@, %2$@, range %3$@"
+          }
+        }
+      }
+    },
+    "BMI %@, %@, range %@. Healthy weight for your height, %@" : {
+      "comment" : "VoiceOver summary of a result. Arguments: BMI value, category name, category BMI range, healthy weight range for the person's height.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI %1$@, %2$@, range %3$@. Healthy weight for your height, %4$@"
+          }
+        }
+      }
+    },
+    "BMI = weight (kg) ÷ height (m)²." : {
+      "comment" : "Doctor summary PDF: the BMI formula. Translate BMI, weight, and height; keep the symbols."
+    },
+    "BMI and Weight History" : {
+      "comment" : "Doctor summary PDF title (also the PDF's document title)."
+    },
+    "BMI can't tell muscle from fat. If you're lean and muscular, a higher number here can simply mean more muscle, not excess body fat or added health risk." : {
+
+    },
+    "BMI category cutoffs" : {
+
+    },
+    "BMI change" : {
+      "comment" : "Doctor summary PDF: latest BMI minus first BMI."
+    },
+    "BMI cutoffs" : {
+
+    },
+    "BMI decreasing from %@ to %@ over %lld measurements." : {
+      "comment" : "VoiceOver trend chart summary. Arguments: first BMI, latest BMI, number of measurements.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI decreasing from %1$@ to %2$@ over %3$#@count@."
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 3,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg measurement"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg measurements"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "BMI gauge" : {
+
+    },
+    "BMI history (CSV)" : {
+
+    },
+    "BMI increasing from %@ to %@ over %lld measurements." : {
+      "comment" : "VoiceOver trend chart summary. Arguments: first BMI, latest BMI, number of measurements.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI increasing from %1$@ to %2$@ over %3$#@count@."
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 3,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg measurement"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg measurements"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "BMI is a screening measure, not a diagnosis. Please discuss these results with your doctor or care team." : {
+      "comment" : "Doctor summary PDF footer on every page."
+    },
+    "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider." : {
+      "comment" : "The medical disclaimer shown near every result, in History, and in Settings. Keep the meaning exact."
+    },
+    "BMI is a screening tool, not a diagnosis. It can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider." : {
+
+    },
+    "BMI is a screening tool, not a diagnosis. Talk to a healthcare provider." : {
+      "comment" : "Short disclaimer spoken by Siri and shown in Shortcuts after a result."
+    },
+    "BMI is a screening tool, not medical advice." : {
+
+    },
+    "BMI over time · shaded band: healthy range" : {
+
+    },
+    "BMI range" : {
+      "comment" : "Doctor summary PDF: lowest to highest BMI in the dates shown."
+    },
+    "BMI Result" : {
+
+    },
+    "BMI standard" : {
+
+    },
+    "BMI steady from %@ to %@ over %lld measurements." : {
+      "comment" : "VoiceOver trend chart summary. Arguments: first BMI, latest BMI (the same), number of measurements.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI steady from %1$@ to %2$@ over %3$#@count@."
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 3,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg measurement"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg measurements"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "BMI trend" : {
+
+    },
+    "BMI Trend" : {
+
+    },
+    "BMI trend chart, %@" : {
+
+    },
+    "BMI trend for the last 90 days" : {
+      "comment" : "VoiceOver label for the trend widget."
+    },
+    "BMI trend for the last 90 days. Latest %@." : {
+      "comment" : "VoiceOver label for the trend widget. Argument: latest BMI."
+    },
+    "BMI trend for the last 90 days. Latest %@. %@" : {
+      "comment" : "VoiceOver label for the trend widget. Arguments: latest BMI, change since the first point (e.g. +0.4 since Jul 12).",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI trend for the last 90 days. Latest %1$@. %2$@"
+          }
+        }
+      }
+    },
+    "BMI was developed from population averages. It does not account for muscle mass, bone density, body-fat distribution, sex, or ethnicity at the individual level. Use it as a starting point for a conversation with a healthcare provider, not as a verdict about a person's health." : {
+
+    },
+    "BMI Widget" : {
+
+    },
+    "BMI. No measurement yet. Tap to add a measurement." : {
+      "comment" : "VoiceOver label for the BMI widget with no data."
+    },
+    "body mass index" : {
+      "comment" : "Shortcuts search keyword."
+    },
+    "Body Mass Index" : {
+      "comment" : "Spotlight search keyword."
+    },
+    "Calculate" : {
+
+    },
+    "Calculate BMI" : {
+
+    },
+    "Calculate BMI for ${weight} and ${height} in ${unitSystem}" : {
+      "comment" : "Shortcuts editor sentence. Keep the ${...} parameter tokens exactly as they are; you may reorder them."
+    },
+    "Calculate your Body Mass Index from your weight and height. BMI is a screening tool, not a diagnosis." : {
+
+    },
+    "Calculates your BMI from the entered weight and height." : {
+
+    },
+    "Calculator" : {
+      "comment" : "Tab bar label. Keep it short."
+    },
+    "Category" : {
+      "comment" : "Doctor summary PDF table column: BMI category."
+    },
+    "Category standard" : {
+
+    },
+    "Chart time range" : {
+
+    },
+    "Choose metric (kilograms / centimeters) or imperial (pounds / feet & inches)." : {
+
+    },
+    "Choose the colors that feel like yours." : {
+      "comment" : "Pro feature description."
+    },
+    "Choose the dates to include, for example since your last appointment." : {
+
+    },
+    "Classic Blue" : {
+      "comment" : "Theme color name."
+    },
+    "cm" : {
+      "comment" : "Unit symbol: centimeters."
+    },
+    "Connect" : {
+
+    },
+    "Connect Apple Health" : {
+
+    },
+    "Connected" : {
+
+    },
+    "Connected. Your weight will sync privately." : {
+
+    },
+    "Connecting to Apple Health" : {
+
+    },
+    "Connections" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Couldn't connect. You can try again in Settings." : {
+
+    },
+    "Custom" : {
+      "comment" : "Doctor summary date range: dates the person picks."
+    },
+    "Cutoff" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Date" : {
+      "comment" : "Doctor summary PDF table column."
+    },
+    "Dates" : {
+
+    },
+    "Default units" : {
+
+    },
+    "Disclaimer. %@" : {
+      "comment" : "VoiceOver label: the word Disclaimer, then the full disclaimer text."
+    },
+    "Doctor summary" : {
+      "comment" : "Pro feature name: a PDF of BMI and weight history to share with a doctor."
+    },
+    "Doctor summary (PDF)" : {
+      "comment" : "Export menu item (Pro owners)."
+    },
+    "Doctor summary (Pro)" : {
+      "comment" : "Export menu item (not Pro yet: opens a preview)."
+    },
+    "Done" : {
+
+    },
+    "Emails the developer about an inappropriate ad" : {
+
+    },
+    "End" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Enjoying BMI Calculator?" : {
+      "comment" : "BMI Calculator is the app name (not translated)."
+    },
+    "Enter your height and weight. Everything stays on your device." : {
+
+    },
+    "Entries" : {
+      "comment" : "Doctor summary PDF: number of entries."
+    },
+    "Entries from %@ to %@ · Prepared %@" : {
+      "comment" : "Doctor summary PDF subtitle. Arguments: first date, last date, date the PDF was made.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Entries from %1$@ to %2$@ · Prepared %3$@"
+          }
+        }
+      }
+    },
+    "Entries were recorded in BMI Calculator. Categories apply to adults only." : {
+      "comment" : "Doctor summary PDF method note. BMI Calculator is the app name (not translated)."
+    },
+    "Export" : {
+
+    },
+    "Feet" : {
+
+    },
+    "From" : {
+
+    },
+    "ft / in" : {
+      "comment" : "Unit symbols: feet / inches (height)."
+    },
+    "Get Pro" : {
+      "comment" : "Pro purchase button before the price loads."
+    },
+    "Get Pro for %@" : {
+      "comment" : "Pro purchase button. Argument: the App Store price, already localized (e.g. $4.99)."
+    },
+    "Get started" : {
+
+    },
+    "Go ad-free" : {
+      "comment" : "Small link above the ad banner. Keep it short."
+    },
+    "Got it" : {
+
+    },
+    "Graphite" : {
+      "comment" : "Theme color name."
+    },
+    "health" : {
+      "comment" : "Spotlight search keyword."
+    },
+    "Health" : {
+      "comment" : "Shortcuts category name."
+    },
+    "Health data isn't available on this device." : {
+      "comment" : "Error. Health means Apple Health: use Apple's name for the Health app in your language."
+    },
+    "Health standard" : {
+
+    },
+    "Healthy" : {
+      "comment" : "Small label on the healthy BMI band in the trend chart. Keep it short."
+    },
+    "Healthy edge" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Healthy high" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Healthy label" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Healthy low" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Healthy weight" : {
+      "comment" : "BMI category name (WHO/CDC adult category). Person-first, non-shaming."
+    },
+    "Healthy weight for your height" : {
+
+    },
+    "Healthy weight for your height, %@" : {
+
+    },
+    "Height" : {
+
+    },
+    "Height in centimeters" : {
+
+    },
+    "Here is a preview of your summary. With Pro you can save it or share it with your doctor or care team." : {
+
+    },
+    "Here's your result" : {
+
+    },
+    "Hides this for a while." : {
+
+    },
+    "Highest" : {
+      "comment" : "Stat tile title above a BMI value; three tiles share one row, so keep it short."
+    },
+    "Highest BMI" : {
+
+    },
+    "History" : {
+      "comment" : "Tab bar label and screen title. Keep it short."
+    },
+    "Imperial" : {
+      "comment" : "Unit system name (lb, ft/in). Shown in a 3-segment control: keep it short."
+    },
+    "Imperial (lb, ft)" : {
+      "comment" : "Onboarding unit choice in a 2-segment control: keep it short."
+    },
+    "Imperial (lb, ft/in)" : {
+
+    },
+    "Inches" : {
+
+    },
+    "Indigo" : {
+      "comment" : "Theme color name."
+    },
+    "Just remove ads" : {
+      "comment" : "Remove Ads purchase button before the price loads."
+    },
+    "Just remove ads for %@" : {
+      "comment" : "Remove Ads purchase button. Argument: the App Store price, already localized (e.g. $1.99)."
+    },
+    "kg" : {
+      "comment" : "Unit symbol: kilograms."
+    },
+    "Last 7 days" : {
+
+    },
+    "Last 30 days" : {
+
+    },
+    "Last 90 days" : {
+
+    },
+    "Last year" : {
+
+    },
+    "Latest BMI" : {
+
+    },
+    "Latest reading %@, %@." : {
+      "comment" : "VoiceOver trend chart summary. Arguments: latest BMI, its category name.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Latest reading %1$@, %2$@."
+          }
+        }
+      }
+    },
+    "Latest reading is outside the healthy range." : {
+
+    },
+    "Latest reading is within the healthy range." : {
+
+    },
+    "Latest weight" : {
+
+    },
+    "lb" : {
+      "comment" : "Unit symbol: pounds (weight)."
+    },
+    "Let's find your number" : {
+
+    },
+    "Lower" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Lowest" : {
+      "comment" : "Stat tile title above a BMI value; three tiles share one row, so keep it short."
+    },
+    "Lowest BMI" : {
+
+    },
+    "Made by an independent developer. Thank you for helping keep it going." : {
+      "comment" : "Pro sheet note."
+    },
+    "Measurement units" : {
+
+    },
+    "Medical disclaimer" : {
+
+    },
+    "Metric" : {
+      "comment" : "Unit system name (kg, cm). Shown in a 3-segment control: keep it short."
+    },
+    "Metric (kg, cm)" : {
+      "comment" : "Onboarding unit choice in a 2-segment control: keep it short."
+    },
+    "Muscle counts as weight" : {
+
+    },
+    "No ads" : {
+      "comment" : "Pro feature name."
+    },
+    "No data" : {
+
+    },
+    "No earlier purchase was found for this Apple Account." : {
+      "comment" : "Restore Purchases found nothing. Apple Account is Apple's term: use Apple's official name for it in your language."
+    },
+    "No entries in these dates." : {
+
+    },
+    "No entries in this date range." : {
+
+    },
+    "No History Yet" : {
+
+    },
+    "No measurement yet" : {
+
+    },
+    "No measurements in this range" : {
+
+    },
+    "Not now" : {
+
+    },
+    "Obesity (class 1)" : {
+      "comment" : "BMI category name (WHO/CDC adult category, BMI 30 to under 35). Person-first, non-shaming."
+    },
+    "Obesity (class 2)" : {
+      "comment" : "BMI category name (WHO/CDC adult category, BMI 35 to under 40). Person-first, non-shaming."
+    },
+    "Obesity (class 3)" : {
+      "comment" : "BMI category name (WHO/CDC adult category, BMI 40 and above). Person-first, non-shaming."
+    },
+    "Ocean" : {
+      "comment" : "Theme color name."
+    },
+    "OK" : {
+
+    },
+    "One purchase. No subscription. No ads." : {
+      "comment" : "Pro sheet subtitle. Pro is a one-time purchase."
+    },
+    "One-time purchase. Restore anytime in Settings." : {
+      "comment" : "Pro sheet footer under the purchase buttons."
+    },
+    "Open BMI Calculator to set up this widget." : {
+
+    },
+    "Opens the App Store to write a review" : {
+
+    },
+    "Opens the BMI calculator to add a new measurement." : {
+
+    },
+    "Opens the privacy policy in an in-app browser" : {
+
+    },
+    "Optional. You can change these any time in Settings." : {
+
+    },
+    "Orchid" : {
+      "comment" : "Theme color name."
+    },
+    "Overweight" : {
+      "comment" : "BMI category name (WHO/CDC adult category). Person-first, non-shaming."
+    },
+    "Page %lld of %lld" : {
+      "comment" : "Doctor summary PDF footer.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Page %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Please enter a weight and height greater than zero." : {
+
+    },
+    "Plus %lld more pages in the full summary." : {
+      "comment" : "Doctor summary preview. Argument: the number of pages not shown (plural variants).",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Plus %lld more page in the full summary."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Plus %lld more pages in the full summary."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Privacy Policy" : {
+
+    },
+    "Pro" : {
+      "comment" : "Short badge marking Pro features. Pro is part of the product name BMI Calculator Pro; most languages keep it as is."
+    },
+    "Pro adds a doctor summary, a trend widget, and themes. One purchase, no subscription." : {
+
+    },
+    "Pro feature" : {
+
+    },
+    "Pro is unlocked. Thank you for supporting BMI Calculator." : {
+      "comment" : "BMI Calculator is the app name (not translated)."
+    },
+    "Pro is unlocked. Thank you for your early support." : {
+
+    },
+    "Pro unlocked" : {
+
+    },
+    "Pro: unlocked" : {
+
+    },
+    "Purchase issue" : {
+
+    },
+    "Purchases restored" : {
+
+    },
+    "Purchasing…" : {
+      "comment" : "Pro purchase button while the purchase is in progress."
+    },
+    "Quickly open the BMI calculator to add a new measurement." : {
+
+    },
+    "Range %@" : {
+      "comment" : "VoiceOver: the BMI range of the result's category, e.g. Range 18.5 – < 25."
+    },
+    "Rate us on the App Store" : {
+
+    },
+    "Recent BMI trend, holding steady over the last %lld entries" : {
+      "comment" : "VoiceOver label for the widget sparkline. Argument: number of entries.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent BMI trend, holding steady over the last %#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Recent BMI trend, trending down over the last %lld entries" : {
+      "comment" : "VoiceOver label for the widget sparkline. Argument: number of entries.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent BMI trend, trending down over the last %#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Recent BMI trend, trending up over the last %lld entries" : {
+      "comment" : "VoiceOver label for the widget sparkline. Argument: number of entries.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent BMI trend, trending up over the last %#@count@"
+          },
+          "substitutions" : {
+            "count" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entry"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg entries"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Recorded %@. Range %@. BMI is a screening tool, not a diagnosis." : {
+      "comment" : "Spotlight description of a saved result. Arguments: date and time, the category's BMI range.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recorded %1$@. Range %2$@. BMI is a screening tool, not a diagnosis."
+          }
+        }
+      }
+    },
+    "Removes ads only. Pro already includes this." : {
+
+    },
+    "Report an ad" : {
+
+    },
+    "Requires Pro" : {
+
+    },
+    "Restore purchases" : {
+
+    },
+    "Restore Purchases" : {
+
+    },
+    "Restores an earlier purchase on this Apple Account" : {
+
+    },
+    "Save a measurement in BMI Calculator to see your trend here." : {
+
+    },
+    "Saved to your private history so you can watch your trend over time." : {
+
+    },
+    "Scroll to change" : {
+
+    },
+    "See my result" : {
+
+    },
+    "See Pro" : {
+
+    },
+    "See your latest BMI, its category, and your recent trend at a glance." : {
+
+    },
+    "Selected" : {
+
+    },
+    "Settings" : {
+      "comment" : "Tab bar label and screen title. Keep it short."
+    },
+    "Share" : {
+
+    },
+    "Share your history as a doctor summary or a spreadsheet" : {
+
+    },
+    "Show numbers" : {
+
+    },
+    "Shows the one-time purchase that removes ads" : {
+
+    },
+    "Shows what Pro includes and its one-time price" : {
+
+    },
+    "Shows what Pro includes and its one-time price." : {
+
+    },
+    "Shows your latest BMI, its category, and your recent trend." : {
+
+    },
+    "Since your first entry" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Skip onboarding" : {
+
+    },
+    "Skips setup and goes straight to the calculator" : {
+
+    },
+    "Something went wrong. Please try again." : {
+      "comment" : "Generic purchase error."
+    },
+    "Spreadsheet (CSV)" : {
+
+    },
+    "st" : {
+      "comment" : "Unit symbol: stone (UK body weight, 14 lb)."
+    },
+    "Standard" : {
+      "comment" : "BMI cutoff choice (WHO/CDC). In a 2-segment control: keep it short."
+    },
+    "Standard (WHO/CDC)" : {
+      "comment" : "Name of the universal BMI cutoff set. WHO and CDC are organization acronyms."
+    },
+    "Standard uses universal cutoffs. Asian uses WHO Asian action points." : {
+
+    },
+    "Start" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Stay on track" : {
+
+    },
+    "Stone" : {
+      "comment" : "Unit system name: UK body weight in stone (st), height in ft/in. Shown in a 3-segment control: keep it short."
+    },
+    "Stone (st, ft/in)" : {
+
+    },
+    "Summary page %lld of %lld" : {
+      "comment" : "VoiceOver label for a doctor summary page preview.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Summary page %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Sync your weight so you don't have to type it each time." : {
+
+    },
+    "Syncs your weight privately so you don't have to type it each time" : {
+
+    },
+    "Syncs your weight privately with Apple Health" : {
+
+    },
+    "Take a look" : {
+
+    },
+    "Tap to add" : {
+
+    },
+    "Tap to add your first measurement" : {
+
+    },
+    "Tap to calculate and track your BMI" : {
+
+    },
+    "Tap to type a value, or swipe up or down to adjust." : {
+
+    },
+    "Teal" : {
+      "comment" : "Theme color name."
+    },
+    "Thank you for supporting BMI Calculator." : {
+
+    },
+    "Thank you for supporting the app." : {
+
+    },
+    "Thank you for your early support." : {
+
+    },
+    "Thank you! Ads are gone. Your purchase stays with your Apple Account, so it comes with you to a new phone." : {
+      "comment" : "Shown after buying Remove Ads. Apple Account is Apple's term: use Apple's official name for it in your language."
+    },
+    "Thank you! Pro is unlocked. Your doctor summary, trend widget, and themes are ready. Your purchase stays with your Apple Account, so it comes with you to a new phone." : {
+      "comment" : "Shown after buying Pro. Apple Account is Apple's term: use Apple's official name for it in your language."
+    },
+    "Theme" : {
+
+    },
+    "Themes" : {
+      "comment" : "Pro feature name: app color themes."
+    },
+    "Themes are part of %@. Category colors stay the same so they keep their meaning." : {
+      "comment" : "Argument: the product name BMI Calculator Pro (not translated)."
+    },
+    "These population-level cutoffs guide screening; they are not a personal diagnosis. Talk to a healthcare provider about what's right for you." : {
+
+    },
+    "This is a screening number, not a diagnosis." : {
+
+    },
+    "This purchase isn't available right now. Please try again later." : {
+      "comment" : "Purchase error."
+    },
+    "This range can mean a person is below a typical healthy weight." : {
+      "comment" : "Supportive note under the Underweight BMI result. Person-first, non-shaming."
+    },
+    "This range is associated with higher health risk for many adults." : {
+      "comment" : "Supportive note under the Obesity BMI results. Person-first, non-shaming."
+    },
+    "This range is considered a healthy weight for many adults." : {
+      "comment" : "Supportive note under the Healthy weight BMI result."
+    },
+    "This range sits above the typical healthy band for many adults." : {
+      "comment" : "Supportive note under the Overweight BMI result. Person-first, non-shaming."
+    },
+    "Time" : {
+      "comment" : "Doctor summary PDF table column."
+    },
+    "Time range" : {
+
+    },
+    "to" : {
+      "comment" : "Spoken between the two ends of a range for VoiceOver, e.g. 59 to 79 kg."
+    },
+    "To" : {
+
+    },
+    "Trend widget" : {
+      "comment" : "Pro feature name: a Home Screen widget with a BMI trend chart."
+    },
+    "Underweight" : {
+      "comment" : "BMI category name (WHO/CDC adult category). Person-first, non-shaming."
+    },
+    "Unit system" : {
+
+    },
+    "Unit System" : {
+
+    },
+    "Units" : {
+
+    },
+    "Universal WHO and CDC cutoffs (18.5, 25, 30)." : {
+      "comment" : "Explains the standard BMI cutoffs. Use your language's decimal separator in the numbers."
+    },
+    "Universal WHO/CDC cutoffs: healthy weight is 18.5 to under 25." : {
+
+    },
+    "Upgrade to Pro" : {
+
+    },
+    "Upper" : {
+      "comment" : "Chart data label read by VoiceOver Audio Graphs; not shown on screen."
+    },
+    "Version" : {
+
+    },
+    "Violet" : {
+      "comment" : "Theme color name."
+    },
+    "Waiting for approval" : {
+
+    },
+    "We couldn't verify the purchase with the App Store." : {
+      "comment" : "Purchase error."
+    },
+    "weight" : {
+      "comment" : "Shortcuts search keyword."
+    },
+    "Weight" : {
+
+    },
+    "Weight change" : {
+      "comment" : "Doctor summary PDF: latest weight minus first weight."
+    },
+    "Welcome back. Pro is unlocked." : {
+      "comment" : "After restoring purchases."
+    },
+    "Welcome back. Your ads are removed." : {
+      "comment" : "After restoring purchases (Remove Ads only)."
+    },
+    "Welcome back. Your earlier purchase includes Pro, so everything is unlocked." : {
+      "comment" : "After restoring purchases, for early Remove Ads buyers who get Pro free."
+    },
+    "WHO Asian action points (lower thresholds: overweight at 23, higher risk at 27.5) are population-level public-health guidance for some Asian groups, not a replacement for individual medical advice." : {
+
+    },
+    "WHO public-health action points (18.5, 23, 27.5) used to flag cardiometabolic risk at a lower BMI in some Asian populations." : {
+      "comment" : "Explains the Asian BMI cutoffs. Use your language's decimal separator in the numbers."
+    },
+    "You already have no ads. Pro adds the doctor summary, the trend widget, and themes." : {
+
+    },
+    "You removed ads early on, so Pro is now yours at no cost. That includes the doctor summary, the trend widget, and themes." : {
+
+    },
+    "Your BMI is %@, which falls in the healthy weight range. %@" : {
+      "comment" : "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your BMI is %1$@, which falls in the healthy weight range. %2$@"
+          }
+        }
+      }
+    },
+    "Your BMI is %@, which falls in the obesity (class 1) range. %@" : {
+      "comment" : "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your BMI is %1$@, which falls in the obesity (class 1) range. %2$@"
+          }
+        }
+      }
+    },
+    "Your BMI is %@, which falls in the obesity (class 2) range. %@" : {
+      "comment" : "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your BMI is %1$@, which falls in the obesity (class 2) range. %2$@"
+          }
+        }
+      }
+    },
+    "Your BMI is %@, which falls in the obesity (class 3) range. %@" : {
+      "comment" : "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your BMI is %1$@, which falls in the obesity (class 3) range. %2$@"
+          }
+        }
+      }
+    },
+    "Your BMI is %@, which falls in the overweight range. %@" : {
+      "comment" : "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your BMI is %1$@, which falls in the overweight range. %2$@"
+          }
+        }
+      }
+    },
+    "Your BMI is %@, which falls in the underweight range. %@" : {
+      "comment" : "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'.",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Your BMI is %1$@, which falls in the underweight range. %2$@"
+          }
+        }
+      }
+    },
+    "Your BMI over the last 90 days, with the healthy range shaded. Requires BMI Calculator Pro." : {
+
+    },
+    "Your BMI over the last 90 days." : {
+
+    },
+    "Your first data point" : {
+
+    },
+    "Your height in centimeters (metric) or total inches (imperial)." : {
+
+    },
+    "Your purchase needs approval. Ads go away as soon as it's approved, even if you close this." : {
+      "comment" : "Ask to Buy: a parent must approve the Remove Ads purchase."
+    },
+    "Your purchase needs approval. Pro unlocks as soon as it's approved, even if you close this." : {
+      "comment" : "Ask to Buy: a parent must approve the Pro purchase."
+    },
+    "Your recent entries, right on your Home Screen." : {
+      "comment" : "Pro feature description."
+    },
+    "Your saved BMI measurements will appear here so you can track changes over time." : {
+
+    },
+    "Your theme colors buttons, highlights, and the trend line. Category colors stay the same so they keep their meaning." : {
+
+    },
+    "Your weight in kilograms (metric) or pounds (imperial)." : {
+
+    }
+  },
+  "version" : "1.0"
+}

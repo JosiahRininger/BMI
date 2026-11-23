@@ -39,8 +39,8 @@ struct ThemePickerView: View {
 
     private var footerText: String {
         store.hasPro
-            ? "Your theme colors buttons, highlights, and the trend line. Category colors stay the same so they keep their meaning."
-            : "Themes are part of \(ProCopy.name). Category colors stay the same so they keep their meaning."
+            ? String(localized: "Your theme colors buttons, highlights, and the trend line. Category colors stay the same so they keep their meaning.")
+            : String(localized: "Themes are part of \(ProCopy.name). Category colors stay the same so they keep their meaning.", comment: "Argument: the product name BMI Calculator Pro (not translated).")
     }
 
     private func row(for theme: AppTheme) -> some View {
@@ -72,7 +72,7 @@ struct ThemePickerView: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(theme.displayName)
-        .accessibilityValue(isSelected ? "Selected" : (isLocked ? "Requires Pro" : ""))
+        .accessibilityValue(isSelected ? Text("Selected") : (isLocked ? Text("Requires Pro") : Text(verbatim: "")))
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 

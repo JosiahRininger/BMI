@@ -54,8 +54,8 @@ public struct BMIResult: Hashable, Codable, Sendable {
     }
 
     /// A display-ready string for `rounded`, always showing one decimal place
-    /// (e.g. `22.0`, `31.7`).
+    /// in the current locale (e.g. `22.0`, `31.7`; `22,0` in es, pt-BR, fr).
     public var displayString: String {
-        String(format: "%.1f", rounded)
+        DisplayNumber.decimal(rounded)
     }
 }

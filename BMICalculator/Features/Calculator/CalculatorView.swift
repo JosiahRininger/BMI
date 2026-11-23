@@ -209,7 +209,7 @@ struct CalculatorView: View {
         .safeAreaInset(edge: .bottom) {
             BannerSlot(showsBanner: model.showsBanner, onGoAdFree: onShowPaywall)
         }
-        .navigationTitle("BMI Calculator")
+        .navigationTitle(Text(verbatim: "BMI Calculator"))
         .navigationBarTitleDisplayMode(.inline)
         // A gentle confirming tap when a result lands. Keyed to resultGeneration
         // (bumped once per real Calculate, not per live re-categorize), and a

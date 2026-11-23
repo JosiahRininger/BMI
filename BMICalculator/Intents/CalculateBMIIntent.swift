@@ -143,25 +143,30 @@ struct CalculateBMIIntent: AppIntent {
     // MARK: Dialog
 
     /// Person-first spoken / displayed summary. Never says "you are <category>".
+    /// One whole sentence per category (not a spliced-in word) so translators
+    /// can get the grammar right.
     static func dialog(for result: BMIResult) -> IntentDialog {
-        let bmiText = String(format: "%.1f", result.rounded)
-        let categoryPhrase = phrase(for: result.category)
-        return IntentDialog("Your BMI is \(bmiText), which falls in the \(categoryPhrase) range. \(disclaimer)")
-    }
-
-    /// Non-judgmental phrasing for each category.
-    static func phrase(for category: BMICategory) -> String {
-        switch category {
-        case .underweight:  return "underweight"
-        case .healthy:      return "healthy weight"
-        case .overweight:   return "overweight"
-        case .obesityI:     return "obesity (class 1)"
-        case .obesityII:    return "obesity (class 2)"
-        case .obesityIII:   return "obesity (class 3)"
+        let bmiText = DisplayNumber.decimal(result.rounded)
+        let disclaimer = Self.disclaimer
+        switch result.category {
+        case .underweight:
+            return IntentDialog(LocalizedStringResource("Your BMI is \(bmiText), which falls in the underweight range. \(disclaimer)", comment: "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'."))
+        case .healthy:
+            return IntentDialog(LocalizedStringResource("Your BMI is \(bmiText), which falls in the healthy weight range. \(disclaimer)", comment: "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'."))
+        case .overweight:
+            return IntentDialog(LocalizedStringResource("Your BMI is \(bmiText), which falls in the overweight range. \(disclaimer)", comment: "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'."))
+        case .obesityI:
+            return IntentDialog(LocalizedStringResource("Your BMI is \(bmiText), which falls in the obesity (class 1) range. \(disclaimer)", comment: "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'."))
+        case .obesityII:
+            return IntentDialog(LocalizedStringResource("Your BMI is \(bmiText), which falls in the obesity (class 2) range. \(disclaimer)", comment: "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'."))
+        case .obesityIII:
+            return IntentDialog(LocalizedStringResource("Your BMI is \(bmiText), which falls in the obesity (class 3) range. \(disclaimer)", comment: "Siri and Shortcuts result. Arguments: BMI value, the short disclaimer. Person-first: never 'you are <category>'."))
         }
     }
 
-    static let disclaimer = "BMI is a screening tool, not a diagnosis. Talk to a healthcare provider."
+    static var disclaimer: String {
+        String(localized: "BMI is a screening tool, not a diagnosis. Talk to a healthcare provider.", comment: "Short disclaimer spoken by Siri and shown in Shortcuts after a result.")
+    }
 }
 
 // MARK: - Errors
