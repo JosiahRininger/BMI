@@ -17,6 +17,45 @@
               "Body mass index in ${applicationName}"
             ]
           }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Calcula mi IMC en ${applicationName}",
+              "Calcular el IMC en ${applicationName}",
+              "Consulta mi IMC en ${applicationName}",
+              "Cuál es mi IMC en ${applicationName}",
+              "Calcula mi IMC con ${applicationName}",
+              "Índice de masa corporal en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Calcule mon IMC avec ${applicationName}",
+              "Calcule l'IMC avec ${applicationName}",
+              "Vérifie mon IMC dans ${applicationName}",
+              "Quel est mon IMC dans ${applicationName}",
+              "Calcule mon IMC dans ${applicationName}",
+              "Indice de masse corporelle dans ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Calcular meu IMC no ${applicationName}",
+              "Calcular IMC no ${applicationName}",
+              "Ver meu IMC no ${applicationName}",
+              "Qual é meu IMC no ${applicationName}",
+              "Descobrir meu IMC com o ${applicationName}",
+              "Índice de massa corporal no ${applicationName}"
+            ]
+          }
         }
       }
     }

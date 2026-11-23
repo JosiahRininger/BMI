@@ -380,6 +380,9 @@ private struct BMIAccessoryRectangularView: View {
                     Text(latest.category.title)
                         .font(.caption2)
                         .lineLimit(1)
+                        // Long category names ("Insuffisance pondérale") shrink
+                        // rather than truncate next to the sparkline.
+                        .minimumScaleFactor(0.8)
                 } else {
                     Text("BMI")
                         .font(.headline)
