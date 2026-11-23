@@ -30,7 +30,25 @@
     "status": "skipped: no vendor number (App Store Connect, Payments and Financial Reports)"
   },
   "analytics": {
-    "status": "no Analytics Report request yet (creating one is a write; needs Josiah's OK)"
+    "requests": [
+      {
+        "accessType": "ONE_TIME_SNAPSHOT",
+        "stoppedDueToInactivity": false
+      },
+      {
+        "accessType": "ONGOING",
+        "stoppedDueToInactivity": false
+      }
+    ],
+    "reports": {},
+    "noDataYet": [
+      "App Store Discovery and Engagement Standard",
+      "App Downloads Standard",
+      "App Store Installation and Deletion Standard",
+      "App Sessions Standard",
+      "App Store Purchases Standard",
+      "App Crashes"
+    ]
   },
   "notes": "Directional only. Apple hides small numbers, so gaps are expected."
 }
