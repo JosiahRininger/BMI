@@ -411,6 +411,12 @@ struct BMICalculatorApp: App {
                 .task {
                     // Back the Spotlight/Siri "recent BMI results" query with SwiftData.
                     BMIResultStore.configure(with: SpotlightResultProvider(container: modelContainer))
+                    #if DEBUG
+                    if ScreenshotHarness.isActive {
+                        applyScreenshotState()
+                        return
+                    }
+                    #endif
                     await services.start()
                 }
                 // Deep links from the widget, Control Center control, and App
@@ -435,6 +441,22 @@ struct BMICalculatorApp: App {
         }
         .modelContainer(modelContainer)
     }
+
+    #if DEBUG
+    /// Puts the app into the fixed QA/screenshot state (see `ScreenshotHarness`)
+    /// instead of the launch-time StoreKit and ad work.
+    private func applyScreenshotState() {
+        ScreenshotHarness.seedHistory(into: modelContainer.mainContext)
+        services.storeState.entitlements = ScreenshotHarness.entitlements
+        services.storeState.isResolved = true
+        services.applyEntitlements(services.storeState.entitlements)
+        WidgetSync.update(from: modelContainer)
+        if let tab = ScreenshotHarness.tab { router.selectedTab = tab }
+        if ScreenshotHarness.sheet == "pro" { router.presentedSheet = .pro }
+        // The calculator marks itself ready once its result is up.
+        if !ScreenshotHarness.calculates { ScreenshotHarness.markReady(after: .seconds(2)) }
+    }
+    #endif
 
     // MARK: First-run gate
 

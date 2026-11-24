@@ -111,14 +111,28 @@ struct DoctorSummaryView: View {
                 DatePicker("From", selection: $customStart, in: ...Date(), displayedComponents: .date)
                 DatePicker("To", selection: $customEnd, in: ...Date(), displayedComponents: .date)
             }
-            Text(summary.isEmpty
-                 ? "No entries in these dates."
-                 : "\(summary.entries.count) \(summary.entries.count == 1 ? "entry" : "entries"), shown in \(unitSystem.displayName.lowercased()) units.")
+            Text(countNote)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
         .padding(14)
         .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Color(.secondarySystemGroupedBackground)))
+    }
+
+    /// "3 entries, shown in metric units." One whole sentence per unit system
+    /// (not a spliced-in word) so translators can match gender and number; the
+    /// count has plural variants.
+    private var countNote: String {
+        let count = summary.entries.count
+        guard count > 0 else { return String(localized: "No entries in these dates.") }
+        switch unitSystem {
+        case .metric:
+            return String(localized: "\(count) entries, shown in metric units.", comment: "Doctor summary. Argument: number of entries (plural variants). Metric = kg and cm.")
+        case .imperial:
+            return String(localized: "\(count) entries, shown in imperial units.", comment: "Doctor summary. Argument: number of entries (plural variants). Imperial = lb and ft/in.")
+        case .stone:
+            return String(localized: "\(count) entries, shown in stone units.", comment: "Doctor summary. Argument: number of entries (plural variants). Stone = UK st and lb, height in ft/in.")
+        }
     }
 
     // MARK: Preview
@@ -140,7 +154,7 @@ struct DoctorSummaryView: View {
                 }
                 if totalPages > pageImages.count {
                     let more = totalPages - pageImages.count
-                    Text("Plus \(more) more \(more == 1 ? "page" : "pages") in the full summary.")
+                    Text("Plus \(more) more pages in the full summary.", comment: "Doctor summary preview. Argument: the number of pages not shown (plural variants).")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

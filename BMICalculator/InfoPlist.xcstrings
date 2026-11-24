@@ -1,0 +1,79 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "CFBundleName" : {
+      "comment" : "Internal bundle name (brand). Do not translate.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMICalculator"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "NSHealthShareUsageDescription" : {
+      "comment" : "Permission prompt for reading from Apple Health. BMI Calculator is the app name (not translated). Health is Apple's Health app: use its official name in your language.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI Calculator reads your height and weight from Health to prefill the calculator. Health data never leaves your device and is never used for ads."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI Calculator lee tu altura y tu peso de Salud para completar automáticamente la calculadora. Los datos de Salud nunca salen de tu dispositivo y nunca se usan para anuncios."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI Calculator lit votre taille et votre poids dans l'app Santé pour préremplir le calcul. Les données de Santé ne quittent jamais votre appareil et ne servent jamais à la publicité."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O BMI Calculator lê sua altura e seu peso no app Saúde para preencher a calculadora. Os dados de saúde nunca saem do seu dispositivo e nunca são usados para anúncios."
+          }
+        }
+      }
+    },
+    "NSHealthUpdateUsageDescription" : {
+      "comment" : "Permission prompt for writing to Apple Health. BMI Calculator is the app name (not translated). Health is Apple's Health app: use its official name in your language.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BMI Calculator can save your weight and BMI to Health after a calculation, if you choose."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI Calculator puede guardar tu peso y tu IMC en Salud después de un cálculo, si así lo eliges."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "BMI Calculator peut enregistrer votre poids et votre IMC dans l'app Santé après un calcul, si vous le souhaitez."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O BMI Calculator pode salvar seu peso e seu IMC no app Saúde após um cálculo, se você quiser."
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

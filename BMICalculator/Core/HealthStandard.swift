@@ -26,8 +26,10 @@ public enum HealthStandard: String, CaseIterable, Codable, Identifiable, Sendabl
     /// A short, person-facing label for the standard.
     public var displayName: String {
         switch self {
-        case .standard: return "Standard (WHO/CDC)"
-        case .asian:    return "Asian (WHO action points)"
+        case .standard:
+            return String(localized: "Standard (WHO/CDC)", comment: "Name of the universal BMI cutoff set. WHO and CDC are organization acronyms.")
+        case .asian:
+            return String(localized: "Asian (WHO action points)", comment: "Name of the WHO BMI cutoff set for some Asian populations.")
         }
     }
 
@@ -35,9 +37,9 @@ public enum HealthStandard: String, CaseIterable, Codable, Identifiable, Sendabl
     public var explanation: String {
         switch self {
         case .standard:
-            return "Universal WHO and CDC cutoffs (18.5, 25, 30)."
+            return String(localized: "Universal WHO and CDC cutoffs (18.5, 25, 30).", comment: "Explains the standard BMI cutoffs. Use your language's decimal separator in the numbers.")
         case .asian:
-            return "WHO public-health action points (18.5, 23, 27.5) used to flag cardiometabolic risk at a lower BMI in some Asian populations."
+            return String(localized: "WHO public-health action points (18.5, 23, 27.5) used to flag cardiometabolic risk at a lower BMI in some Asian populations.", comment: "Explains the Asian BMI cutoffs. Use your language's decimal separator in the numbers.")
         }
     }
 

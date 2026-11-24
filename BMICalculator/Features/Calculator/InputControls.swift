@@ -80,6 +80,11 @@ struct WeightField: View {
 
     private var step: Double { 0.5 }
 
+    /// How typed weights are parsed and shown: up to one decimal, in the
+    /// person's locale, so "72,5" works in es, pt-BR, and fr and "72.5" in en.
+    /// Shared with the unit tests that cover decimal-comma input.
+    static let inputFormat = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...1))
+
     var body: some View {
         LabeledInputRow(title: "Weight", systemImage: "scalemass") {
             HStack(spacing: 12) {
@@ -91,7 +96,7 @@ struct WeightField: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Weight")
-        .accessibilityValue(Text(verbatim: String(format: "%.1f %@", value, unitLabel)))
+        .accessibilityValue(Text(verbatim: "\(DisplayNumber.decimal(value)) \(unitLabel)"))
         .accessibilityHint("Tap to type a value, or swipe up or down to adjust.")
         // Make the promised swipe gesture real: combining the children into one
         // element drops the Stepper's operability, so wire the increment/decrement
@@ -115,7 +120,7 @@ struct WeightField: View {
                 .foregroundStyle(isEditing ? CalcPalette.brandBlue : .secondary)
                 .accessibilityHidden(true)
 
-            TextField("Weight", value: $value, format: .number.precision(.fractionLength(0...1)))
+            TextField("Weight", value: $value, format: Self.inputFormat)
                 .keyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .font(.title2.weight(.semibold).monospacedDigit())
@@ -260,11 +265,12 @@ struct ImperialHeightField: View {
     }
 
     private func inchLabel(_ inch: Double) -> String {
-        // Show whole inches without a trailing .0, halves as "x.5 in".
+        // Show whole inches without a trailing .0, halves as "x.5 in" (with the
+        // locale's decimal separator, e.g. "7,5 in").
         if inch == inch.rounded() {
-            return "\(Int(inch)) in"
+            return String(localized: "\(Int(inch)) in", comment: "Height in whole inches, e.g. 7 in. Shown in a picker wheel.")
         }
-        return String(format: "%.1f in", inch)
+        return String(localized: "\(DisplayNumber.decimal(inch)) in", comment: "Height in half inches, e.g. 7.5 in. Shown in a picker wheel.")
     }
 }
 
@@ -297,7 +303,7 @@ struct AdaptiveHeightField: View {
 /// every input looks consistent. Liquid Glass on iOS 26, material fallback
 /// below.
 struct LabeledInputRow<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     @ViewBuilder var content: () -> Content
 

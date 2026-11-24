@@ -134,6 +134,7 @@ struct BMITrendWidgetView: View {
         switch state {
         case .locked:
             message(symbol: "chart.xyaxis.line", text: "Open BMI Calculator to set up this widget.")
+                // BMI Calculator is the app name (not translated).
         case .empty:
             message(symbol: "plus.circle", text: "Save a measurement in BMI Calculator to see your trend here.")
         case .trend:
@@ -141,7 +142,7 @@ struct BMITrendWidgetView: View {
         }
     }
 
-    private func message(symbol: String, text: String) -> some View {
+    private func message(symbol: String, text: LocalizedStringKey) -> some View {
         VStack(spacing: 8) {
             Image(systemName: symbol)
                 .font(.title2)
@@ -168,7 +169,7 @@ struct BMITrendWidgetView: View {
             }
             if entry.showsNumbers, let latest = entry.points.last {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(String(format: "%.1f", latest.rounded))
+                    Text(latest.rounded, format: .number.precision(.fractionLength(1)))
                         .font(family == .systemLarge ? .largeTitle.weight(.semibold) : .title2.weight(.semibold))
                         .monospacedDigit()
                     if let change = changeText {
@@ -188,15 +189,20 @@ struct BMITrendWidgetView: View {
     private var changeText: String? {
         guard entry.points.count >= 2, let first = entry.points.first, let last = entry.points.last else { return nil }
         let change = ((last.bmi - first.bmi) * 10).rounded() / 10
-        let value = change == 0 ? "0.0" : String(format: "%+.1f", change)
-        return "\(value) since \(first.date.formatted(.dateTime.month(.abbreviated).day()))"
+        let value = DisplayNumber.signedDecimal(change)
+        let date = first.date.formatted(.dateTime.month(.abbreviated).day())
+        return String(localized: "\(value) since \(date)", comment: "Trend widget: BMI change since the first point, e.g. +0.4 since Jul 12. Small widget: keep it short.")
     }
 
     private var accessibilityLabel: String {
         guard entry.showsNumbers, let latest = entry.points.last else {
-            return "BMI trend for the last 90 days"
+            return String(localized: "BMI trend for the last 90 days", comment: "VoiceOver label for the trend widget.")
         }
-        return "BMI trend for the last 90 days. Latest \(String(format: "%.1f", latest.rounded)). \(changeText ?? "")"
+        let latestText = DisplayNumber.decimal(latest.rounded)
+        guard let changeText else {
+            return String(localized: "BMI trend for the last 90 days. Latest \(latestText).", comment: "VoiceOver label for the trend widget. Argument: latest BMI.")
+        }
+        return String(localized: "BMI trend for the last 90 days. Latest \(latestText). \(changeText)", comment: "VoiceOver label for the trend widget. Arguments: latest BMI, change since the first point (e.g. +0.4 since Jul 12).")
     }
 
     private var chart: some View {

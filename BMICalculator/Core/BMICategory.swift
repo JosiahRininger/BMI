@@ -30,8 +30,28 @@ public enum BMICategory: String, CaseIterable, Codable, Identifiable, Sendable {
 
     // MARK: Display
 
-    /// A person-first, non-judgmental title for the category.
+    /// A person-first, non-judgmental title for the category, localized.
     public var title: String {
+        switch self {
+        case .underweight:
+            return String(localized: "Underweight", comment: "BMI category name (WHO/CDC adult category). Person-first, non-shaming.")
+        case .healthy:
+            return String(localized: "Healthy weight", comment: "BMI category name (WHO/CDC adult category). Person-first, non-shaming.")
+        case .overweight:
+            return String(localized: "Overweight", comment: "BMI category name (WHO/CDC adult category). Person-first, non-shaming.")
+        case .obesityI:
+            return String(localized: "Obesity (class 1)", comment: "BMI category name (WHO/CDC adult category, BMI 30 to under 35). Person-first, non-shaming.")
+        case .obesityII:
+            return String(localized: "Obesity (class 2)", comment: "BMI category name (WHO/CDC adult category, BMI 35 to under 40). Person-first, non-shaming.")
+        case .obesityIII:
+            return String(localized: "Obesity (class 3)", comment: "BMI category name (WHO/CDC adult category, BMI 40 and above). Person-first, non-shaming.")
+        }
+    }
+
+    /// The English category name, never localized. Used only by the CSV export,
+    /// whose format (English column names, POSIX numbers) stays stable for
+    /// spreadsheets and re-imports in every language.
+    public var englishTitle: String {
         switch self {
         case .underweight: return "Underweight"
         case .healthy:     return "Healthy weight"
@@ -48,13 +68,23 @@ public enum BMICategory: String, CaseIterable, Codable, Identifiable, Sendable {
     /// numeric boundaries actually applied depend on `HealthStandard` and
     /// live in `BMICalculator.category(forBMI:standard:)`.
     public var displayRange: String {
+        displayRange(locale: .current)
+    }
+
+    /// ``displayRange`` with numbers formatted for `locale` (a decimal comma in
+    /// es, pt-BR, and fr). The symbols (<, –, ≥) are universal, so the shape is
+    /// not translated.
+    public func displayRange(locale: Locale) -> String {
+        func n(_ value: Double) -> String {
+            DisplayNumber.decimal(value, places: value == value.rounded() ? 0 : 1, locale: locale)
+        }
         switch self {
-        case .underweight: return "< 18.5"
-        case .healthy:     return "18.5 – < 25"
-        case .overweight:  return "25 – < 30"
-        case .obesityI:    return "30 – < 35"
-        case .obesityII:   return "35 – < 40"
-        case .obesityIII:  return "≥ 40"
+        case .underweight: return "< \(n(18.5))"
+        case .healthy:     return "\(n(18.5)) – < \(n(25))"
+        case .overweight:  return "\(n(25)) – < \(n(30))"
+        case .obesityI:    return "\(n(30)) – < \(n(35))"
+        case .obesityII:   return "\(n(35)) – < \(n(40))"
+        case .obesityIII:  return "≥ \(n(40))"
         }
     }
 

@@ -344,13 +344,19 @@ struct BMIGauge: View {
 
     /// BMI rounded to one decimal for display.
     private var formattedBMI: String {
-        String(format: "%.1f", bmi)
+        DisplayNumber.decimal(bmi)
     }
 
     /// Spoken description for VoiceOver. Conveys the value, the named category,
     /// and its numeric range so the verdict never depends on band color.
     private var accessibilityDescription: String {
-        "BMI \(formattedBMI), \(category.title), range \(category.displayRange)"
+        let bmi = formattedBMI
+        let title = category.title
+        let range = category.displayRange
+        return String(
+            localized: "BMI \(bmi), \(title), range \(range)",
+            comment: "VoiceOver summary of a result. Arguments: BMI value, category name, category BMI range."
+        )
     }
 
     /// Springs the indicator to a new normalized fraction, with a brief scale

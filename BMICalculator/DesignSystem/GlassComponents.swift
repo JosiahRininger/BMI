@@ -286,25 +286,25 @@ private struct GlassComponentsPreview: View {
                     VStack(spacing: 16) {
                         GlassCard {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("Your result")
+                                Text(verbatim: "Your result")
                                     .font(.headline)
                                     .foregroundStyle(Theme.textPrimary)
-                                Text("BMI is a screening tool, not a diagnosis.")
+                                Text(verbatim: "BMI is a screening tool, not a diagnosis.")
                                     .font(.subheadline)
                                     .foregroundStyle(Theme.textSecondary)
                             }
                         }
 
                         GlassCard(tinted: true) {
-                            Text("Tinted glass card")
+                            Text(verbatim: "Tinted glass card")
                                 .font(.headline)
                                 .foregroundStyle(Theme.textPrimary)
                         }
 
-                        Button("Calculate BMI") {}
+                        Button {} label: { Text(verbatim: "Calculate BMI") }
                             .buttonStyle(.primaryGlass)
 
-                        Button("Remove Ads") {}
+                        Button {} label: { Text(verbatim: "Remove Ads") }
                             .buttonStyle(.secondaryGlass)
                     }
                     .padding()

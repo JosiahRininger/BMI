@@ -209,14 +209,30 @@ struct CalculatorView: View {
         .safeAreaInset(edge: .bottom) {
             BannerSlot(showsBanner: model.showsBanner, onGoAdFree: onShowPaywall)
         }
-        .navigationTitle("BMI Calculator")
+        .navigationTitle(Text(verbatim: "BMI Calculator"))
         .navigationBarTitleDisplayMode(.inline)
         // A gentle confirming tap when a result lands. Keyed to resultGeneration
         // (bumped once per real Calculate, not per live re-categorize), and a
         // soft/light weight so it confirms without "celebrating" any category —
         // the system honors the person's haptics setting automatically.
         .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: model.resultGeneration)
+        #if DEBUG
+        .screenshotScrollToResultBottom(resultID: model.resultGeneration)
+        #endif
         .task {
+            #if DEBUG
+            // QA/screenshot state: show a result before the collaborators are
+            // bound, so it never counts toward a review prompt or an ad.
+            if ScreenshotHarness.calculates, model.result == nil {
+                model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
+                // No insertion animation, so a capture never catches the card
+                // mid-transition (or a scroll that lands during it).
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { model.calculate(persistingInto: nil) }
+                if !ScreenshotHarness.scrollsToResultBottom { ScreenshotHarness.markReady() }
+            }
+            #endif
             bindCollaborators()
             model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
             if let u = UnitSystem(rawValue: unitSystemRaw), u != model.unitSystem {

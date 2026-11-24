@@ -1,12 +1,20 @@
 # BMI Calculator — Localization Roadmap
 
-App: **BMI Calculator – Fast & Simple** (id 1467544257) · currently US-English only.
+App: **BMI Calculator** (id 1467544257) · see Status below for what has shipped.
 Date: 2026-06-18 · Cross-links: [`ASO.md`](./ASO.md) · [`MONETIZATION.md`](./MONETIZATION.md) · [`BUILD_STATUS.md`](./BUILD_STATUS.md)
 
 > Principle: **chase revenue-per-hour, not raw installs.** A US/UK/DE user is worth 5–50× an
 > India/Brazil/Indonesia user on banner eCPM + IAP. Localize the rich markets; skip the
 > download-volume traps. Most locales are **metadata-only** (Minimum Viable Localization ≈ 1 week
 > each); the *one* genuine product change is UK "stone" units.
+
+## Status (2026-11-23, version 2.1.2)
+
+- **App UI translated:** Spanish (`es`), Brazilian Portuguese (`pt-BR`) and French (`fr`), in String Catalogs (`Localizable`, `InfoPlist`, `AppShortcuts`, widget `InfoPlist`). English stays the development language.
+- **Store listings:** en-US, en-GB, en-AU, en-CA, es-MX, es-ES, pt-BR and fr-FR, each with its own keywords and localized screenshots (stone for en-GB, imperial for en-CA, metric elsewhere).
+- **pt-BR is no longer skipped.** The "skip" below weighed paid translation effort against Brazil's low eCPM. With the UI already in catalogs, adding it cost nothing extra.
+- **Known limit:** the single `es` file uses Spain's iOS wording (for example "Ajustes"). A separate `es-419` file is a possible follow-up.
+- **Not yet:** German (stage 2 below), Japanese, and Arabic/CJK. Regional BMI cutoffs differ in some of those markets, so they need a product decision first.
 
 ## Priority order
 

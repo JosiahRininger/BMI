@@ -41,13 +41,13 @@ extension BMICategory {
     var supportiveNote: String {
         switch self {
         case .underweight:
-            return "This range can mean a person is below a typical healthy weight."
+            return String(localized: "This range can mean a person is below a typical healthy weight.", comment: "Supportive note under the Underweight BMI result. Person-first, non-shaming.")
         case .healthy:
-            return "This range is considered a healthy weight for many adults."
+            return String(localized: "This range is considered a healthy weight for many adults.", comment: "Supportive note under the Healthy weight BMI result.")
         case .overweight:
-            return "This range sits above the typical healthy band for many adults."
+            return String(localized: "This range sits above the typical healthy band for many adults.", comment: "Supportive note under the Overweight BMI result. Person-first, non-shaming.")
         case .obesityI, .obesityII, .obesityIII:
-            return "This range is associated with higher health risk for many adults."
+            return String(localized: "This range is associated with higher health risk for many adults.", comment: "Supportive note under the Obesity BMI results. Person-first, non-shaming.")
         }
     }
 }
@@ -56,8 +56,16 @@ extension BMICategory {
 
 /// Shared screening disclaimer surfaced near every result (and in Settings).
 enum BMIDisclaimer {
-    static let text =
-    "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
+    static var text: String {
+        String(localized: "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider.", comment: "The medical disclaimer shown near every result, in History, and in Settings. Keep the meaning exact.")
+    }
+
+    /// Makes an en-dash range ("59–79 kg") read naturally in VoiceOver
+    /// ("59 to 79 kg" in English, "59 a 79 kg" in Spanish).
+    static func spokenRange(_ range: String) -> String {
+        let to = String(localized: "to", comment: "Spoken between the two ends of a range for VoiceOver, e.g. 59 to 79 kg.")
+        return range.replacingOccurrences(of: "–", with: " \(to) ")
+    }
 }
 
 // MARK: - Gauge Scale Mapping
@@ -144,15 +152,20 @@ struct ResultCard: View {
     /// "BMI 24.1, Healthy weight, range 18.5 – < 25. Healthy weight for your
     /// height, 59 to 79 kg".
     private var resultSummary: String {
-        var summary = String(format: "BMI %.1f, %@, range %@",
-                             result.rounded,
-                             result.category.title,
-                             result.category.displayRange)
+        let bmi = DisplayNumber.decimal(result.rounded)
+        let category = result.category.title
+        let range = result.category.displayRange
         if let healthyWeightRange {
-            summary += ". Healthy weight for your height, "
-                + healthyWeightRange.replacingOccurrences(of: "–", with: " to ")
+            let healthy = BMIDisclaimer.spokenRange(healthyWeightRange)
+            return String(
+                localized: "BMI \(bmi), \(category), range \(range). Healthy weight for your height, \(healthy)",
+                comment: "VoiceOver summary of a result. Arguments: BMI value, category name, category BMI range, healthy weight range for the person's height."
+            )
         }
-        return summary
+        return String(
+            localized: "BMI \(bmi), \(category), range \(range)",
+            comment: "VoiceOver summary of a result. Arguments: BMI value, category name, category BMI range."
+        )
     }
 
     // MARK: Header — big number
@@ -178,7 +191,7 @@ struct ResultCard: View {
             Spacer(minLength: 0)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text(verbatim: String(format: "BMI %.1f", result.rounded)))
+        .accessibilityLabel(Text("BMI \(DisplayNumber.decimal(result.rounded))", comment: "VoiceOver label for the BMI value, e.g. BMI 24.1."))
     }
 
     // MARK: Category title + range + supportive note
@@ -281,7 +294,7 @@ struct ResultCard: View {
         .accessibilityElement(children: .combine)
         // Speak an en-dash range as "to" so VoiceOver reads it naturally.
         .accessibilityLabel(
-            "Healthy weight for your height, \(range.replacingOccurrences(of: "–", with: " to "))"
+            "Healthy weight for your height, \(BMIDisclaimer.spokenRange(range))"
         )
     }
 
@@ -306,11 +319,11 @@ struct ResultCard: View {
                     Image(systemName: "sparkles")
                         .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(upsellIsUpgrade ? "Upgrade to Pro" : ProCopy.name)
+                        (upsellIsUpgrade ? Text("Upgrade to Pro") : Text(verbatim: ProCopy.name))
                             .font(.subheadline.weight(.semibold))
-                        Text(upsellIsUpgrade
-                             ? "Adds a doctor summary, a trend widget, and themes."
-                             : "A doctor summary, a trend widget, themes, and no ads. One-time purchase.")
+                        (upsellIsUpgrade
+                             ? Text("Adds a doctor summary, a trend widget, and themes.")
+                             : Text("A doctor summary, a trend widget, themes, and no ads. One-time purchase."))
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .fixedSize(horizontal: false, vertical: true)
@@ -327,7 +340,7 @@ struct ResultCard: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(upsellIsUpgrade ? "Upgrade to Pro" : ProCopy.name)
+            .accessibilityLabel(upsellIsUpgrade ? Text("Upgrade to Pro") : Text(verbatim: ProCopy.name))
             .accessibilityHint("Shows what Pro includes and its one-time price.")
 
             Button(action: onUpsellDismissed) {

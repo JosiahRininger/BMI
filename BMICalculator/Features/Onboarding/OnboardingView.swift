@@ -105,13 +105,23 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity)
         }
         .interactiveDismissDisabled()
+        #if DEBUG
+        .task {
+            // QA/screenshot state: open on a later onboarding page.
+            if let raw = ScreenshotHarness.onboardingPage, let target = Page(rawValue: raw) {
+                page = target
+                ScreenshotHarness.markReady(after: .seconds(2))
+            }
+        }
+        #endif
     }
 
     // MARK: Header
 
     private var header: some View {
         HStack {
-            Text("BMI Calculator")
+            // Brand name: not localized.
+            Text(verbatim: "BMI Calculator")
                 .font(DSFont.title2)
                 .foregroundStyle(DSColor.brand)
                 .accessibilityAddTraits(.isHeader)
@@ -415,10 +425,10 @@ private struct MeasurementEntry: View {
         VStack(spacing: DSSpacing.md) {
             switch unitSystem {
             case .metric:
-                WeightField(value: $input.weightKilograms, range: 20...400, unitLabel: "kg")
+                WeightField(value: $input.weightKilograms, range: 20...400, unitLabel: UnitSystem.metric.weightUnitLabel)
                 MetricHeightField(centimeters: $input.heightCentimeters, range: 50...250)
             case .imperial, .stone:
-                WeightField(value: $input.weightPounds, range: 44...880, unitLabel: "lb")
+                WeightField(value: $input.weightPounds, range: 44...880, unitLabel: UnitSystem.imperial.weightUnitLabel)
                 ImperialHeightField(height: imperialHeight, feetRange: 1...8, inchesRange: 0...11.5)
             }
         }
@@ -435,7 +445,7 @@ private struct ResultHeroCard: View {
     var body: some View {
         DSCard {
             VStack(spacing: DSSpacing.sm) {
-                Text(String(format: "%.1f", result.rounded))
+                Text(result.rounded, format: .number.precision(.fractionLength(1)))
                     .font(.system(size: 64, weight: .bold, design: .rounded))
                     .foregroundStyle(DSColor.category(result.category))
                     .contentTransition(.numericText())
@@ -467,7 +477,7 @@ private struct ResultHeroCard: View {
         // Speak a single concise summary, e.g. "BMI 24.1, Healthy weight,
         // range 18.5 – < 25", instead of three separate fragments.
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("BMI \(String(format: "%.1f", result.rounded)), \(result.category.title)")
+        .accessibilityLabel("BMI \(DisplayNumber.decimal(result.rounded)), \(result.category.title)")
         .accessibilityValue("Range \(result.category.displayRange)")
     }
 }
@@ -525,14 +535,23 @@ private struct ConnectHealthRow: View {
                     Text("Connect Apple Health")
                         .font(DSFont.subheadline)
                         .foregroundStyle(DSColor.primaryText)
-                    Text(subtitle)
-                        .font(DSFont.caption)
-                        .foregroundStyle(DSColor.secondaryText)
-                        // Reserve two lines so the card height stays constant as the
-                        // subtitle switches between states (a source of the jolt);
-                        // scale slightly rather than truncate on narrow widths.
-                        .lineLimit(2, reservesSpace: true)
-                        .minimumScaleFactor(0.85)
+                    // Reserve two lines (the hidden spacer) so the card height
+                    // stays constant as the subtitle switches between states (a
+                    // source of the jolt); scale slightly rather than truncate on
+                    // narrow widths. A third line is allowed for longer
+                    // translations on small phones (French and Portuguese
+                    // truncated at 375 pt).
+                    ZStack(alignment: .topLeading) {
+                        Text(verbatim: " \n ")
+                            .font(DSFont.caption)
+                            .hidden()
+                            .accessibilityHidden(true)
+                        Text(subtitle)
+                            .font(DSFont.caption)
+                            .foregroundStyle(DSColor.secondaryText)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.85)
+                    }
                 }
                 Spacer()
 
@@ -546,7 +565,7 @@ private struct ConnectHealthRow: View {
         .animation(.smooth(duration: 0.25), value: state)
     }
 
-    private var subtitle: String {
+    private var subtitle: LocalizedStringKey {
         switch state {
         case .connected: return "Connected. Your weight will sync privately."
         case .failed: return "Couldn't connect. You can try again in Settings."
@@ -588,8 +607,8 @@ private struct ConnectHealthRow: View {
 
 /// Page headline + supporting copy block.
 private struct OnboardingHeadline: View {
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
 
     var body: some View {
         VStack(alignment: .leading, spacing: DSSpacing.xs) {

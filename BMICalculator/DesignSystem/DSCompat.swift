@@ -114,11 +114,11 @@ struct DSCard<Content: View>: View {
 /// `PrimaryGlassButton(title:systemImage:action:)`, used with a trailing action
 /// closure and modified with `.disabled(_:)` at the call site (hence a `View`).
 struct PrimaryGlassButton: View {
-    let title: String
+    let title: LocalizedStringKey
     var systemImage: String?
     let action: () -> Void
 
-    init(title: String, systemImage: String? = nil, action: @escaping () -> Void) {
+    init(title: LocalizedStringKey, systemImage: String? = nil, action: @escaping () -> Void) {
         self.title = title
         self.systemImage = systemImage
         self.action = action

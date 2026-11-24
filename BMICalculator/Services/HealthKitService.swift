@@ -52,11 +52,11 @@ public enum HealthKitError: LocalizedError {
     public var errorDescription: String? {
         switch self {
         case .notAvailable:
-            return "Health data isn't available on this device."
+            return String(localized: "Health data isn't available on this device.", comment: "Error. Health means Apple Health: use Apple's name for the Health app in your language.")
         case .authorizationDenied:
-            return "Access to Health data was not granted. You can enable it in Settings › Health › Data Access & Devices."
+            return String(localized: "Access to Health data was not granted. You can enable it in Settings › Apps › Health › Data Access & Devices.", comment: "Error. The path names iOS screens: use the exact names iOS shows for Settings, Health, and Data Access & Devices in your language.")
         case .typeUnavailable:
-            return "A required Health data type is unavailable."
+            return String(localized: "A required Health data type is unavailable.", comment: "Error. Health means Apple Health.")
         }
     }
 }

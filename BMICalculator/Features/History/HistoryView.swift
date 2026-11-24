@@ -40,6 +40,9 @@ public struct HistoryView: View {
 
     public init(standard: HealthStandard = .standard) {
         self.standard = standard
+        #if DEBUG
+        if let range = ScreenshotHarness.range { _range = State(initialValue: range) }
+        #endif
     }
 
     // MARK: Derived data
@@ -100,8 +103,11 @@ public struct HistoryView: View {
             Button {
                 showsDoctorSummary = true
             } label: {
-                Label(store?.hasPro == true ? "Doctor summary (PDF)" : "Doctor summary (Pro)",
-                      systemImage: "doc.text")
+                if store?.hasPro == true {
+                    Label("Doctor summary (PDF)", systemImage: "doc.text")
+                } else {
+                    Label("Doctor summary (Pro)", systemImage: "doc.text")
+                }
             }
             ShareLink(
                 item: CSVExport(entries: records.map(ExportEntry.init), standard: standard),
@@ -231,9 +237,9 @@ private struct SummaryStatsRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            StatTile(title: "Average", value: average)
-            StatTile(title: "Highest", value: values.max())
-            StatTile(title: "Lowest", value: values.min())
+            StatTile(title: "Average", accessibilityTitle: "Average BMI", value: average)
+            StatTile(title: "Highest", accessibilityTitle: "Highest BMI", value: values.max())
+            StatTile(title: "Lowest", accessibilityTitle: "Lowest BMI", value: values.min())
         }
         .padding(.vertical, 4)
         .listRowSeparator(.hidden)
@@ -243,12 +249,15 @@ private struct SummaryStatsRow: View {
 /// A single stat tile, with a Liquid Glass background on iOS 26 and a
 /// material fallback on earlier systems.
 private struct StatTile: View {
-    let title: String
+    /// Short tile label (three tiles share one row, so keep it short).
+    let title: LocalizedStringKey
+    /// The full spoken name, e.g. "Average BMI".
+    let accessibilityTitle: LocalizedStringKey
     let value: Double?
 
     private var displayValue: String {
         guard let value else { return "–" }
-        return String(format: "%.1f", value)
+        return DisplayNumber.decimal(value)
     }
 
     var body: some View {
@@ -270,8 +279,8 @@ private struct StatTile: View {
         .padding(.vertical, 12)
         .background(tileBackground)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title) BMI")
-        .accessibilityValue(value == nil ? "No data" : displayValue)
+        .accessibilityLabel(Text(accessibilityTitle))
+        .accessibilityValue(value == nil ? Text("No data") : Text(verbatim: displayValue))
     }
 
     @ViewBuilder
@@ -300,7 +309,8 @@ private struct SinceFirstEntryRow: View {
             Text("Since your first entry")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            Text("\(change.firstDate.formatted(date: .abbreviated, time: .omitted)) · BMI \(String(format: "%.1f", change.firstBMI)) then, \(String(format: "%.1f", change.latestBMI)) now (\(change.formattedChange))")
+            Text("\(change.firstDate.formatted(date: .abbreviated, time: .omitted)) · BMI \(DisplayNumber.decimal(change.firstBMI)) then, \(DisplayNumber.decimal(change.latestBMI)) now (\(change.formattedChange))",
+                 comment: "History, since the first entry. Arguments: first entry date, first BMI, latest BMI, signed change (e.g. +0.4).")
                 .font(.subheadline)
                 .monospacedDigit()
         }
@@ -324,7 +334,7 @@ private struct HistoryProCard: View {
                 Image(systemName: "sparkles")
                     .foregroundStyle(Theme.brand)
                     .accessibilityHidden(true)
-                Text(isUpgrade ? "Upgrade to Pro" : "Enjoying BMI Calculator?")
+                (isUpgrade ? Text("Upgrade to Pro") : Text("Enjoying BMI Calculator?", comment: "BMI Calculator is the app name (not translated)."))
                     .font(.subheadline.weight(.semibold))
             }
             Text("Pro adds a doctor summary, a trend widget, and themes. One purchase, no subscription.")
@@ -380,7 +390,7 @@ private struct HistoryRow: View {
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("BMI \(record.roundedBMI), \(category.title)")
+        .accessibilityLabel("BMI \(DisplayNumber.decimal(record.roundedBMI)), \(category.title)")
         .accessibilityValue(record.date.formatted(date: .abbreviated, time: .shortened))
     }
 }
@@ -403,7 +413,7 @@ private struct EmptyHistoryView: View {
 
 /// The required screening-tool disclaimer, surfaced near results history.
 private struct DisclaimerFootnote: View {
-    private let text = "BMI is a screening tool for informational purposes only, not a diagnosis or a substitute for professional medical advice. It doesn't directly measure body fat and can be inaccurate for athletes, older adults, during pregnancy, and across ethnic groups. Talk to a healthcare provider."
+    private var text: String { BMIDisclaimer.text }
 
     var body: some View {
         Text(text)

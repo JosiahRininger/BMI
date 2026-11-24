@@ -236,10 +236,11 @@ enum BMIWidgetAccessibility {
     /// e.g. "BMI 24.1, Healthy weight" — or a friendly prompt when empty.
     static func readoutLabel(for entry: BMIWidgetEntry) -> String {
         guard let latest = entry.latest else {
-            return "BMI. No measurement yet. Tap to add a measurement."
+            return String(localized: "BMI. No measurement yet. Tap to add a measurement.", comment: "VoiceOver label for the BMI widget with no data.")
         }
-        let value = latest.rounded.formatted(.number.precision(.fractionLength(1)))
-        return "BMI \(value), \(latest.category.title)"
+        let value = DisplayNumber.decimal(latest.rounded)
+        let title = latest.category.title
+        return String(localized: "BMI \(value), \(title)", comment: "A saved result, e.g. BMI 24.1, Healthy weight. Arguments: BMI value, category name.")
     }
 
     /// A short trend summary describing the direction of recent values, so the
@@ -248,15 +249,16 @@ enum BMIWidgetAccessibility {
         guard let first = trend.first, let last = trend.last, trend.count > 1 else {
             return nil
         }
-        let direction: String
+        // Whole sentences per direction so translators can get the grammar
+        // right; the count has plural variants (it is always 2 or more).
+        let count = trend.count
         if last < first {
-            direction = "trending down"
+            return String(localized: "Recent BMI trend, trending down over the last \(count) entries", comment: "VoiceOver label for the widget sparkline. Argument: number of entries.")
         } else if last > first {
-            direction = "trending up"
+            return String(localized: "Recent BMI trend, trending up over the last \(count) entries", comment: "VoiceOver label for the widget sparkline. Argument: number of entries.")
         } else {
-            direction = "holding steady"
+            return String(localized: "Recent BMI trend, holding steady over the last \(count) entries", comment: "VoiceOver label for the widget sparkline. Argument: number of entries.")
         }
-        return "Recent BMI trend, \(direction) over the last \(trend.count) entries"
     }
 }
 
@@ -378,6 +380,9 @@ private struct BMIAccessoryRectangularView: View {
                     Text(latest.category.title)
                         .font(.caption2)
                         .lineLimit(1)
+                        // Long category names ("Insuffisance pondérale") shrink
+                        // rather than truncate next to the sparkline.
+                        .minimumScaleFactor(0.8)
                 } else {
                     Text("BMI")
                         .font(.headline)

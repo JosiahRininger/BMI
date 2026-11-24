@@ -1,0 +1,64 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Calculate my BMI in ${applicationName}" : {
+      "comment" : "Siri and Spotlight phrases for the Calculate BMI shortcut. Translate each phrase naturally; every phrase must keep ${applicationName} exactly once. You can add or drop phrases.",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringSet" : {
+            "state" : "new",
+            "values" : [
+              "Calculate my BMI in ${applicationName}",
+              "Calculate BMI in ${applicationName}",
+              "Check my BMI in ${applicationName}",
+              "What's my BMI in ${applicationName}",
+              "Work out my BMI with ${applicationName}",
+              "Body mass index in ${applicationName}"
+            ]
+          }
+        },
+        "es" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Calcula mi IMC en ${applicationName}",
+              "Calcular el IMC en ${applicationName}",
+              "Consulta mi IMC en ${applicationName}",
+              "Cuál es mi IMC en ${applicationName}",
+              "Calcula mi IMC con ${applicationName}",
+              "Índice de masa corporal en ${applicationName}"
+            ]
+          }
+        },
+        "fr" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Calcule mon IMC avec ${applicationName}",
+              "Calcule l'IMC avec ${applicationName}",
+              "Vérifie mon IMC dans ${applicationName}",
+              "Quel est mon IMC dans ${applicationName}",
+              "Calcule mon IMC dans ${applicationName}",
+              "Indice de masse corporelle dans ${applicationName}"
+            ]
+          }
+        },
+        "pt-BR" : {
+          "stringSet" : {
+            "state" : "translated",
+            "values" : [
+              "Calcular meu IMC no ${applicationName}",
+              "Calcular IMC no ${applicationName}",
+              "Ver meu IMC no ${applicationName}",
+              "Qual é meu IMC no ${applicationName}",
+              "Descobrir meu IMC com o ${applicationName}",
+              "Índice de massa corporal no ${applicationName}"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

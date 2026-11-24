@@ -26,22 +26,22 @@ public enum ChartRange: Int, CaseIterable, Identifiable, Sendable {
     /// Short label for the range picker.
     public var label: String {
         switch self {
-        case .week:    return "7D"
-        case .month:   return "30D"
-        case .quarter: return "90D"
-        case .year:    return "1Y"
-        case .all:     return "All"
+        case .week:    return String(localized: "7D", comment: "Chart range segment: last 7 days. 5-segment control: keep it 2 to 4 characters.")
+        case .month:   return String(localized: "30D", comment: "Chart range segment: last 30 days. 5-segment control: keep it 2 to 4 characters.")
+        case .quarter: return String(localized: "90D", comment: "Chart range segment: last 90 days. 5-segment control: keep it 2 to 4 characters.")
+        case .year:    return String(localized: "1Y", comment: "Chart range segment: last year. 5-segment control: keep it 2 to 4 characters.")
+        case .all:     return String(localized: "All", comment: "Chart or summary range: every entry. Short (segmented control).")
         }
     }
 
     /// Accessible, spelled-out description.
     public var accessibilityLabel: String {
         switch self {
-        case .week:    return "Last 7 days"
-        case .month:   return "Last 30 days"
-        case .quarter: return "Last 90 days"
-        case .year:    return "Last year"
-        case .all:     return "All entries"
+        case .week:    return String(localized: "Last 7 days")
+        case .month:   return String(localized: "Last 30 days")
+        case .quarter: return String(localized: "Last 90 days")
+        case .year:    return String(localized: "Last year")
+        case .all:     return String(localized: "All entries")
         }
     }
 
@@ -91,10 +91,9 @@ struct HistoryChange: Equatable {
         return HistoryChange(firstDate: first.date, firstBMI: first.bmi, latestBMI: latest.bmi)
     }
 
-    /// e.g. "+0.4", "-1.2", "0.0" (a plain hyphen-minus is fine for numbers).
+    /// e.g. "+0.4", "-1.2", "0.0" ("+0,4" in es, pt-BR, fr).
     var formattedChange: String {
-        if change == 0 { return "0.0" }
-        return String(format: "%+.1f", change)
+        DisplayNumber.signedDecimal(change)
     }
 }
 
@@ -402,19 +401,29 @@ public struct TrendChart: View {
     /// color (color-blind / non-visual access).
     private var accessibilitySummary: String {
         guard let first = visibleRecords.first, let last = visibleRecords.last else {
-            return "No data"
+            return String(localized: "No data")
         }
         let firstBMI = first.roundedBMI
         let lastBMI = last.roundedBMI
-        let direction: String
-        if lastBMI > firstBMI { direction = "increasing" }
-        else if lastBMI < firstBMI { direction = "decreasing" }
-        else { direction = "steady" }
+        let firstText = DisplayNumber.decimal(firstBMI)
+        let lastText = DisplayNumber.decimal(lastBMI)
+        let count = visibleRecords.count
+        // Whole sentences per direction (not a spliced-in word) so translators
+        // can get the grammar right; the count has plural variants.
+        let trend: String
+        if lastBMI > firstBMI {
+            trend = String(localized: "BMI increasing from \(firstText) to \(lastText) over \(count) measurements.", comment: "VoiceOver trend chart summary. Arguments: first BMI, latest BMI, number of measurements.")
+        } else if lastBMI < firstBMI {
+            trend = String(localized: "BMI decreasing from \(firstText) to \(lastText) over \(count) measurements.", comment: "VoiceOver trend chart summary. Arguments: first BMI, latest BMI, number of measurements.")
+        } else {
+            trend = String(localized: "BMI steady from \(firstText) to \(lastText) over \(count) measurements.", comment: "VoiceOver trend chart summary. Arguments: first BMI, latest BMI (the same), number of measurements.")
+        }
         let latestCategory = last.category(standard: standard).title
+        let latest = String(localized: "Latest reading \(lastText), \(latestCategory).", comment: "VoiceOver trend chart summary. Arguments: latest BMI, its category name.")
         let zoneNote = latestInHealthyRange
-            ? " Latest reading is within the healthy range."
-            : " Latest reading is outside the healthy range."
-        return "BMI \(direction) from \(firstBMI) to \(lastBMI) over \(visibleRecords.count) measurements. Latest reading \(lastBMI), \(latestCategory).\(zoneNote)"
+            ? String(localized: "Latest reading is within the healthy range.")
+            : String(localized: "Latest reading is outside the healthy range.")
+        return "\(trend) \(latest) \(zoneNote)"
     }
 }
 

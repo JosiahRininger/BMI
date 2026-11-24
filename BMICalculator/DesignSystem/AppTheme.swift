@@ -37,13 +37,13 @@ enum AppTheme: String, CaseIterable, Identifiable, Sendable {
     /// Human-readable name for the picker and accessibility.
     var displayName: String {
         switch self {
-        case .classic:  return "Classic Blue"
-        case .ocean:    return "Ocean"
-        case .teal:     return "Teal"
-        case .indigo:   return "Indigo"
-        case .violet:   return "Violet"
-        case .orchid:   return "Orchid"
-        case .graphite: return "Graphite"
+        case .classic:  return String(localized: "Classic Blue", comment: "Theme color name.")
+        case .ocean:    return String(localized: "Ocean", comment: "Theme color name.")
+        case .teal:     return String(localized: "Teal", comment: "Theme color name.")
+        case .indigo:   return String(localized: "Indigo", comment: "Theme color name.")
+        case .violet:   return String(localized: "Violet", comment: "Theme color name.")
+        case .orchid:   return String(localized: "Orchid", comment: "Theme color name.")
+        case .graphite: return String(localized: "Graphite", comment: "Theme color name.")
         }
     }
 
