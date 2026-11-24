@@ -26,3 +26,7 @@ The live app is `BMICalculator/` (SwiftUI, XcodeGen). `BMI-iOS/` is the retired 
 
 ## After every change
 Build, run the tests, check UI changes on a simulator (iPhone, iPad, and iPhone Duo where layout matters), and summarize what changed.
+
+## Growth work
+- Growth items follow `~/Developer/growth-playbook/GROWTH-AUTOMATION.md`; history in `growth/changelog.md`, metrics in the private `~/Developer/growth-playbook/apps/bmi-calculator/baseline.json`, never in this public repo (refresh with `~/Developer/growth-playbook/scripts/asc/baseline.py`).
+- `.claude/hooks/growth_guard.py` blocks review submission, release, review replies, price changes and email sends unless `growth/approvals/<kind>.ok` (submit, release, review-reply, price, email) exists and names the exact approved change. A release shipped under the standing ship rule still needs its approval file; delete each file once used. Every App Store Connect write is appended to `growth/audit.log`.

@@ -65,3 +65,5 @@ Vimvest/Sections/Login/WelcomeScreens/AboutVideo/.vimvest_welcome-loop.mp4.iclou
 .DS_Store
 cloudinary_ios/
 /resetAccount.sh
+growth/drafts/analytics-raw/
+growth/baseline.json
