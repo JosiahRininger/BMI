@@ -76,7 +76,12 @@ struct SettingsView: View {
             .background(DSColor.background.ignoresSafeArea())
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.large)
-            .task { await refreshHealthState() }
+            .task {
+                #if DEBUG
+                if ScreenshotHarness.sheet == "disclaimer" { showFullDisclaimer = true }
+                #endif
+                await refreshHealthState()
+            }
             .onChange(of: healthStandardRaw) { _, raw in
                 // Mirror the chosen standard into the App Group so other processes
                 // (the Siri/Shortcut intent) categorize the same way the app does.

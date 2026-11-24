@@ -216,7 +216,23 @@ struct CalculatorView: View {
         // soft/light weight so it confirms without "celebrating" any category —
         // the system honors the person's haptics setting automatically.
         .sensoryFeedback(.impact(weight: .light, intensity: 0.7), trigger: model.resultGeneration)
+        #if DEBUG
+        .screenshotScrollToResultBottom(resultID: model.resultGeneration)
+        #endif
         .task {
+            #if DEBUG
+            // QA/screenshot state: show a result before the collaborators are
+            // bound, so it never counts toward a review prompt or an ad.
+            if ScreenshotHarness.calculates, model.result == nil {
+                model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
+                // No insertion animation, so a capture never catches the card
+                // mid-transition (or a scroll that lands during it).
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) { model.calculate(persistingInto: nil) }
+                if !ScreenshotHarness.scrollsToResultBottom { ScreenshotHarness.markReady() }
+            }
+            #endif
             bindCollaborators()
             model.standard = HealthStandard(rawValue: standardRaw) ?? .standard
             if let u = UnitSystem(rawValue: unitSystemRaw), u != model.unitSystem {

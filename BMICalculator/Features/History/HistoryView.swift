@@ -40,6 +40,9 @@ public struct HistoryView: View {
 
     public init(standard: HealthStandard = .standard) {
         self.standard = standard
+        #if DEBUG
+        if let range = ScreenshotHarness.range { _range = State(initialValue: range) }
+        #endif
     }
 
     // MARK: Derived data

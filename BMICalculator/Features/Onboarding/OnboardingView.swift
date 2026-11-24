@@ -105,6 +105,15 @@ struct OnboardingView: View {
             .frame(maxWidth: .infinity)
         }
         .interactiveDismissDisabled()
+        #if DEBUG
+        .task {
+            // QA/screenshot state: open on a later onboarding page.
+            if let raw = ScreenshotHarness.onboardingPage, let target = Page(rawValue: raw) {
+                page = target
+                ScreenshotHarness.markReady(after: .seconds(2))
+            }
+        }
+        #endif
     }
 
     // MARK: Header
@@ -526,14 +535,23 @@ private struct ConnectHealthRow: View {
                     Text("Connect Apple Health")
                         .font(DSFont.subheadline)
                         .foregroundStyle(DSColor.primaryText)
-                    Text(subtitle)
-                        .font(DSFont.caption)
-                        .foregroundStyle(DSColor.secondaryText)
-                        // Reserve two lines so the card height stays constant as the
-                        // subtitle switches between states (a source of the jolt);
-                        // scale slightly rather than truncate on narrow widths.
-                        .lineLimit(2, reservesSpace: true)
-                        .minimumScaleFactor(0.85)
+                    // Reserve two lines (the hidden spacer) so the card height
+                    // stays constant as the subtitle switches between states (a
+                    // source of the jolt); scale slightly rather than truncate on
+                    // narrow widths. A third line is allowed for longer
+                    // translations on small phones (French and Portuguese
+                    // truncated at 375 pt).
+                    ZStack(alignment: .topLeading) {
+                        Text(verbatim: " \n ")
+                            .font(DSFont.caption)
+                            .hidden()
+                            .accessibilityHidden(true)
+                        Text(subtitle)
+                            .font(DSFont.caption)
+                            .foregroundStyle(DSColor.secondaryText)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.85)
+                    }
                 }
                 Spacer()
 
